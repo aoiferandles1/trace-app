@@ -32,7 +32,7 @@ export function SheetsSection() {
       description="A modal <dialog>: white, 28px top corners, a 40 x 4 handle, a 36px close button, the scrim behind, at most 75% of the screen tall. Focus moves in, Tab wraps inside, Escape closes (unless the sheet must be answered), focus returns to the opener."
     >
       <div className="grid gap-10 xl:grid-cols-2">
-        <Specimen title="Access request (ApproveA2)" note="Must be answered: no close button, Escape does nothing. Allow is filled; Deny is a 44px text button.">
+        <Specimen title="Access request (ApproveA2)" note="Must be answered: no close button, Escape does nothing. Allow is filled; Deny is a 44px text button. Both stay pinned under the list when it scrolls.">
           <div className="flex flex-col items-start gap-3">
             <Button variant="secondary" onClick={() => setOpen(true)}>
               Open the access request
@@ -61,7 +61,17 @@ export function SheetsSection() {
             <AccessRequestDetails
               clinician={{ name: "Dr Hennessy", role: "GP", practice: "Rathmines Medical Centre" }}
               duration="30 min"
-              shared={["Safety info", "Medications", "Conditions", "Recent visits", "Care team", "Can add session notes"]}
+              // The owner's defaults (Full timeline and Medication notes on): longer than the board's list.
+              shared={[
+                "Safety info",
+                "Medications",
+                "Conditions",
+                "Recent visits",
+                "Full timeline",
+                "Care team",
+                "Medication notes",
+                "Can add session notes",
+              ]}
               notIncluded="Documents, Family history, Mental health"
             />
             <p className="text-caption text-ink-2">Name and practice are as typed. Trace does not check them.</p>

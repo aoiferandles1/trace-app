@@ -52,6 +52,17 @@ test.describe("UI kit", () => {
     await expect(dialog).toBeVisible();
     await expectNoAxeViolations(page, "dialog");
 
+    // With the owner's default share (eight rows) the title, Allow and Deny are all on screen at
+    // once, without scrolling (BRIEF.md 5.4: Deny is not hidden).
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const target of [
+      dialog.getByRole("heading", { name: "Dr Hennessy wants access" }),
+      dialog.getByRole("button", { name: "Allow access" }),
+      dialog.getByRole("button", { name: "Deny", exact: true }),
+    ]) {
+      await expect(target).toBeInViewport({ ratio: 1 });
+    }
+
     // Focus is inside the dialog, and Tab cannot leave it.
     for (let i = 0; i < 6; i++) {
       await page.keyboard.press("Tab");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { IconButton } from "./IconButton";
 
@@ -57,13 +57,29 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // While the content scrolls (a long request at 390 x 844) the scrolling part takes focus,
+  // so it can be scrolled from the keyboard.
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body || !open) return;
+    const check = () => setScrolls(body.scrollHeight > body.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(body);
+    for (const child of Array.from(body.children)) ro.observe(child);
+    return () => ro.disconnect();
+  }, [open]);
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) {
       dialog.showModal();
-      if (initialFocusId) document.getElementById(initialFocusId)?.focus();
+      // Without scrolling: the part that scrolls would otherwise start at the focused element
+      // and hide the title above it.
+      if (initialFocusId) document.getElementById(initialFocusId)?.focus({ preventScroll: true });
     } else if (!open && dialog.open) {
       dialog.close();
     }
@@ -115,7 +131,14 @@ export function BottomSheet({
         className,
       )}
     >
-      <div className={cn("flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pt-3", actions ? "pb-1" : "pb-6")}>
+      <div
+        ref={bodyRef}
+        tabIndex={scrolls ? 0 : undefined}
+        className={cn(
+          "flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pt-3 focus-visible:-outline-offset-2",
+          actions ? "pb-1" : "pb-6",
+        )}
+      >
         <span aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-border-control" />
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-0.5">
