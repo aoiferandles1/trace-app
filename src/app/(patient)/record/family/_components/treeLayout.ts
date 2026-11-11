@@ -5,7 +5,7 @@ import type { Relative } from "@/lib/patient/record";
  * the data (board FamilyA2). The board's own numbers are the anchors: a
  * 350px wide drawing, node centres for grandparents at 44, 132, 218 and 306
  * (y 26), Mum at 88 and Dad at 262 (y 176), you and your siblings centred
- * on 175, 90 apart (y 316). Rows are 140 apart. Aunts and uncles extend the
+ * on 175, 90 apart (y 316). Rows below are 140 apart. Aunts and uncles extend the
  * parents' row outwards, children go under you, and anyone else ("Someone
  * else", or a second Mum) sits on a last row without lines. When that makes
  * the drawing wider than 350px it grows, and the screen lets it scroll
@@ -55,7 +55,8 @@ export function layoutTree(relatives: Relative[]): TreeLayout {
 
   const nodes: TreeNode[] = [];
   const paths: string[] = [];
-  const y = [TOP, TOP + ROW, TOP + 2 * ROW, TOP + 3 * ROW];
+  // FamilyA2's rows: grandparents at 26, parents 150 below (176), you 140 below them (316); then 140 apart.
+  const y = [TOP, TOP + 150, TOP + 150 + ROW, TOP + 150 + 2 * ROW];
 
   // Grandparents.
   const gp: Record<string, Relative | null> = {};
@@ -124,7 +125,7 @@ export function layoutTree(relatives: Relative[]): TreeLayout {
   const others = relatives.filter((r) => !used.has(r.id));
   if (others.length) {
     lastRow += 1;
-    const oy = TOP + lastRow * ROW;
+    const oy = y[2] + (lastRow - 2) * ROW;
     others.forEach((r, i) => nodes.push({ key: r.id, relative: r, x: 44 + 88 * i, y: oy }));
   }
 
