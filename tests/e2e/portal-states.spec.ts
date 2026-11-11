@@ -167,6 +167,17 @@ test("mocked: access pauses, the record disappears, then comes back", async ({ b
   await context.close();
 });
 
+test("mocked: ended with notes allowed but none written says so", async ({ browser, viewport }) => {
+  const { context, page } = await newDoctor(browser, { viewport: viewport ?? undefined });
+  const set = await mockPortal(page, { status: () => statusOf("active"), record: () => fakeRecord() });
+  await page.goto("/view/session");
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+  // After the end the database no longer says whether notes were allowed.
+  set({ status: () => statusOf("ended", { ended_by: "patient", notes_saved_to_record: false }) });
+  await expect(page.getByText("No session notes were written, so nothing was added to the record.")).toBeVisible({ timeout: 7_000 });
+  await context.close();
+});
+
 test("mocked: ended by the patient and by the timer", async ({ browser, viewport }) => {
   const { context, page } = await newDoctor(browser, { viewport: viewport ?? undefined });
   const set = await mockPortal(page, {
@@ -210,6 +221,8 @@ test("mocked: notes typed but not saved when the patient ends stay on screen to 
   await expect(page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 7_000 });
   await expect(page.getByText(/were not saved before the session ended/)).toBeVisible();
   await expect(page.getByLabel("Notes not saved")).toHaveValue("Chief complaint: Chest pain on exertion");
+  // Not "No session notes were written": the doctor did write some.
+  await expect(page.getByText("No session notes were written, so nothing was added to the record.")).toHaveCount(0);
   await expectNoAxeViolations(page);
   await context.close();
 });

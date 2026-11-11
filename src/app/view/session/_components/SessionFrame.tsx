@@ -70,6 +70,8 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState(false);
   // Notes typed but not saved when the session ended: kept on screen so the doctor can copy them.
   const [unsaved, setUnsaved] = useState<SessionNotes | null>(null);
+  // allow_notes is only returned while the session is live; the ended screen still needs it.
+  const [notesAllowed, setNotesAllowed] = useState<boolean | null>(null);
 
   const notesLoaded = useRef(false);
   const lastSaved = useRef(JSON.stringify(EMPTY_NOTES));
@@ -84,6 +86,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
       setOffset(clockOffset(s.server_time));
       setStatus(s);
       allowNotes.current = Boolean(s.allow_notes);
+      if (s.status === "active" || s.status === "paused") setNotesAllowed(Boolean(s.allow_notes));
 
       // Announcements: start, back from a pause, pause, end. (5 and 1 minutes
       // left come from MilestoneAnnouncer.)
@@ -256,7 +259,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
       <SessionContext.Provider value={ctx}>
         <PortalShell tone="indigo" header={header} footer={footer}>
           {liveRegion}
-          <EndedScreen status={status} unsaved={unsaved} />
+          <EndedScreen status={status} unsaved={unsaved} notesAllowed={notesAllowed} />
         </PortalShell>
       </SessionContext.Provider>
     );
@@ -421,7 +424,15 @@ function UnsavedNotes({ notes }: { notes: SessionNotes }) {
   );
 }
 
-function EndedScreen({ status, unsaved }: { status: PortalStatus; unsaved: SessionNotes | null }) {
+function EndedScreen({
+  status,
+  unsaved,
+  notesAllowed,
+}: {
+  status: PortalStatus;
+  unsaved: SessionNotes | null;
+  notesAllowed: boolean | null;
+}) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
   const by = status.ended_by;
@@ -439,7 +450,7 @@ function EndedScreen({ status, unsaved }: { status: PortalStatus; unsaved: Sessi
         : "Access to the record is closed on both sides.";
   const notesLine = status.notes_saved_to_record
     ? "Your session notes were saved to the patient's record."
-    : status.allow_notes
+    : (status.allow_notes ?? notesAllowed) && !unsaved
       ? "No session notes were written, so nothing was added to the record."
       : null;
   return (
