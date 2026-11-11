@@ -57,7 +57,9 @@ async function openSession(browser: Browser, patient: PortalPatient, opts: Scope
   await submitCode(doctor.page, share.code);
   await patient.waitForStatus("requested");
   await patient.respond(true);
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 10_000 });
+  // The waiting screen polls every 2 s, then the record route compiles and loads; under a full
+  // run (four workers on one dev server) that has taken longer than 10 s.
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 20_000 });
   return { ...doctor, requested };
 }
 
@@ -164,6 +166,9 @@ test("conditions: shown on the Overview only when shared", async ({ browser, pat
 });
 
 test("medication notes appear only when the contract returns them", async ({ browser, patient }) => {
+  // Three sessions in one test, each loading the Medications view over the network: it failed
+  // once under a full run on the default 5 s wait, and passes alone and under CPU load.
+  const VIEW_LOAD = 15_000;
   // Without the Medication notes scope: no note travels, and no label or gap shows.
   let s = await openSession(browser, patient, {});
   const meds = (await section(s.page, "medications")).body.record.data;
@@ -172,7 +177,7 @@ test("medication notes appear only when the contract returns them", async ({ bro
   expect(notes.every((n: string | null) => n === null)).toBe(true);
   expect(JSON.stringify(meds)).not.toContain("note_shared");
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
-  await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
+  await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible({ timeout: VIEW_LOAD });
   await expect(s.page.getByText(/Jane: "/)).toHaveCount(0);
   await patient.end();
   await s.context.close();
@@ -180,7 +185,7 @@ test("medication notes appear only when the contract returns them", async ({ bro
   // With it: Jane's own words under each period that has them.
   s = await openSession(browser, patient, { share_medication_notes: true });
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
-  await expect(s.page.getByText('Jane: "Back on 36. Smoother and sleeping better."')).toBeVisible();
+  await expect(s.page.getByText('Jane: "Back on 36. Smoother and sleeping better."')).toBeVisible({ timeout: VIEW_LOAD });
   await expect(s.page.getByText('Jane: "Too much. Racing heart and trouble sleeping."')).toBeVisible();
   await s.page.waitForTimeout(250);
   await expectNoAxeViolations(s.page);
@@ -192,10 +197,10 @@ test("medication notes appear only when the contract returns them", async ({ bro
   await patient.hideNotes("Concerta");
   s = await openSession(browser, patient, { share_medication_notes: true });
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
-  await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
+  await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible({ timeout: VIEW_LOAD });
   await expect(s.page.getByText(/Jane: "/)).toHaveCount(0);
   await s.page.getByRole("button", { name: /^Levothyroxine/ }).click();
-  await expect(s.page.getByText('Jane: "Energy back to normal."')).toBeVisible();
+  await expect(s.page.getByText('Jane: "Energy back to normal."')).toBeVisible({ timeout: VIEW_LOAD });
   const concerta = (await section(s.page, "medications")).body.record.data.current.find((m: { name: string }) => m.name === "Concerta");
   expect(concerta.periods.every((p: { note: string | null }) => p.note === null)).toBe(true);
   await patient.end();

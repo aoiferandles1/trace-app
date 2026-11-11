@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
+import { expectChartLabelsClear } from "./helpers/chart";
 
 /**
  * Acceptance check for the UI kit (Phase 1): /kit and the two shell demos
@@ -24,6 +25,13 @@ test.describe("UI kit", () => {
     await page.goto("/kit/portal");
     await expect(page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible();
     await expectNoAxeViolations(page);
+  });
+
+  test("step chart labels never cross the line, at any width", async ({ page }) => {
+    await page.goto("/kit");
+    await expect(page.getByRole("heading", { level: 1, name: "UI kit" })).toBeVisible();
+    // Concerta (45mg dropping to 36mg), two strengths, one, eight in 270px and seven up and down in 220px.
+    await expectChartLabelsClear(page);
   });
 
   test("no horizontal scroll", async ({ page }) => {

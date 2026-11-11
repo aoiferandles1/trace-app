@@ -1,5 +1,6 @@
 import { expect, test as base } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
+import { expectChartLabelsClear } from "./helpers/chart";
 import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
 import { PortalPatient } from "../helpers/portal-patient";
 
@@ -127,6 +128,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(main.getByText("Now 36mg, since Feb 2025").filter({ visible: true })).toBeVisible();
   const chart = main.locator("table").filter({ hasText: "Strength" });
   await expect(chart.locator("tbody tr td:first-child")).toHaveText(["18mg", "27mg", "36mg", "45mg", "36mg"]);
+  await expectChartLabelsClear(page);
   await expect(main.getByText("Prescribed by Dr Hennessy").filter({ visible: true }).first()).toBeVisible();
   await expect(main.getByText('Jane: "Back on 36. Smoother and sleeping better."').filter({ visible: true })).toBeVisible();
   await page.getByRole("radio", { name: "Past" }).click();

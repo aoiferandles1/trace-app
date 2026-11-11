@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
+import { expectChartLabelsClear } from "./helpers/chart";
 import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
 
 /**
@@ -50,7 +51,7 @@ async function periodsOf(id: string) {
   return data!;
 }
 
-/** The step chart fits its card: nothing scrolls and every label is inside the card. */
+/** The step chart fits its card: nothing scrolls, every label is inside the card and clear of the line. */
 async function expectChartFits(page: Page) {
   const fit = await page.evaluate(() => {
     const table = [...document.querySelectorAll("table")].find((t) => /strength over time/.test(t.caption?.textContent ?? ""));
@@ -63,6 +64,7 @@ async function expectChartFits(page: Page) {
     };
   });
   expect(fit).toEqual({ scrolls: false, outside: 0 });
+  await expectChartLabelsClear(page);
 }
 
 /** True in the desktop layout (1024px and wider). */
@@ -233,6 +235,20 @@ test("full timeline: the filter, and the sheet with Seen by, Outcome, Prescribed
   ]);
   // A row without its year shown still says it to screen readers.
   await expect(list.getByRole("button", { name: /Asthma flare.*2026/ })).toBeVisible();
+  // The year never touches the title ("2026Chest infection"): about 8px between the year's ink and the title (it was 0).
+  const yearGaps = await list.getByRole("button").evaluateAll((rows) =>
+    rows
+      .map((row) => {
+        const [yearCol, text] = [...row.children] as HTMLElement[];
+        if (!yearCol.textContent) return null;
+        const range = document.createRange();
+        range.selectNodeContents(yearCol);
+        return text.getBoundingClientRect().left - range.getBoundingClientRect().right;
+      })
+      .filter((g): g is number => g !== null),
+  );
+  expect(yearGaps.length).toBe(8);
+  for (const g of yearGaps) expect(g).toBeGreaterThanOrEqual(6);
   expect(year).toBe("2026");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);

@@ -136,7 +136,9 @@ export function ListRow({
 
 /**
  * Full timeline row (TimelineA2): grid of a 52px year column, the title and
- * caption, and a chevron. The year shows on the first row of each year
+ * caption, and a chevron. The board sets the title straight after the year
+ * column, which leaves "2026" (about 49px of Sora) touching the title; the
+ * columns are 8px apart here, as the portal's year rows (SelectableRow). The year shows on the first row of each year
  * (`showYear`), in accent for the current year; screen readers always hear it.
  */
 export function YearRow({
@@ -186,7 +188,7 @@ export function YearRow({
     </>
   );
   const classes = cn(
-    "grid min-h-15 w-full grid-cols-[52px_1fr_20px] items-center py-2 text-left text-ink",
+    "grid min-h-15 w-full grid-cols-[52px_1fr_20px] items-center gap-x-2 py-2 text-left text-ink",
     selected && CURRENT_BAR,
     className,
   );

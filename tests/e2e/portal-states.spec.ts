@@ -365,3 +365,27 @@ test("mocked: an ungranted view's URL shows Not shared and asks for nothing", as
   await expectNoAxeViolations(page);
   await context.close();
 });
+
+test("mocked: the Overview's vitals keep their gap at 1280 with the notes open (PortalRecordE)", async ({ browser }) => {
+  test.skip(test.info().project.name !== "desktop", "a desktop layout check");
+  const { context, page } = await newDoctor(browser, { viewport: { width: 1280, height: 800 } });
+  await mockPortal(page, { status: () => statusOf("active") });
+  await page.goto("/view/session");
+  await expect(page.getByRole("heading", { level: 1, name: "Test Patient" })).toBeVisible();
+  const vitals = page.getByRole("region", { name: "Vitals" });
+  await expect(vitals.getByText("120/80")).toBeVisible();
+  // The figures on one row: each ends at least 12px before the next starts (the board's gap is 16px).
+  const gaps = await vitals.locator("dd").evaluateAll((dds) => {
+    const r = dds.map((d) => {
+      const range = document.createRange();
+      range.selectNodeContents(d);
+      return range.getBoundingClientRect();
+    });
+    const out: number[] = [];
+    for (let i = 0; i + 1 < r.length; i += 2) out.push(r[i + 1].left - r[i].right);
+    return out;
+  });
+  expect(gaps.length).toBeGreaterThan(0);
+  for (const g of gaps) expect(g).toBeGreaterThanOrEqual(12);
+  await context.close();
+});

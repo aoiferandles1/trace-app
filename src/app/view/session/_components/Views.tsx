@@ -273,7 +273,9 @@ export function OverviewView() {
             )}
           </div>
           {d.vitals ? (
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-5.5">
+            // The board's "1fr 1fr": a column grows to fit its widest figure ("128/82"), so the
+            // figures beside it keep the 16px gap however narrow the pane is.
+            <dl className="grid grid-cols-[1fr_1fr] gap-x-4 gap-y-5.5">
               {(
                 [
                   [d.vitals.systolic != null && d.vitals.diastolic != null ? `${d.vitals.systolic}/${d.vitals.diastolic}` : null, "Blood pressure"],

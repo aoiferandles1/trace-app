@@ -27,6 +27,13 @@ const LONG: StepPeriod[] = [100, 125, 150, 125, 175, 200, 150, 100].map((v, i) =
   to: i === 7 ? "now" : `${2018 + i}`,
 }));
 
+/** Steps down as well as up, in a narrow box: every label must still clear the line. */
+const DROPS: StepPeriod[] = [20, 60, 40, 80, 10, 50, 45].map((v, i) => ({
+  value: v,
+  from: `${2018 + i}`,
+  to: i === 6 ? "now" : `${2019 + i}`,
+}));
+
 const RESULTS: Array<[string, number, string, number, number]> = [
   ["Haemoglobin", 128, "g/L", 115, 160],
   ["White cells", 6.2, "x10⁹/L", 4, 11],
@@ -72,6 +79,9 @@ export function DataSection() {
             </Box>
             <Box width={270}>
               <StepChart periods={LONG} unit="mcg" caption="Eight periods, the last label pulled inside" />
+            </Box>
+            <Box width={220}>
+              <StepChart periods={DROPS} unit="mg" caption="Seven periods up and down, 220px" />
             </Box>
           </div>
         </Specimen>
