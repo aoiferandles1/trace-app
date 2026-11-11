@@ -72,7 +72,7 @@ export function EmailForm({
         name="email"
         autoComplete="email"
         inputMode="email"
-        placeholder="janedoe@email.com"
+        placeholder="janedoe@example.ie"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         error={error}
