@@ -190,7 +190,7 @@ function HomeBody({
 
       <section aria-labelledby="quick-label" className="flex flex-col gap-3">
         <SectionHeading id="quick-label">Quick actions</SectionHeading>
-        <ul className="grid grid-cols-4 gap-2">
+        <ul className="grid grid-cols-2 gap-3">
           <li>
             <QuickActionTile href="/add/note" label="Add note" icon="pencil" />
           </li>

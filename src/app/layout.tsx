@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Ground (--ground). Session screens switch it to session indigo with <ThemeColor tone="session" />.
   themeColor: "#f7f7fb",
 };
 

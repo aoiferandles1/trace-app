@@ -31,7 +31,7 @@ export function StatTile({
         {value}
         <span className="sr-only"> {label}</span>
       </p>
-      <p aria-hidden="true" className={cn("truncate text-meta", !urgent && "text-ink-2")}>
+      <p aria-hidden="true" className={cn("text-meta", !urgent && "text-ink-2")}>
         {label}
       </p>
     </div>

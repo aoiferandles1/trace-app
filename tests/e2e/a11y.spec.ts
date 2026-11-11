@@ -177,7 +177,7 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
   await page.keyboard.press("Tab");
   await expect(sheet.getByRole("button", { name: "Allow access" })).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(sheet.getByRole("button", { name: "Deny access" })).toBeFocused();
+  await expect(sheet.getByRole("button", { name: "Deny", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveCount(1);
   expect(await page.evaluate(() => Boolean(document.activeElement?.closest("dialog")))).toBe(true);

@@ -44,7 +44,7 @@ export function ShareTodayCard({
       </h2>
       <p className="mt-1 font-display text-hero font-light">
         {m ? m[1] : time}
-        {m?.[2] && <span className="ml-1 font-sans text-unit font-medium tracking-[0]">{m[2].toLowerCase()}</span>}
+        {m?.[2] && <span className="ml-1 font-sans text-unit font-medium tracking-normal">{m[2].toLowerCase()}</span>}
       </p>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-3">
         {place && <p className="min-w-0 text-meta">{place}</p>}

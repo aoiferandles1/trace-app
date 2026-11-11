@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Trace favicon: session indigo (--session) with a white line "t" on the icon grid's stroke style. -->
+  <rect width="32" height="32" rx="8" fill="#3D4EB8"/>
+  <path d="M13 7v14.5a3.5 3.5 0 0 0 3.5 3.5H20M9 12.5h11" fill="none" stroke="#FFFFFF" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

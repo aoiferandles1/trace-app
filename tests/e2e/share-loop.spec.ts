@@ -209,7 +209,7 @@ test("deny, with the request arriving over another screen", async ({ page, brows
   await page.keyboard.press("Escape");
   await expect(sheet).toBeVisible();
 
-  await sheet.getByRole("button", { name: "Deny access" }).click();
+  await sheet.getByRole("button", { name: "Deny", exact: true }).click();
   await page.waitForURL(/\/home$/);
   await expect(sheet).toBeHidden();
   await expect(doctor.page.getByRole("heading", { name: "Your patient chose not to share their record." })).toBeVisible({ timeout: 8_000 });
@@ -373,7 +373,7 @@ test("reset demo puts Jane's record back", async ({ page }) => {
   await page.waitForURL(/\/home$/);
   // Home must take taps: the confirm sheet must not stay open as a modal on the hidden Profile screen.
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
-  await page.getByRole("link", { name: "Timeline", exact: true }).click({ timeout: 5_000 });
+  await page.getByRole("link", { name: "Record", exact: true }).click({ timeout: 5_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Record" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Personal note added/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("link", { name: /Remove me on reset/ })).toHaveCount(0);

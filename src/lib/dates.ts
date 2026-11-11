@@ -92,7 +92,7 @@ function dayParts(iso: string) {
 
 export function formatTimelineDate(iso: string): string {
   const { y, m, d } = dayParts(iso);
-  return `${d} ${MONTHS[m - 1]} ${y}`.toUpperCase();
+  return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** "5 Jan" (Home's Recently added). */
@@ -115,10 +115,10 @@ export function formatTime(iso: string): string {
     .toLowerCase();
 }
 
-/** "MONDAY · 12 JAN 2026" (Home's header). */
+/** "Monday 12 Jan 2026" (Home's header). */
 export function formatHeaderDate(date: Date = new Date()): string {
   const weekday = fmt(date, { weekday: "long" });
-  return `${weekday} · ${formatTimelineDate(date.toISOString())}`.toUpperCase();
+  return `${weekday} ${formatTimelineDate(date.toISOString())}`;
 }
 
 /** "Monday 12 January 2026, 9:30am" (entry detail). */

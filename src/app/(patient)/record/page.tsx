@@ -8,7 +8,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
-import { dayKey, formatTimelineDate, yearOfIso } from "@/lib/dates";
+import { dayKey, formatShortDate, yearOfIso } from "@/lib/dates";
 import { conditionMeta, criticalItems, type Condition, type Entry } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
@@ -139,7 +139,7 @@ function Timeline({ entries }: { entries: Entry[] }) {
               <TimelineItem
                 key={e.id}
                 kind={e.kind}
-                date={formatTimelineDate(e.occurs_at)}
+                date={formatShortDate(e.occurs_at)}
                 dateTime={dayKey(e.occurs_at)}
                 title={e.title}
                 meta={entryMeta(e)}

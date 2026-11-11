@@ -62,7 +62,7 @@ export function SharedSummaryCard({
             {notList.map((n) => (
               <li key={n} className="flex items-center gap-2.5 text-caption text-on-session-2">
                 <span aria-hidden="true" className="size-4.5 shrink-0 rounded-full border-2 border-on-session-ring" />
-                {n}
+                <span className="first-letter:uppercase">{n}</span>
               </li>
             ))}
           </ul>

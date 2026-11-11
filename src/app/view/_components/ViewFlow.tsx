@@ -12,6 +12,7 @@ import { CodeInput } from "@/components/ui/CodeInput";
 import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TextField } from "@/components/ui/TextField";
+import { ThemeColor } from "@/components/ui/ThemeColor";
 import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
 import { clockOffset, portalApi, PortalApiError, type PortalRecord, type PortalStatus } from "../_lib/api";
 import { durationLabel, patientFirstName, patientFullName } from "../_lib/format";
@@ -261,6 +262,7 @@ export function ViewFlow() {
 
   return (
     <PortalShell tone={onSession ? "session" : "ground"} header={header} footer={footer}>
+      {onSession && <ThemeColor tone="session" />}
       <PortalHero
         tone={onSession ? "session" : "default"}
         title="Read your patient's record."

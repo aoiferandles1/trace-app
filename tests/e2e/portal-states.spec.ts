@@ -137,7 +137,9 @@ test("mocked: the request times out while waiting", async ({ browser, viewport }
   const set = await mockPortal(page, { status: () => statusOf("requested") });
   await page.goto("/view");
   await expect(page.getByRole("heading", { name: "Waiting for patient to approve." })).toBeVisible();
-  await expect(page.getByText(/Patient has [34]:\d\d to respond/)).toBeVisible();
+  // PortalWaitB: "Patient has" over the large countdown.
+  await expect(page.getByText("Patient has", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^[34]:\d\d$/)).toBeVisible();
   set({ status: () => statusOf("expired") });
   await expect(page.getByRole("heading", { name: "Your patient didn't answer in time." })).toBeVisible({ timeout: 5000 });
   await expectNoAxeViolations(page);
