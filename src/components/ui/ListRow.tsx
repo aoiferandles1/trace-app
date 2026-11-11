@@ -46,6 +46,8 @@ export type ListRowProps = {
   padY?: 10 | 11 | 12;
   /** Space between the text and the value: 14 (default) or 12 (MedsA2's rows). */
   gap?: 12 | 14;
+  /** Row height without `padY`: 64 (default) or 60 (InsuranceA2's providers). */
+  height?: 60 | 64;
   className?: string;
 };
 
@@ -78,6 +80,7 @@ export function ListRow({
   titleAs = "span",
   padY,
   gap = 14,
+  height = 64,
   className,
 }: ListRowProps) {
   const Title = href || onClick ? "span" : titleAs;
@@ -101,7 +104,7 @@ export function ListRow({
   const classes = cn(
     "flex w-full items-center text-left text-ink",
     gap === 12 ? "gap-3" : "gap-3.5",
-    padY ? padYClasses[padY] : "min-h-16 py-2",
+    padY ? padYClasses[padY] : height === 60 ? "min-h-15" : "min-h-16 py-2",
     (href || onClick) && "transition-colors duration-150 ease-out hovered:text-accent-alt",
     className,
   );
