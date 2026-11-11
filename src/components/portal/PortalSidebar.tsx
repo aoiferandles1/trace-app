@@ -61,7 +61,7 @@ export function PortalSidebar({
       aria-label="Patient record"
       className={cn("on-session flex min-w-0 flex-col bg-session px-3.5 text-white lg:min-h-dvh lg:pb-6 lg:pt-7", className)}
     >
-      <p className="px-3.5 pt-4 font-display text-title font-light lg:pb-7 lg:pt-0">trace</p>
+      <p className="px-3.5 pt-4 font-display text-wordmark font-light lg:pb-7 lg:pt-0">trace</p>
       <div className="flex min-w-0 flex-col px-3.5 py-3 lg:pb-5 lg:pt-0">
         <p className="truncate text-row font-medium">{patient.name}</p>
         <p className="truncate text-meta text-on-session-2">{patient.details}</p>

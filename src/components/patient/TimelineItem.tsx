@@ -71,7 +71,12 @@ export function TimelineItem({ kind, date, dateTime, title, meta, href, upcoming
     <li className={className}>
       <ListRow
         icon={k.icon}
-        title={title}
+        title={
+          <>
+            {upcoming && <span className="sr-only">Upcoming, </span>}
+            {title}
+          </>
+        }
         caption={
           <>
             {k.label}
@@ -79,10 +84,7 @@ export function TimelineItem({ kind, date, dateTime, title, meta, href, upcoming
           </>
         }
         value={
-          <time dateTime={dateTime}>
-            {upcoming && <span className="sr-only">Upcoming, </span>}
-            {date}
-          </time>
+          <time dateTime={dateTime}>{date}</time>
         }
         valueStyle={upcoming ? "accent" : "caption"}
         href={href}

@@ -157,7 +157,7 @@ export function FirstTimeAccordion({ className }: { className?: string }) {
       id="first-time"
       aria-labelledby={`${base}-title`}
       tabIndex={-1}
-      className={cn("w-full max-w-[722px] focus:outline-none", className)}
+      className={cn("max-w-[722px] focus:outline-none", className)}
     >
       <h2 id={`${base}-title`} className="mb-2 font-display text-heading font-light">
         First time using Trace?

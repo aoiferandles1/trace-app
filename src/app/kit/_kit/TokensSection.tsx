@@ -131,6 +131,7 @@ const TYPE: Array<[string, string, string, string]> = [
   ["code", "font-display text-code font-light", "44 phone / 48 portal", "9070"],
   ["numeral-lg", "font-display text-numeral-lg font-light", "32/36", "19"],
   ["name", "font-display text-name font-light", "30/36", "Jane Doe"],
+  ["wordmark", "font-display text-wordmark font-light", "28/34", "trace"],
   ["title", "font-display text-title font-light", "28/34 phone / 26/32 portal", "Medications"],
   ["title-md", "font-display text-title-md font-light", "26/32", "Dr Hennessy wants access"],
   ["title-sm", "font-display text-title-sm font-light", "24/30", "Family history"],

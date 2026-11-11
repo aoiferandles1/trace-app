@@ -7,13 +7,13 @@ import { DetailBlock } from "@/components/ui/DetailBlock";
  */
 export function DetailList({ rows }: { rows: { label: string; value: ReactNode }[] }) {
   return (
-    <div className="flex flex-col gap-4">
+    <dl className="flex flex-col gap-4">
       {rows.map((r) => (
-        <DetailBlock key={r.label} label={r.label}>
+        <DetailBlock key={r.label} label={r.label} term>
           {r.value}
         </DetailBlock>
       ))}
-    </div>
+    </dl>
   );
 }
 

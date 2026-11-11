@@ -13,7 +13,7 @@ import { Countdown } from "@/components/ui/Countdown";
 import { Notice } from "@/components/ui/Notice";
 import { ThemeColor } from "@/components/ui/ThemeColor";
 import { formatTime } from "@/lib/dates";
-import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
+import { initialsOf } from "@/lib/format";
 import {
   clinicianName,
   hardEndOf,
@@ -124,12 +124,8 @@ function Active({
   return (
     <>
       <div className="flex flex-1 flex-col gap-4 px-5 pb-6 pt-1">
-        <SessionStatusRow
-          label="Session active"
-          minimiseHref="/home"
-          time={manual ? undefined : formatCountdown(left)}
-          timeLabel={manual ? undefined : `${formatCountdownSpoken(left)} left`}
-        />
+        {/* The time shows once, in the countdown below (SessionA2). */}
+        <SessionStatusRow label="Session active" minimiseHref="/home" />
         <div className="flex flex-col items-center gap-2.5 text-center">
           <Avatar initials={initialsOf(name)} size={88} tone="session" display />
           <h1 className="font-display text-title font-light">
@@ -162,7 +158,7 @@ function Active({
           </Notice>
         )}
       </div>
-      <div className="sticky bottom-0 flex flex-col items-center gap-2 bg-session px-5 pb-6 pt-3">
+      <div className="flex flex-col items-center gap-2 px-5 pb-6 pt-3">
         <Button variant="primary" tone="session" size="lg" fullWidth onClick={onEnd} loading={busy}>
           End sharing now
         </Button>

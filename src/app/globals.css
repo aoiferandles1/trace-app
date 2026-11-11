@@ -193,6 +193,8 @@
   --text-code--line-height: var(--t-code-lh);
   --text-numeral-lg: 32px; /* date-tile days, vitals, step numbers */
   --text-numeral-lg--line-height: 36px;
+  --text-wordmark: 28px; /* the "trace" wordmark (portal header and rail) */
+  --text-wordmark--line-height: 34px;
   --text-name: 30px; /* portal header: patient name */
   --text-name--line-height: 36px;
   --text-name--letter-spacing: -0.01em;

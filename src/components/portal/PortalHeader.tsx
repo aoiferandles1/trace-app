@@ -22,12 +22,12 @@ export function PortalHeader({
   const line = [clinician?.name, clinician?.practice].filter(Boolean).join(", ");
   return (
     <header className={cn("flex min-h-22 items-center justify-between gap-4 px-5 sm:px-14", className)}>
-      <Link href="/view" className={cn("font-display text-title font-light", tone === "session" ? "text-white" : "text-ink")}>
+      <Link href="/view" className={cn("font-display text-wordmark font-light", tone === "session" ? "text-white" : "text-ink")}>
         trace
         <span className="sr-only"> clinical access portal home</span>
       </Link>
       {clinician && (
-        <p className={cn("min-w-0 truncate text-caption", tone === "session" ? "text-on-session-2" : "text-ink-2")}>
+        <p className={cn("relative min-w-0 truncate text-caption", tone === "session" ? "text-on-session-2" : "text-ink-2")}>
           {line}
           {clinician.role && <span className="sr-only">, {clinician.role}</span>}
         </p>

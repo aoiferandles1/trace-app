@@ -43,6 +43,7 @@ export function ShareTodayCard({
         {title}
       </h2>
       <p className="mt-1 font-display text-hero font-light">
+        <span className="sr-only">Today, </span>
         {m ? m[1] : time}
         {m?.[2] && <span className="ml-1 font-sans text-unit font-medium tracking-normal">{m[2].toLowerCase()}</span>}
       </p>

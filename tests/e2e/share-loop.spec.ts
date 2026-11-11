@@ -71,10 +71,11 @@ async function generateFrom(page: Page, entry: "card" | "profile"): Promise<stri
 test("happy path: the appointment-day card to notes on the timeline and in the access log", async ({ page, browser }) => {
   // p-apptday: today's seeded 9:30 GP visit drives the card.
   await home(page);
-  await expect(page.getByText(/^Today · 9:30am$/)).toBeVisible();
+  // The today card (MainA2): the time in large numerals, "Today, " for screen readers.
+  await expect(page.getByText(/^Today, 9:30am$/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "GP visit · Dr Hennessy" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Upcoming/ })).toHaveCount(0);
-  await expect(page.getByText("Demo · sample data").first()).toBeVisible();
+  await expect(page.getByText("Demo with sample data").first()).toBeVisible();
   await expectNoAxeViolations(page);
 
   // p-prefs, with the GP visit defaults.
@@ -107,13 +108,13 @@ test("happy path: the appointment-day card to notes on the timeline and in the a
   // p-request over the code screen: who, how long, exactly what.
   const sheet = page.getByRole("dialog", { name: "Dr Hennessy wants access" });
   await expect(sheet).toBeVisible({ timeout: 10_000 });
-  await expect(sheet.getByText("GP · Rathmines Medical Centre")).toBeVisible();
+  await expect(sheet.getByText("GP, Rathmines Medical Centre")).toBeVisible();
   await expect(sheet.getByText("30 min")).toBeVisible();
   await expect(sheet.getByText("Sharing your GP visit profile for this appointment.")).toBeVisible();
   for (const item of ["Critical safety", "Medications", "Active conditions", "Recent visits (last 3)", "Care team", "Can add session notes to your record"]) {
     await expect(sheet.getByRole("listitem").filter({ hasText: item })).toBeVisible();
   }
-  await expect(sheet.getByText("Full timeline, documents, insurance and mental health not included")).toBeVisible();
+  await expect(sheet.getByText("Not shared: Full timeline, documents, insurance and mental health.")).toBeVisible();
   // Focus is inside the sheet, on the request, not on Allow.
   await expect(sheet.locator("#access-request-body")).toBeFocused();
   await page.waitForTimeout(300); // the sheet slides up; let it settle before axe measures
@@ -123,7 +124,7 @@ test("happy path: the appointment-day card to notes on the timeline and in the a
   // p-active.
   await page.waitForURL(/\/session$/);
   await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
-  await expect(page.getByText("Rathmines Medical Centre · GP visit")).toBeVisible();
+  await expect(page.getByText("Rathmines Medical Centre, GP visit")).toBeVisible();
   await expect(page.getByRole("region", { name: "Dr Hennessy can see" }).getByText("3 diagnoses")).toBeVisible();
   await expect(page.getByText(/^Access ends automatically at \d{1,2}:\d{2}(am|pm)$/)).toBeVisible();
   await expectNoAxeViolations(page);
@@ -544,8 +545,8 @@ test("a phone whose clock is 10 minutes slow still counts down from the database
   await standInSession(page, () => standIn({ expires_at: new Date(realNow + 25 * 60_000).toISOString() }));
   await page.goto("/session");
   await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible({ timeout: 20_000 });
-  // By the device clock alone this would read 34 or 35 minutes.
-  await expect(page.getByText(/^2[45] min \d+ sec$/)).toBeVisible({ timeout: 8_000 });
+  // By the device clock alone this would read 34 or 35 minutes. The countdown shows mm:ss (SessionA2).
+  await expect(page.getByText(/^2[45]:\d\d$/)).toBeVisible({ timeout: 8_000 });
 });
 
 test("offline: the session screen says it could not load, then recovers on its own", async ({ page }) => {

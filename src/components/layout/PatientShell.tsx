@@ -6,6 +6,9 @@ import { cn } from "@/lib/cn";
  *
  * - Up to 480px wide it fills the screen; wider, it is a centred 430px
  *   column on ground with border-card edges. No fake iOS status bar.
+ * - The frame is one screen tall, as on the boards: the demo strip, banner,
+ *   footer and tab bar stay put and only <main> (header included) scrolls,
+ *   so nothing ever sits underneath the tab bar.
  * - Content sits in a 20px gutter (`px-5`); screens add it themselves.
  *
  * Slots, top to bottom:
@@ -41,10 +44,10 @@ export function PatientShell({
 }) {
   const session = tone === "session";
   return (
-    <div className={cn("min-h-dvh", session ? "bg-session" : "bg-ground")}>
+    <div className={cn("h-dvh", session ? "bg-session" : "bg-ground")}>
       <div
         className={cn(
-          "mx-auto flex min-h-dvh w-full max-w-[480px] flex-col min-[481px]:max-w-[430px] min-[481px]:border-x",
+          "mx-auto flex h-dvh w-full max-w-[480px] flex-col min-[481px]:max-w-[430px] min-[481px]:border-x",
           session
             ? "on-session bg-session text-white min-[481px]:border-on-session-border"
             : "bg-ground text-ink min-[481px]:border-border-card",
@@ -52,22 +55,17 @@ export function PatientShell({
         )}
       >
         {demo}
-        {banner && <div className="sticky top-0 z-30">{banner}</div>}
-        {header}
-        <main id="main" className="flex flex-1 flex-col">
+        {banner && <div className="shrink-0">{banner}</div>}
+        <main id="main" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          {header}
           {children}
         </main>
         {footer && (
-          <div
-            className={cn(
-              "sticky bottom-0 z-20 px-5 pb-6 pt-3",
-              session ? "bg-session" : "border-t border-border-tabbar bg-ground",
-            )}
-          >
+          <div className={cn("shrink-0 px-5 pb-6 pt-3", session ? "bg-session" : "border-t border-border-tabbar bg-ground")}>
             {footer}
           </div>
         )}
-        {tabBar && <div className="sticky bottom-0 z-20">{tabBar}</div>}
+        {tabBar && <div className="shrink-0">{tabBar}</div>}
       </div>
     </div>
   );
