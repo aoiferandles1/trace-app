@@ -206,6 +206,8 @@ function YourData() {
       return;
     }
     await Promise.all([share.refresh(), reloadProfile()]);
+    setResetting(false);
+    setConfirmReset(false);
     share.announce("The demo is reset. Jane's record is back to how it started.");
     router.push("/home");
   }

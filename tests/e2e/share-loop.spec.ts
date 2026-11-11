@@ -328,9 +328,12 @@ test("reset demo puts Jane's record back", async ({ page }) => {
   await expectNoAxeViolations(page, "dialog");
   await sheet.getByRole("button", { name: "Reset demo" }).click();
   await page.waitForURL(/\/home$/);
-  await page.goto("/record");
+  // Home must take taps: the confirm sheet must not stay open as a modal on the hidden Profile screen.
+  expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
+  await page.getByRole("link", { name: "Timeline", exact: true }).click({ timeout: 5_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Record" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Personal note added/ })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Remove me on reset")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Remove me on reset/ })).toHaveCount(0);
 });
 
 test("/demo runs the loop inside its two frames", async ({ browser }) => {

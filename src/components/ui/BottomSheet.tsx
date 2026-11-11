@@ -56,6 +56,13 @@ export function BottomSheet({
     } else if (!open && dialog.open) {
       dialog.close();
     }
+    // Next.js keeps a screen mounted but hidden after navigating away (React
+    // Activity), which runs this cleanup. A modal <dialog> left open there
+    // would stay in the top layer and make every other screen inert, so close
+    // it; if the screen comes back with `open` still true, it reopens.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open, initialFocusId]);
 
   function trapTab(e: KeyboardEvent<HTMLDialogElement>) {

@@ -110,7 +110,7 @@ function CodeScreen() {
           busy={busy}
           error={error}
           onRegenerate={() => regenerate(session)}
-          onExpire={() => void refresh()}
+          onExpire={refresh}
         />
       )}
     </PatientShell>
@@ -130,7 +130,7 @@ function CodeBody({
   busy: boolean;
   error: string | null;
   onRegenerate: () => void;
-  onExpire: () => void;
+  onExpire: () => unknown;
 }) {
   const usable = session.status === "code_issued" || session.status === "requested";
   const counting = session.status === "code_issued";

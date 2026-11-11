@@ -87,7 +87,7 @@ function SessionScreen() {
           Loading&hellip;
         </p>
       ) : open.status === "active" ? (
-        <Active session={open} busy={busy === "end"} error={error} onEnd={end} onExpire={() => void refresh()} />
+        <Active session={open} busy={busy === "end"} error={error} onEnd={end} onExpire={refresh} />
       ) : (
         <Paused session={open} busy={busy} error={error} onEnd={end} onExtend={extend} />
       )}
@@ -106,7 +106,7 @@ function Active({
   busy: boolean;
   error: string | null;
   onEnd: () => void;
-  onExpire: () => void;
+  onExpire: () => unknown;
 }) {
   const { profile } = usePatientSession();
   const name = clinicianName(session);

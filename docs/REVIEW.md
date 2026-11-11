@@ -191,6 +191,7 @@ Built from `p-apptday`, `p-home-live`, `p-prefs`, `p-code`, `p-request`, `p-acti
 | S21 | p-paused | "Session notes saved · access closed" only when notes are allowed and the doctor wrote some; otherwise "Access closed". Added "If you don't decide, the session closes at 10:35am." "Time used" shows minutes from Allow to the pause, "30 of 30 min" | The first would be untrue with no notes. The session closes itself 30 minutes after Time's up (PLAN.md section 15). |
 | S22 | p-ended | The line under "Session ended" depends on who ended it: "Dr Hennessy no longer has access to your record." (you), "Dr Hennessy ended the session and no longer has access to your record." (the doctor), "The session closed after Time's up. Dr Hennessy no longer has access to your record." (the timer). Session notes: "View", "None written" or "Not allowed". Duration under a minute: "Less than a minute" | Not designed. |
 | S23 | p-ended | Kept "Add notes or receipts"; it opens Add, which has no receipts tile | Receipts are not in the MVP. Suggest "Add notes". |
+| S24b | Every confirm sheet (BottomSheet) | Unchanged look. A sheet still open when you leave a screen now closes itself | Bug fix: the hidden screen's open modal made the next screen ignore taps (found with "Reset demo"). |
 | S24 | Home, Recently added | Today's 9:30 visit counts as recently added once the time has passed (as before) | Unchanged from Phase 4; flagging because it sits under the share card on appointment days. |
 
 **New screens**
