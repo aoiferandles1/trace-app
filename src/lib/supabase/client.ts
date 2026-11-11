@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
+import { clockedFetch } from "@/lib/serverClock";
 import type { Database } from "./database.types";
 
 /**
@@ -14,7 +15,12 @@ import type { Database } from "./database.types";
  *
  * Typed with the generated database types (src/lib/supabase/database.types.ts,
  * a copy of supabase/types/database.types.ts; regenerate both after a migration).
+ *
+ * Every response's Date header is used to correct countdowns on a device
+ * whose clock is wrong (src/lib/serverClock.ts).
  */
 export function createClient() {
-  return createBrowserClient<Database>(supabaseUrl(), supabasePublishableKey());
+  return createBrowserClient<Database>(supabaseUrl(), supabasePublishableKey(), {
+    global: { fetch: clockedFetch },
+  });
 }

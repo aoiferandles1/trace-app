@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { Pill, type Tone } from "@/components/ui/Pill";
 import { formatTime, formatWeekdayDate } from "@/lib/dates";
+import { serverNow } from "@/lib/serverClock";
 import {
   clinicianName,
   formatDuration,
@@ -132,7 +133,7 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
     ? [s.clinician_name, s.clinician_role].filter(Boolean).join(" · ")
     : "No one used this code";
   const when = s.approved_at ?? s.requested_at ?? s.created_at;
-  const minutes = s.approved_at ? minutesBetween(s.approved_at, s.ended_at ?? s.paused_at ?? new Date().toISOString()) : null;
+  const minutes = s.approved_at ? minutesBetween(s.approved_at, s.ended_at ?? s.paused_at ?? new Date(serverNow()).toISOString()) : null;
   return (
     <article
       aria-label={`${who}, ${formatWeekdayDate(when)}`}

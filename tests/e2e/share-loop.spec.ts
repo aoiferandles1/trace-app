@@ -533,3 +533,15 @@ test("timer announcements (stand-in data): 5 minutes and 1 minute left, never ev
   const ticking = await page.locator('[aria-live], [role="status"], [role="alert"]').allTextContents();
   expect(ticking.join(" ")).not.toMatch(/\d+:\d{2}/);
 });
+
+test("a phone whose clock is 10 minutes slow still counts down from the database's time (stand-in data)", async ({ page }) => {
+  const realNow = Date.now();
+  // The device clock is 10 minutes behind; it keeps running from there.
+  await page.clock.install({ time: realNow - 10 * 60_000 });
+  // 25 minutes left by the database's clock (the Supabase responses carry the real Date header).
+  await standInSession(page, () => standIn({ expires_at: new Date(realNow + 25 * 60_000).toISOString() }));
+  await page.goto("/session");
+  await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible({ timeout: 20_000 });
+  // By the device clock alone this would read 34 or 35 minutes.
+  await expect(page.getByText(/^2[45] min \d+ sec$/)).toBeVisible({ timeout: 8_000 });
+});
