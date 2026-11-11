@@ -6,7 +6,7 @@ import { PatientShell } from "@/components/layout/PatientShell";
 import { Button } from "@/components/ui/Button";
 import { HintStrip } from "@/components/ui/HintStrip";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { usePatientSession } from "@/components/patient/PatientSession";
+import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { cn } from "@/lib/cn";
 import { GP_PROFILE_KEY } from "../_lib/gpProfile";
 import { useStepSave } from "../_lib/useStepSave";
@@ -20,7 +20,7 @@ function readLater(): boolean {
 }
 
 /** Sign-up step 7 of 7 (p-welcome): what was set up, then Home. */
-export default function WelcomeStepPage() {
+function WelcomeStepScreen() {
   const { save, busy, error, profile } = useStepSave("welcome");
   const { email } = usePatientSession();
   const gpLater = useSyncExternalStore(
@@ -103,5 +103,13 @@ function Item({ done = false, title, children }: { done?: boolean; title: string
         {children && <span className="break-words text-body-sm text-text-tertiary">{children}</span>}
       </span>
     </li>
+  );
+}
+
+export default function WelcomeStepPage() {
+  return (
+    <SessionReady>
+      <WelcomeStepScreen />
+    </SessionReady>
   );
 }

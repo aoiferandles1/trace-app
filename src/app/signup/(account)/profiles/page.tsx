@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionReady } from "@/components/patient/PatientSession";
 import { Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
@@ -26,7 +27,7 @@ const SEES: { label: string; tone: Tone }[] = [
  * after "Set up GP visit profile". "Add Emergency and Specialist profiles
  * later" is hidden (PLAN.md section 11).
  */
-export default function ProfilesPage() {
+function ProfilesScreen() {
   const { save, busy, error } = useStepSave("profiles");
   const [later, setLater] = useState(false);
 
@@ -99,5 +100,13 @@ export default function ProfilesPage() {
         )}
       </div>
     </PatientShell>
+  );
+}
+
+export default function ProfilesPage() {
+  return (
+    <SessionReady>
+      <ProfilesScreen />
+    </SessionReady>
   );
 }

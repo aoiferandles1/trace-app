@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionReady } from "@/components/patient/PatientSession";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/cn";
 import { useStepSave } from "../_lib/useStepSave";
 
 /** Sign-up step 5 of 7 (p-privacy): what is stored, who sees it, consent. */
-export default function PrivacyPage() {
+function PrivacyScreen() {
   const { save, busy, error, profile } = useStepSave("privacy");
   const [agreed, setAgreed] = useState(Boolean(profile.terms_accepted_at));
   const [reminders, setReminders] = useState(profile.email_reminders);
@@ -105,5 +106,13 @@ function InfoCard({ title, tone, children }: { title: string; tone: keyof typeof
       <h2 className={cn("text-body-lg font-bold", titleTone[tone])}>{title}</h2>
       <p className="text-body-sm text-text-tertiary">{children}</p>
     </section>
+  );
+}
+
+export default function PrivacyPage() {
+  return (
+    <SessionReady>
+      <PrivacyScreen />
+    </SessionReady>
   );
 }

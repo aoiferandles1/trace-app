@@ -148,8 +148,15 @@ export function PatientSessionGate({
       </div>
     );
   }
-  if (!value) return <CheckingScreen />;
+  // Children always render (each page wraps its content in <SessionReady>),
+  // so Next.js can validate the page segments; they show the loading state
+  // until the check above has finished.
   return <Ctx value={value}>{children}</Ctx>;
+}
+
+/** Renders its children once the session is checked, and the loading state until then. */
+export function SessionReady({ children }: { children: ReactNode }) {
+  return useContext(Ctx) ? children : <CheckingScreen />;
 }
 
 /** Shown for a moment while the session is checked. */

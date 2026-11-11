@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionReady } from "@/components/patient/PatientSession";
 import { CircleAlert } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
@@ -18,7 +19,7 @@ import { useStepSave } from "../_lib/useStepSave";
  * and implants are typed as one line each and saved as lists (split on
  * commas). "I'll add this later" moves on without saving anything.
  */
-export default function MedicalPage() {
+function MedicalScreen() {
   const { save, busy, error, profile } = useStepSave("medical");
   const [bloodType, setBloodType] = useState(profile.blood_type ?? "");
   const [allergies, setAllergies] = useState(profile.allergies.join(", "));
@@ -95,5 +96,13 @@ export default function MedicalPage() {
         </form>
       </div>
     </PatientShell>
+  );
+}
+
+export default function MedicalPage() {
+  return (
+    <SessionReady>
+      <MedicalScreen />
+    </SessionReady>
   );
 }

@@ -44,6 +44,8 @@ export type MedicationCardProps = {
   onExpandedChange?: (expanded: boolean) => void;
   /** Heading level of the name. */
   headingLevel?: 2 | 3;
+  /** Shown at the end of the expanded panel, e.g. an Edit link. */
+  footer?: ReactNode;
   className?: string;
 };
 
@@ -58,6 +60,7 @@ export function MedicationCard({
   defaultExpanded = false,
   onExpandedChange,
   headingLevel = 3,
+  footer,
   className,
 }: MedicationCardProps) {
   const [internal, setInternal] = useState(defaultExpanded);
@@ -127,6 +130,7 @@ export function MedicationCard({
             </div>
           ))}
         </dl>
+        {footer}
       </div>
     </article>
   );

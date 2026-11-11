@@ -1,5 +1,6 @@
 "use client";
 
+import { SessionReady } from "@/components/patient/PatientSession";
 import { useState, type FormEvent } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { ProgressHeader } from "@/components/patient/ProgressHeader";
@@ -9,11 +10,11 @@ import { HintStrip } from "@/components/ui/HintStrip";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { dayKey } from "@/lib/dates";
-import { COUNTRIES } from "../_lib/countries";
+import { COUNTRIES } from "@/lib/patient/options";
 import { useStepSave } from "../_lib/useStepSave";
 
 /** Sign-up step 3 of 7 (p-about): name, date of birth, country. */
-export default function AboutPage() {
+function AboutScreen() {
   const { save, busy, error, profile } = useStepSave("about");
   const [first, setFirst] = useState(profile.first_name ?? "");
   const [last, setLast] = useState(profile.last_name ?? "");
@@ -103,5 +104,13 @@ export default function AboutPage() {
         </form>
       </div>
     </PatientShell>
+  );
+}
+
+export default function AboutPage() {
+  return (
+    <SessionReady>
+      <AboutScreen />
+    </SessionReady>
   );
 }

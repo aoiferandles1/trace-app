@@ -82,23 +82,37 @@ function fromDay(day: string): Date {
 }
 
 /** "5 JAN 2026" (timeline). */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function dayParts(iso: string) {
+  const [y, m, d] = dayKey(iso).split("-").map(Number);
+  return { y, m, d, weekday: new Date(Date.UTC(y, m - 1, d)).getUTCDay() };
+}
+
 export function formatTimelineDate(iso: string): string {
-  return fmt(iso, { day: "numeric", month: "short", year: "numeric" }).replace(".", "").toUpperCase();
+  const { y, m, d } = dayParts(iso);
+  return `${d} ${MONTHS[m - 1]} ${y}`.toUpperCase();
 }
 
 /** "5 Jan" (Home's Recently added). */
 export function formatShortDate(iso: string): string {
-  return fmt(iso, { day: "numeric", month: "short" }).replace(".", "");
+  const { m, d } = dayParts(iso);
+  return `${d} ${MONTHS[m - 1]}`;
 }
 
 /** "Wed 14 Jan" (Home's Upcoming card). */
 export function formatWeekdayDate(iso: string): string {
-  return fmt(iso, { weekday: "short", day: "numeric", month: "short" }).replace(/[.,]/g, "");
+  const { m, d, weekday } = dayParts(iso);
+  return `${WEEKDAYS[weekday]} ${d} ${MONTHS[m - 1]}`;
 }
 
 /** "9:30am". */
 export function formatTime(iso: string): string {
-  return fmt(iso, { hour: "numeric", minute: "2-digit", hour12: true }).replace(/\s/g, "").toLowerCase();
+  return new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "numeric", minute: "2-digit", hour12: true })
+    .format(new Date(iso))
+    .replace(/[\s.]/g, "")
+    .toLowerCase();
 }
 
 /** "MONDAY · 12 JAN 2026" (Home's header). */
