@@ -36,7 +36,7 @@ The app now runs on the redesign's tokens, fonts, icons and base components (doc
 
 - **B1. Tick toggle ring** is 2px on ShareA2 and InsuranceA2; the brief says 1.5px. Size 24 on the tiles, 28 on Insurance's "Include in shares" row.
 - **B2. "Doctor can add notes"** is a 52 x 32 track switch on ShareA2, not the tick. Both exist (`SwitchRow control="track"`); every other toggle is the tick.
-- **B3. Share confirm's "Create share code"** is 56px tall with radius 18 on ShareA2. ApproveA2, SessionA2 and FamilyA2 use the brief's 52px pill, so the button is built as the 52px pill. Say if the share screen should differ.
+- **B3. Share confirm's "Create share code"** is 56px tall with radius 18 on ShareA2, while ApproveA2, SessionA2 and FamilyA2 use the brief's 52px pill. Built as each board (`Button size="xl"` on Share confirm only). Say if the share screen should match the others.
 - **B4. Segmented control height.** 40px on the Record, Medications, Timeline and Family boards (the brief), 44px for ShareA2's durations, 34px in the portal (PortalRecordE). All three are built.
 - **B5. Session active's time bar** is 6px on SessionA2; the brief says 3px. The portal header's bar is 3px (PortalRecordE). Both are built.
 - **B6. "End sharing now"** is white with ink text on SessionA2; the brief says indigo text. Built as the board.
@@ -76,30 +76,40 @@ The app now runs on the redesign's tokens, fonts, icons and base components (doc
 - **D11. p-profiles.** "Add Emergency and Specialist profiles later" is hidden. Both buttons move on: the GP visit profile is the defaults every share starts from, so there is nothing to store. After "I'll do this later", Welcome shows "GP visit profile" / "Ready whenever you share. You can check it before every share." without a tick.
 - **D12. p-welcome.** "Add your first entry" says "Log a visit, write a note, or add a medication". If no critical safety details were entered, it shows "Add your critical safety details" / "Blood type, allergies and implants, from Profile", without a tick, so it never claims something was saved.
 - **P3. Sign-up step 3 (About you).** No back link: the code step is behind you once you are signed in. Steps 4 to 6 go back one step.
-- **D13. p-home.** No bell and no "Upload doc", so four quick actions, two to a row. "Upcoming" is the next future visit, with "Today" or "2d". The refill card shows the current medication whose refill date is nearest (today or later); the third stat tile ("8 days until refill") hides when there is none. "Recently added" is the three latest past entries.
-- **D14. p-home.** "added this month" counts entries created this calendar month.
-- **D15. p-record.** No bell. Under Ongoing conditions, an "Add a condition" link. Resolved conditions get their own list. An empty critical strip adds an "Add allergies or blood type" link to Edit profile.
 - **D16. p-meds and p-meds-expired.** No "Request repeat prescription". An "Add a medication" button ends the list. The first current medication starts open. Cards are in the order they were added; expired ones most recently ended first.
 - **D17. p-add.** Only Log appointment, Add a medication and Write a note, plus a new "Add a condition" tile ("A diagnosis or ongoing health issue").
-- **D18. p-profile.** No back arrow (it is a tab), no "Verified", no PPS number. The third stat is "conditions" (Figma: "documents"). Settings (Push notifications, Face ID unlock, Share anonymised data) and the Share / Export / Help / Privacy tiles are replaced by a "Your data" list: Share my record, Access log, Export my data, Privacy and terms, Delete my account (and Reset demo on the demo). "Sign out" stays as the last button. Personal details add Sex and Email when known; empty ones read "Not added".
-- **D19. Care team on p-profile.** The tag is the role as typed ("GP", "Cardiology", "Pharmacy"); the line under it is the organisation, or "Specialist" / "GP" / "Pharmacy" when there is none.
-- **S7. p-apptday.** The card shows the visit's place only ("Rathmines Medical Centre"), not "· Dublin": an entry has one "Where" field. No bell, no "Upload doc".
 - **S8. p-apptday.** The card shows on the day of a visit until a share started from that visit has ended. Then Home goes back to normal for the rest of the day.
-- **S9. p-home-live.** The Upcoming card is hidden while the live card shows, as in the frame. At Time's up the card reads "Time's up" / "Dr Hennessy · GP visit" / "Access paused · Decide now" with no time; a Manual share reads "No timer · View session".
 - **S10. Live banner while paused.** "Dr Hennessy's access is paused" and "Time's up", in place of "can see your record" and the time, which would be untrue.
-- **S11. p-prefs (Confirm preferences).** No Documents or Insurance switches. Back goes to Home (from the card) or My profile (from Profile). "Recent visits (last 3)" and "Full timeline" are separate switches; with both on, the doctor sees the full timeline.
 - **S12. p-prefs.** If a doctor can already see the record: "A doctor can already see your record. View session".
-- **S13. p-code.** "trace.health/view" is the real address. The heading is set at 36px so it fits one line at 390 wide.
-- **S14. p-code.** The list ends with "Not included: ...", as on p-active. The rows follow the choices: "Full timeline" / "Every entry" replaces Recent visits when on; "Mental health history" / "Included" appears when on.
 - **S15. p-code, other states.** Once the doctor types the code the timer card reads "Code entered" / "Dr Hennessy is asking". Expired: "This code has expired." / "Make a new code when your doctor is ready." / "No longer works" / "Make a new code" / "Back to home". Cancelled: "This code was cancelled." Denied: "You denied this request."
-- **S18. p-request, what they will see.** Built from this share's switches: "Full timeline" replaces "Recent visits (last 3)" when on, "Mental health history" appears when on, "Can add session notes to your record" only when notes are allowed. The grey line lists what is off, for example "Conditions, full timeline, documents, insurance and mental health not included".
-- **S19. p-active.** "Rathmines Medical Centre · GP visit" is the practice the doctor typed plus the profile. "3 diagnoses" counts every condition the doctor sees, resolved ones included. Manual shares show "Until you end it" and no clock; "Access ends automatically at" shows the 12 hour limit.
-- **S20. p-active.** The chevron at the top left is "Minimise": back to Home while the session carries on.
-- **S20b. p-paused (Time's up).** The same "Minimise" chevron, back to Home, so the screen can be left without deciding. The frame has none. *(New in the hardening pass.)*
 - **S21. p-paused.** "Session notes saved · access closed" only when notes are allowed and the doctor wrote some, otherwise "Access closed". Adds "If you don't decide, the session closes at 10:35am." "Time used" shows minutes from Allow to the pause ("30 of 30 min").
-- **S22. p-ended.** The line under "Session ended" depends on who ended it: "Dr Hennessy no longer has access to your record." (you), "Dr Hennessy ended the session and no longer has access to your record." (the doctor) or "The session closed after Time's up. Dr Hennessy no longer has access to your record." (the timer). Session notes: "View", "None written" or "Not allowed". Under a minute: "Less than a minute".
-- **S24. Home, Recently added.** Today's 9:30 visit counts as recently added once the time has passed, so it sits under the share card on appointment days.
+- **S22. Session ended summary** (now reached from Home's "View summary"). The line under "Session ended" depends on who ended it: "Dr Hennessy no longer has access to your record." (you), "Dr Hennessy ended the session and no longer has access to your record." (the doctor) or "The session closed after Time's up. Dr Hennessy no longer has access to your record." (the timer). Session notes: "View", "None written" or "Not allowed". Under a minute: "Less than a minute".
 - **S24b. Every confirm sheet.** Same look. A sheet left open when you leave a screen now closes itself, and a confirm sheet closes after its action works, so going back to that screen does not reopen it.
+
+### 1.3b Patient screens rebuilt on the boards (Phases 2 and 3, November 2026)
+
+Home (MainA2), Record (RecordA2), Share confirm (ShareA2), Share code (CodeA2), Approve access (ApproveA2) and Session active (SessionA2) now follow the boards value by value. Where the build differs, or the board shows something the data cannot, it is listed here. Screens without a board (Time's up, the ended summary, Profile and its rows, the live state of Home) follow the brief's rules; they are in section 2.
+
+- **E1. Home's three states.** Normal day: greeting, Coming up, Recent. A visit today (until a share started from it has ended): the accent today card with "Share record". While a doctor has access, or at Time's up: the same card shows "Dr Hennessy has access", the time left as the big figure, "Ends at 6:11pm", and a "View session" pill ("Time's up for Dr Hennessy" / "0:00" / "Your record is hidden" / "Decide now" when paused; "No timer" / "Until you end it" for a Manual share). On Home this card takes the place of the live strip, so the two do not say the same thing twice; every other screen keeps the strip. No board shows the live state.
+- **E2. "Share record" only on a visit day.** As before, sharing on any other day starts from Profile's "Share my record". The brief calls the card's button the primary entry to sharing; say if Home should offer sharing every day.
+- **E3. Coming up.** Refills of current medications and every upcoming entry, soonest first. A refill within 14 days is the tinted tile with its days left in words ("8 days"); a later one is a plain tile. Upcoming visits pick their icon from the title: a drop for a blood test or INR, a heart for cardiology, a calendar otherwise (the board's three). Tiles show the entry's own title, so "Cardiology follow-up" wraps to two lines where the board says "Cardiology". Refill tiles open the medication, visit tiles the entry (the boards make every tile a link; brief 4.3 says upcoming items are not clickable, but the patient needs to edit their own appointments).
+- **E4. Recent.** The three latest past entries, leaving out the visit on the today card (as the board does). While a share is live the card does not feature the visit, so it appears in Recent.
+- **E5. Home's greeting** reads "Good afternoon, Jane" to a screen reader as one heading.
+- **E6. Record's safety strip.** Board: no warning icon. Brief 5.6: a warning icon. Built as the board; the word "allergy" and the colour carry it.
+- **E7. Record opens on Timeline.** The board's preview state is the Family tab; the app opens on the first tab and remembers the tab in the address (`/record?tab=conditions`), so a condition's Back returns to it.
+- **E8. Record's Timeline tab.** Every upcoming entry (latest first, dates in accent, "upcoming" for screen readers), then every past entry, newest first, each opening its detail. With the demo that is exactly the board's six rows.
+- **E9. Family tab's short list.** The board shows Mum, Dad and Dad's dad; nothing in the data picks Dad's dad over Mum's mum. The build shows parents first, then other relatives with a known condition, three at most: Mum, Dad, Mum's mum. Say which three you want, or the rule.
+- **E10. Family tab's small tree** is drawn from the relatives that exist (grandparents, parents, you filled, one sibling). With the demo it is the board's drawing.
+- **E11. Share confirm, eleven tiles.** The board's seven plus Documents, Family history, Insurance and Medication notes in the same style, before Mental health. Defaults: Safety info and Medications locked; Conditions, Recent visits and Care team on; everything else off. Insurance starts on only when the connection's "Include in shares" is on. The count reads "5 of 11 shared" with eleven bars (narrower than the board's seven, to fit).
+- **E12. Share confirm's title** names the doctor of the visit it came from ("Share with Dr Hennessy", DH avatar). From Profile there is no doctor yet: the title is "Share your record" and the right-hand disc shows a person icon.
+- **E13. No "Private by default" line** under the tiles: the board has only the Mental health tile's caption, and the brief's separate line would repeat it.
+- **E14. Share code.** The board's "Next: doctor requests access" link in the demo strip is the canvas's click-through and is not built. "Sharing" lists every shared section with a line from the record ("4 active", "3 items", "GP, 2 specialists, 1 pharmacy", "7 relatives"); "Not shared" lists every section left out, Medication notes included (the board's list stops at five).
+- **E15. Approve access.** "They will see" and the "Not shared" line come from the share's own switches. The old line "Sharing your GP visit profile for this appointment." is gone, as on the board.
+- **E16. Session active.** "Dr Hennessy can see" lists the shared sections from the session. The line under the name is the practice the doctor typed plus the title of the visit the share came from ("Rathmines Medical Centre, GP visit"); from Profile, the practice alone. "Access ends at 3:37pm" (the 12 hour limit for a Manual share).
+- **E17. A way back from the session screens.** SessionA2 has a 24px gap and no back control; the tab bar is hidden there. The build puts a 32px "Back to Home" chevron in that gap (20px taller than the board), on Session active and Time's up. Without it the only way out is the browser's Back.
+- **E18. Time's up** (no board): "Time's up" as a page title, the line, "Time used", then "Add 15 min" and "Add 30 min" (were "+15m" and "+30m") as two white buttons side by side, "Save and end", and when it closes by itself.
+- **E19. When a share ends** (from the phone, the portal or the timer) the phone goes back to Home with one line: "Dr Hennessy no longer has access to your record. View summary". The summary is the old Session ended screen.
+- **E20. Profile** (no board) is the brief's list: Your details, Share my record (hidden while a doctor has access), Insurance, Documents, Care team, Share history, Privacy and security, Reset demo on a demo, then Sign out on its own. The brief also lists Mental health; it has no page (your decision of 11 Nov), so there is no row.
 
 ### 1.4 Doctor's portal screens
 
@@ -138,9 +148,12 @@ Each is built from the UI kit, matching the nearest existing screen. Redesign or
 - **Edit or delete a medication**, from the Edit link on a medication card.
 - **Edit profile**, with Critical safety and Email sections.
 - **Add, edit and remove someone on the care team**, from My profile.
-- **Empty states** for a brand-new record: Home, Record, Meds and the care team on Profile.
-- **Access log**: every share, newest first, one card each with who (as they typed it), the practice, a status tag, When, How long, Shared, a link to the session notes, and "What happened (6)" opening the events with their times. The newest card starts open.
-- **"Share my record" and "Access log" rows** on My profile's Your data list. "Share my record" comes first and is hidden while a doctor has access.
+- **Empty states** for a brand-new record: Home ("Your record is empty. Start with a medication, an appointment or a note." / "Add to my record"), each Record tab, Meds and Care team.
+- **Share history** (was Access log): every share, newest first, one card each with who (as they typed it), the practice, a status tag, When, How long, Shared, a link to the session notes, and "What happened (6)" opening the events with their times. The newest card starts open.
+- **Your details** (Profile's first row): personal details and the critical safety facts as stored, with "Edit details" pinned at the bottom (opens Edit profile, which comes back here).
+- **Care team** (Profile's row): the people in order, GP first, each opening its edit screen, then "Add to your care team".
+- **Privacy and security** (Profile's row): "Privacy and terms", "Export my data" ("Everything in your record, as one file"; it now includes the new sections) and "Delete my account" as a red text button with its confirm sheet.
+- **The ended summary** (Home's "View summary" after a share ends): the old Session ended screen, without its status row.
 - **"Couldn't load" state on the indigo screens** (the code screen and the live session): if the phone is offline, the screen now says so with "Try again" instead of "Loading…" for ever, and tries again by itself every few seconds. *(New in the hardening pass.)*
 
 ### Doctor's portal
@@ -200,12 +213,12 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 - "Loading…" · "This couldn't load. Check your connection and try again." / "Try again" · "Trace couldn't load your record. Check your connection and reload the page." (now also shown when the phone is offline on opening the app, instead of going back to Welcome)
 - "This entry / condition / medication / person isn't in your record. It may have been deleted."
 - "This couldn't be saved. Check your connection and try again." · "This couldn't be deleted. Check your connection and try again."
-- Sharing summary rows when the counts cannot load (offline): "Always shared" under Medications, "Included" under Active conditions and Care team. *(New in the hardening pass.)*
+- Sharing summary rows when the counts cannot load (offline): each section's name alone, with no line under it (Safety info keeps "Allergies, blood type").
 
 ### Home, record, meds, add
 
-- Home, empty: "Your record is empty" / "Start with what you know: a medication you take, your next appointment, or a note for yourself." / "Add to my record" · refill title "... · due today" when due today · badge "Today"
-- Record: "Add allergies or blood type" · "No ongoing conditions." · "Add a condition" · "Resolved conditions" · "Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here."
+- Home: "GP visit today" (the visit's title + "today") · "Share record" · "Coming up" · "<Medication> refill" · badge "8 days", "1 day", "Today" · "Recent" · while sharing "Dr Hennessy has access", "Ends at 6:11pm", "Until you end it", "No timer", "View session", "Time's up for Dr Hennessy", "Your record is hidden", "Decide now" · after a share "Dr Hennessy no longer has access to your record. View summary" · empty "Your record is empty. Start with a medication, an appointment or a note." / "Add to my record"
+- Record: tabs "Timeline", "Conditions", "Family" · strip "Penicillin allergy", "Blood type A+" · "View full timeline" · "Add a condition" · "No conditions yet." · "Family tree" / "7 relatives" · "Relatives" · "Add a relative" · "No conditions known in your family yet." · "Add allergies or blood type" · "Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here." · for screen readers ", upcoming" after an upcoming row
 - Meds: "No current medications." · "No expired medications." · "Add a medication" · "Edit" · detail rows "Refill due", "Since: 2019 · ongoing / ends 12 March 2027 / ended 3 July 2026"
 - Add: "Add a condition" / "A diagnosis or ongoing health issue"
 - Entry form: "What kind": Visit or appointment, Test result, Prescription, Letter, Scan or X-ray · "Title" · "Date" · "Time" · "Doctor or clinician" · "Where" · "Notes" / "Note" · placeholders "e.g. GP visit", "e.g. Fatigue symptoms", "e.g. Dr Hennessy", "e.g. Rathmines Medical Centre" · hint "Only you can see personal notes. They are never shared with a doctor." · errors "Give the note a title.", "Say what the appointment was for, like GP visit.", "Enter a date, like 14/01/2026.", "Enter a time, like 09:30.", "Write the note." · buttons "Save note", "Save to my record", "Save changes"
@@ -216,8 +229,8 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 ### Profile
 
-- "Your data" · "Share my record" · "Access log" · "Export my data" (while working: "Preparing your file…") · "Privacy and terms" · "Delete my account" · "Not added" · "No one on your care team yet." · "Add to your care team" · "Your data couldn't be exported. Check your connection and try again."
-- Delete account: "Delete your account?" / "Your whole record goes with it: profile, conditions, medications, timeline, care team and access log. This can't be undone. You can export your data first." / "Delete everything" / "Keep my account" / "Your account couldn't be deleted. Check your connection and try again."
+- "Profile" · "Patient · Dublin, IE" · rows "Your details", "Share my record", "Insurance", "Documents", "Care team", "Share history", "Privacy and security", "Reset demo", "Sign out" (while working "Signing out…") · Your details: "Edit details", "Blood type", "Allergies", "Implants or devices", "Not added" · Privacy and security: "Privacy and terms", "Export my data" / "Everything in your record, as one file" (while working: "Preparing your file…"), "Delete my account" · "No one on your care team yet." · "Add to your care team" · "Your data couldn't be exported. Check your connection and try again."
+- Delete account: "Delete your account?" / "Your whole record goes with it: profile, conditions, medications, timeline, family, documents, insurance, care team and share history. This can't be undone. You can export your data first." / "Delete everything" / "Keep my account" / "Your account couldn't be deleted. Check your connection and try again."
 - Edit profile: sections "Personal details", "Critical safety" ("Always shown first to any doctor you share with."), "Email" · "Sex" · "Phone" · "Address" · "Town or city" · "Reminders and health tips by email" / "Optional. Trace does not send these yet."
 - Care team form: "Name" · "Type": GP, Specialist, Pharmacy · "Role or specialty" · "Practice, clinic or shop" · "Enter a name, like Dr Hennessy." · "Remove from care team" / "Remove Dr Hennessy?" / "They will be removed from your care team. Nothing else in your record changes."
 - Export file name: trace-export-YYYY-MM-DD.json
@@ -225,14 +238,17 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 ### Sharing (patient side)
 
-- Request sheet, under the list: "The name and practice are as they typed them. Trace does not check them."
-- Request sheet, share started from Profile: "Sharing your GP visit profile. This share is not linked to an appointment." (in place of "Sharing your GP visit profile for this appointment."; please rewrite)
+- Share confirm: "Share with Dr Hennessy" (from a visit) or "Share your record" (from Profile) · tiles "Safety info", "Medications", "Conditions", "Recent visits", "Full timeline", "Care team", "Documents", "Family history", "Insurance", "Medication notes", "Mental health" / "Private by default" · "For how long" · "Doctor can add notes" · "5 of 11 shared" · "Create share code" · for screen readers "Shared securely" on the lock, "Always shared" on locked tiles
+- Share code: "Share your record" · "Enter this at <address>/view" · "Expires in 4:59" · "Regenerate" · "Sharing", with lines "Allergies, blood type", "4 active", "3 items", "Last 3", "9 events", "GP, 2 specialists, 1 pharmacy", "2 documents", "7 relatives", the insurer's name or "Not connected" / "Not included in shares", "Notes you chose to share" · "Not shared"
+- Request sheet (ApproveA2): "Access request" · "They will see" · "Can add session notes" · "Not shared: Full timeline, Documents, Family history, Insurance, Medication notes, Mental health." · "Name and practice are as typed. Trace does not check them."
+- Session active: "Dr Hennessy has access" · "Rathmines Medical Centre, GP visit" · "Time left" · "Dr Hennessy can see" · "End sharing now" · "Access ends at 3:37pm" · "Back to Home" (the chevron, for screen readers)
+- Time's up: "Time's up" · "Add 15 min" · "Add 30 min"
 - Durations on the request: "30 min", "1 hour", "All day", "Until you stop it"
-- Access log: "Access log" · "Every share, newest first. Only you can see this." · "You haven't shared your record yet. Every share shows up here." · "No one used this code" · tags "Code ready", "Waiting for you", "Live now", "Time's up", "Ended", "Denied", "Expired", "Cancelled" · rows "When", "How long", "Shared", "Notes" / "Session notes" · "What happened (n)"
-- Access log events: "You made a share code" · "Dr Hennessy typed the code and asked for access" · "Dr Hennessy cancelled their request" · "You allowed access" · "You denied access" · "The code expired unused" · "The request closed with no answer" · "Replaced by a new code" · "You cancelled the code" · "Viewed the overview / conditions / the timeline / medications / the care team" · "Time ran out, access paused" · "You added 15 minutes" · "Session notes added to your record" · "You ended the session" · "Dr Hennessy ended the session" · "The session closed after Time's up"
+- Share history: "Share history" · "Every share, newest first. Only you can see this." · "You haven't shared your record yet. Every share shows up here." / "Share my record" · "No one used this code" · tags "Code ready", "Waiting for you", "Live now", "Time's up", "Ended", "Denied", "Expired", "Cancelled" · rows "When", "How long", "Shared", "Notes" / "Session notes" · "What happened (n)"
+- Share history events: "You made a share code" · "Dr Hennessy typed the code and asked for access" · "Dr Hennessy cancelled their request" · "You allowed access" · "You denied access" · "The code expired unused" · "The request closed with no answer" · "Replaced by a new code" · "You cancelled the code" · "Viewed the overview / conditions / the timeline / medications / the care team / recent visits / the full timeline / family history / insurance / documents / mental health" · "Opened a document" · "Time ran out, access paused" · "You added 15 minutes" · "Session notes added to your record" · "You ended the session" · "Dr Hennessy ended the session" · "The session closed after Time's up"
 - Share errors: "A doctor can already see your record. End that session before you start a new share." · "That appointment isn't in your record any more. Share from your profile instead." · "This share has reached its 12 hour limit. Save and end it." · "This session has already closed." · "That request has already closed." · "That didn't work. Check your connection and try again."
 - Announcements for screen readers (as S3, plus): "Dr Hennessy can see your record again." (after adding time) · "The request from Dr Hennessy timed out." · "Your share code expired." · "The doctor cancelled their request. Your code still works." · "You denied access. Dr Hennessy cannot see your record." · "New code ready: 4 8 3 7."
-- Session ended, nothing to show: "No ended session to show" / "Your access log has every share you have made." / "View access log"
+- Session ended, nothing to show: "No ended session to show" / "Your share history has every share you have made." / "View share history" · the summary's rows "Add to your record" / "While the appointment is fresh" and "View share history" / "Every share you have made"
 
 ### Demo page
 
@@ -293,7 +309,6 @@ Figma copy that this version cannot back up, and what the app says now. Each nee
 - **c-denied.** "This is normal — patients are in control" became "This is normal. Patients are in control." (no em dash).
 - **Portal accordion, How it works.** "Patient approves — record loads" became "Patient approves, record loads" (no em dash). Otherwise your words.
 - **c-end.** "She can read everything you write" became "Jane can read everything you write": the app cannot know pronouns.
-- **p-ended, "Add notes or receipts".** Kept, but it opens Add, which has no receipts tile. Suggest "Add notes".
 - **A line on Welcome and in the portal footer** says Trace is a portfolio project by Aoife Randles and not a medical service, linking to the case study and Terms. Terms says the same, plus what is stored.
 
 ---
@@ -306,7 +321,6 @@ In the design but not in this version. They are hidden, not shown as "coming lat
 - **Add:** the Upload document, Scan or photograph, Record a vaccination, Family history and Upload a receipt tiles.
 - **Meds:** "Request repeat prescription" (there is no pharmacy to send it to).
 - **My profile:** Push notifications, Face ID unlock and Share anonymised data settings; the Share / Export / Help / Privacy tiles (replaced by the Your data list).
-- **Confirm preferences:** the Documents and Insurance switches. Documents and Insurance show as locked, "Not shared", in the portal sidebar.
 - **Profiles step (p-profiles):** "Add Emergency and Specialist profiles later".
 - **Every portal code card:** "Or scan their QR code instead".
 - **Portal:** the Documents screen (c-documents-specialist); the vitals judgements ("Elevated", "Normal", "Stable").
@@ -321,13 +335,19 @@ In the design but not in this version. They are hidden, not shown as "coming lat
 Each has a default the build uses until you decide.
 
 - **R3. Field outlines.** The boards' 1.3:1 border on inputs and code boxes, or a 3:1 one? (The boards' border; see 1.1.)
-- **B3. Share confirm's button.** The board's 56px button with radius 18, or the 52px pill every other board uses? (52px pill.)
+- **B3. Share confirm's button.** The board's 56px button with radius 18, or the 52px pill every other board uses? (The board's 56px.)
+- **Q1. Medication notes default.** Off on every share; a note also needs its own "Share with doctors" switch (`note_shared`). (Off.)
+- **Q2. Full timeline default.** Off on every share, with Recent visits on. Should Full timeline start on? (Off.)
+- **Q3. Insurance tile.** Starts on when the connection's "Include in shares" is on, otherwise off. (As described.)
+- **Q4. Board sample data.** CodeA2 says "Medications, 3 active", but Jane has 4 current medications: the build says "4 active". CodeA2 says "Care team, GP, 2 specialists"; Jane's care team also has Boots: the build says "GP, 2 specialists, 1 pharmacy". (What the data says.)
+- **Q5. Family tab's three relatives** (E9). (Parents, then the first other relative with a condition.)
+- **Q6. Refill tiles on Home.** Tinted with days left within 14 days, plain after that (E3). (14 days.)
+- **Q7. The chevron back to Home on the session screens** (E17). Keep it, or follow the board and leave the browser's Back as the only way out? (Keep it.)
+- **Q8. Mental health in Profile.** The brief lists a Mental health row; it has no page. (No row.)
+- **Q9. Sharing on days with no visit.** Only from Profile, as now, or also from Home? (Profile only.)
 - **D2. Welcome feature line.** Now reworded (section 4); confirm or rewrite.
 - **D5, D6, D8, D9.** The About, Medical and Privacy lines are now reworded (section 4); confirm or rewrite.
-- **D13. Refill card on Home.** It shows the nearest refill date however far away. Should it only show within, say, 14 days? (Any date.)
 - **S11. Recent visits and Full timeline.** Should turning on Full timeline switch off Recent visits? (No; both can be on.)
-- **S17. The request sheet's line for a share started from Profile.** Please rewrite the stand-in.
-- **S23. "Add notes or receipts" on p-ended.** (Kept; suggest "Add notes".)
 - **P3 (portal). c-denied "Close".** Back to the name step. Is that what you meant?
 - **P18. "ongoing" tag on portal medications.** (Kept; consider the drug class.)
 - **Sign-up step 3 cannot be left.** Once signed in, the About you step has no back link and no sign out, so the only way out is to finish sign-up (or close the tab). Should it have a "Sign out" link? (No link.) *(Found in the hardening pass.)*
