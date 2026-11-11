@@ -198,7 +198,7 @@ function Paused({
   const notes = session.allow_notes && hasNotes(session);
   return (
     <div className="flex flex-1 flex-col gap-5 px-4 pb-10 pt-2">
-      <SessionStatusRow label="Session paused" dot="peach" time="00:00" timeLabel="No time left" />
+      <SessionStatusRow label="Session paused" dot="peach" time="00:00" timeLabel="No time left" minimiseHref="/home" />
       <div className="flex flex-col items-center gap-5 pt-8 text-center">
         <span aria-hidden="true" className="flex size-20 items-center justify-center rounded-full bg-brand-indigo">
           <Clock className="size-8" />
