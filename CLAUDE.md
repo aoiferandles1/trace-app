@@ -72,7 +72,7 @@ supabase/                Owned by the database work (migrations, SQL tests, gene
 </PatientShell>
 ```
 
-Full width up to 480px, a centred 430px column above. No fake iOS status bar. `tone="session"` for the sharing screens (share code, session active, Time's up): session indigo, white text, white focus rings. Add `<ThemeColor tone="session" />` on those screens so the browser chrome matches.
+Full width up to 480px, a centred 430px column above. No fake iOS status bar. The frame is one screen tall, as on the boards: the demo strip, banner, footer and tab bar stay put and only `<main>` (with the header inside it) scrolls, so nothing sits under the tab bar. Do not add `sticky` bars inside a screen; use the shell's slots. `tone="session"` for the sharing screens (share code, session active, Time's up): session indigo, white text, white focus rings. Add `<ThemeColor tone="session" />` on those screens so the browser chrome matches.
 
 `PortalShell` takes `header`, `sidebar` (the rail), `notes`, `footer`, children, and sets `.desk`, so everything inside takes the desktop token values. From 1024px: 232px rail, fluid record, 300px notes, the side columns sticky. Below 1024px it stacks and the rail becomes a row of section tabs. Without `sidebar`/`notes` (code, waiting, ended) it is one column; `tone` is `ground` (default), `surface` (the live record) or `session` (the waiting screen). It renders the "Skip to the record" link.
 
