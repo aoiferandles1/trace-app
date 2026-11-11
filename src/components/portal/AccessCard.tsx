@@ -25,7 +25,7 @@ export function PortalHero({
       <h1 className="mt-5 max-w-[22ch] font-display text-[36px] font-light leading-[1.1] tracking-[-0.02em] text-white sm:text-[52px]">
         {title}
       </h1>
-      {subtitle && <p className="mt-3 max-w-[440px] text-body-lg text-white">{subtitle}</p>}
+      {subtitle && <p className="mt-3 max-w-[470px] text-body-lg text-white">{subtitle}</p>}
     </div>
   );
 }

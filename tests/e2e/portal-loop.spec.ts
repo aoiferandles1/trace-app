@@ -36,6 +36,9 @@ test.beforeEach(async ({ patient }) => {
 test("happy path: code, Allow, read the record, notes reach the patient's record", async ({ browser, patient }) => {
   const share = await patient.shareCode();
   const { context, page } = await newDoctor(browser, { remember: false });
+  // The doctor's browser must never talk to Supabase, only to /api/portal.
+  const hosts = new Set<string>();
+  context.on("request", (r) => hosts.add(new URL(r.url()).host));
 
   // Name step, pre-filled by the demo flag.
   await page.goto("/view?demo=1");
@@ -96,7 +99,10 @@ test("happy path: code, Allow, read the record, notes reach the patient's record
   await expect(page.getByRole("heading", { level: 1, name: "Medications" })).toBeVisible();
   await expect(main.getByText("Needs regular INR blood tests.").filter({ visible: true })).toBeVisible();
   await page.getByRole("tab", { name: /Expired/ }).click();
+  await expect(page.getByRole("tab", { name: /Expired/ })).toHaveAttribute("aria-selected", "true");
   await expect(main.getByText("Clarithromycin 500mg").filter({ visible: true })).toBeVisible();
+  // The chips fade colour over 150ms; let it finish so axe measures the end state.
+  await page.waitForTimeout(250);
   await expectNoAxeViolations(page);
 
   await nav.getByRole("link", { name: "Care team" }).click();
@@ -133,6 +139,10 @@ test("happy path: code, Allow, read the record, notes reach the patient's record
   // And the record is gone for good.
   const after = await page.request.get("/api/portal/record?section=overview");
   expect(await after.json()).toEqual({ record: null });
+
+  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host;
+  expect([...hosts]).not.toContain(supabaseHost);
+  expect([...hosts].filter((h) => h.includes("supabase"))).toEqual([]);
   await context.close();
 });
 
@@ -290,4 +300,34 @@ test("the patient adds time: the portal's countdown moves on", async ({ browser,
   await patient.extend(15);
   await expect(banner).toContainText(/Access expires in 4\d:\d\d/, { timeout: 7_000 });
   await context.close();
+});
+
+/**
+ * Slow (about 5 minutes), so opt-in: E2E_SLOW=1. The patient never answers:
+ * the request times out on the database clock, the waiting doctor sees "didn't
+ * answer in time", and a second doctor typing the same code gets c-code-expired.
+ * The paused state cannot be reached faster than the shortest share (30 min),
+ * so it is covered with mocked responses in portal-states.spec.ts and by
+ * supabase/tests/05_time_transitions.sql.
+ */
+test("slow: the request times out, then the same code is expired", async ({ browser, patient }) => {
+  test.skip(!process.env.E2E_SLOW, "Set E2E_SLOW=1 to run (takes about 5 minutes)");
+  test.setTimeout(8 * 60_000);
+  const share = await patient.shareCode();
+  const first = await newDoctor(browser);
+  await submitCode(first.page, share.code);
+  await expect(first.page.getByRole("heading", { name: "Waiting for patient to approve." })).toBeVisible();
+  await patient.waitForStatus("requested");
+
+  await expect(first.page.getByRole("heading", { name: "Your patient didn't answer in time." })).toBeVisible({
+    timeout: 6 * 60_000,
+  });
+  await expectNoAxeViolations(first.page);
+
+  const second = await newDoctor(browser);
+  await submitCode(second.page, share.code);
+  await expect(second.page.getByRole("heading", { name: "This code has expired." })).toBeVisible();
+  await expectNoAxeViolations(second.page);
+  await first.context.close();
+  await second.context.close();
 });

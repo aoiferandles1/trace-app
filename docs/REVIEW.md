@@ -69,3 +69,73 @@ Strings built into components. Screens will add their own in later phases.
 ## 4. New screens
 
 None in Phase 1. The `/kit` page and its `/kit/patient` and `/kit/portal` demos are development tools, not part of the app (they return 404 in production).
+
+## Clinician portal
+
+Phase 6: `/view` (before the record opens) and `/view/session` (the record). Built from the c-* frames; everything below either has no frame or differs from its frame on purpose.
+
+### New screens (no Figma frame)
+
+| Screen | Where | What it is |
+|---|---|---|
+| Name step | `/view`, before the code | The c-code card with "Who is asking?" and three fields. Pre-filled with Dr Hennessy, GP, Rathmines Medical Centre when the URL has `?demo`. Remembered in this browser; a returning doctor goes straight to the code. |
+| Request timed out | `/view`, after waiting | The c-code card: the patient did not answer in 5 minutes. |
+| Code withdrawn | `/view`, after waiting | The c-code card: the patient cancelled the share before answering. Not in PLAN.md's list, but the database has the state (`cancelled`). |
+| Access paused | `/view/session` | The record and sidebar are gone; a card on the page background, with the notes panel still beside it so the doctor can finish writing. |
+| Session ended | `/view/session` | Indigo, like c-end: a "Session ended." hero and a card that says who ended it (the patient, the doctor, or the timer) and whether notes reached the record. |
+| Care team | `/view/session/care-team` | One white card per person (name, role and practice, a GP / Specialist / Pharmacy tag), in the overview's card style. |
+| Below 1024px | every portal screen | PortalShell stacks: the sidebar becomes a row of section tabs, the notes panel goes under the record. The LIVE banner wraps by its own width, since from 1024px the record column can be under 400px wide. |
+
+### New strings
+
+| Where | String |
+|---|---|
+| Name step | Eyebrow "NEW SESSION", heading "Who is asking?", "Your patient sees these details on their phone before they decide. Trace does not check them.", fields "Your name", "Role (optional)" with hint "For example GP or practice nurse", "Practice (optional)", "Continue", "Remembered on this computer for next time." Error: "Enter your name, as your patient knows you." |
+| Code card | "Requesting as Dr Hennessy, GP, Rathmines Medical Centre. Change details" (where Figma has "Or scan their QR code instead") |
+| c-code-error | Field error under the boxes: "Wrong code. 4 tries left before a 15 minute pause." (the count is live). In Figma the boxes alone show it, in colour only. |
+| c-code-locked | Under Figma's line: "Code entry is paused for this browser until 14:05." / "You can try again now." "Enter a new code" stays disabled until then. |
+| Waiting | Screen readers: "The patient has about 4 minutes to respond" (the ticking time is hidden from them). Steps read "(done)", "(in progress)", "(not yet)". |
+| Request timed out | Eyebrow "NO ANSWER", "Your patient didn't answer in time.", "Requests close after 5 minutes. Ask your patient for a new code.", "Enter a new code" |
+| Code withdrawn | Eyebrow "NOT SHARED", "Your patient withdrew the code.", "They cancelled the share before answering. Ask them for a new code if you still need their record." |
+| Access paused | Eyebrow "ACCESS PAUSED", "Time's up on this share.", "The patient's timer ran out, so their record is hidden. It comes back here if they add more time.", "If nothing changes, the session closes at 10:02.", "You can still finish your notes. They go to the record when the session ends.", "End session now" |
+| Session ended | Hero "Session ended."; eyebrow "SESSION ENDED"; "Your patient ended the session." / "They stopped sharing from their phone. Access to their record is closed."; "You ended the session." / "Access to the record is closed on both sides."; "The session has closed." / "The patient's time ran out and they did not add more. Access to their record is closed."; "Your session notes were saved to the patient's record." or "No session notes were written, so nothing was added to the record."; "Start a new session" |
+| Care team | Meta "The people Jane sees for their care"; "Jane did not share their care team for this visit."; "No care team recorded." Tags "GP", "Specialist", "Pharmacy". |
+| Timeline | Meta "Every entry Jane chose to share" (full timeline); "Jane did not share their timeline for this visit."; "No past entries shared."; section "Upcoming" |
+| Medications | "No current medications.", "No expired medications."; expired cards show "Taken: 2024 · ended 3 Jul 2026"; a "Refill due" row when there is a date |
+| Overview | "No conditions recorded.", "No current medications.", "No past entries shared.", "No upcoming visits." |
+| c-end | "Nothing written" in an empty field; "These notes will be written to Jane's Trace record when you end the session. Jane can read everything you write." (Figma: "She can read", but the app cannot know pronouns); without notes allowed: "The patient did not allow notes for this session, so nothing is added to their record."; on a failed save: "Your latest notes could not be saved. Ending the session will try again." |
+| Loading | Screen readers: "Loading the portal". Under the wordmark, the real address: "<site>/view · Clinical Access Portal" (from NEXT_PUBLIC_SITE_URL). Error: "The portal could not reach Trace. Check your connection and reload the page." |
+| Errors | "Enter all 4 digits of the code.", "The code could not be checked. Check your connection and try again.", "The request could not be cancelled. Check your connection and try again.", "The session could not be ended. Check your connection and try again." |
+| Announcements (screen readers, polite) | "Session started. You are reading the shared record.", "5 minutes of access left.", "1 minute of access left.", "Access paused. The patient's time ran out and the record is hidden.", "The patient added more time. The record is back.", "Session ended. Access to the record is closed." |
+| Page titles | "Clinical Access Portal", "Overview", "Timeline", "Medications", "Care team", "End session" (each followed by "· Trace Clinical Access Portal") |
+
+### Differences from the frames, and why
+
+| # | Where | Figma | Build | Why |
+|---|---|---|---|---|
+| P1 | c-code-expired | Peach hint "Jane will be notified in her Trace app" | Left out | The portal cannot know the patient's name before access, and nothing notifies the patient. |
+| P2 | c-denied | "This is normal — patients are in control" | "This is normal. Patients are in control." | No em dashes. |
+| P3 | c-denied, Close | No destination | Goes back to the name step, so the next doctor at the computer can start fresh | Check this is what you meant. |
+| P4 | c-opening footer line | "Encrypted · read-only · audit logged" | "Encrypted in transit · read-only · access logged" | PLAN.md section 11. |
+| P5 | c-opening | Progress and three steps | The overview has loaded before it shows; the bar then fills in about 1.3 seconds (at once with reduced motion) | The name comes from the first record call. |
+| P6 | c-waiting steps | Three empty circles | "Code accepted" ticked, "Waiting for approval" in progress | Shows where things are. |
+| P7 | All code cards | "Or scan their QR code instead" | Left out | Out of scope (PLAN.md section 11). |
+| P8 | "Need help?" | No destination | Moves to the "First time using Trace?" accordion | |
+| P9 | Accordion, How it works | "Patient approves — record loads" | "Patient approves, record loads" | No em dashes. Otherwise verbatim. |
+| P10 | Accordion, What you'll see | Conditions, Medications, Blood tests, Imaging, Visit history, Documents | Critical safety, Conditions, Medications, Visit history ("Visits, results, prescriptions and letters, newest first"), Care team, Session notes ("If the patient allows it, notes you write go back to their record") | Reference ranges, imaging reports and documents are not in the MVP. Conditions and Medications keep Figma's words. |
+| P11 | Accordion, For your practice | Practice profile, practice QR code, team audit log, "Set up a clinic profile — it's free" | "There is nothing to set up. You type your details each time." Two cards: "Your details appear on the consent screen" (says Trace does not check them) and "Remembered on this computer" | None of those features exist, and the doctor's identity is not verified (PLAN.md section 11). |
+| P12 | Accordion, Privacy and security | "data controller"; "You cannot edit, export, or permanently store... nothing persists on our side"; "GDPR Article 9 compliant"; "encrypted end-to-end... expires after 30 minutes" | Card 1 without "data controller"; "You cannot edit any part of the record. The view closes when the session ends."; "Every view is logged" in place of the GDPR claim; "Connections and stored data are encrypted. This is not end-to-end encryption. A share code works once and expires after 5 minutes if it is not used." | Claims the MVP cannot back up. The code lasts 5 minutes, not 30. |
+| P13 | Accordion icons | Figma icon assets | lucide-react equivalents | Project convention. The "For your practice" and "Privacy and security" header icons are guesses (Building2, ShieldCheck). |
+| P14 | Accordion body text | White at 75% | White at 90% | Contrast: 75% on the tinted cards is close to 4:1. |
+| P15 | c-overview vitals | "Elevated", "Normal", "Stable" under each value | Left out | They are clinical judgements the app would have to invent. |
+| P16 | c-overview "View all" | On Conditions, Medications, Timeline, Upcoming, Vitals | Medications, Timeline and Upcoming only | There is no conditions page or vitals history in the portal. |
+| P17 | c-overview timeline | Chevrons on each entry | No chevrons on the overview | There is no entry detail page. On the Timeline page, entries with a body (results, letters, session notes) expand in place, with a chevron. |
+| P18 | c-overview medication tags | "ongoing" | "ongoing" on every current medication | Kept, but it carries no information; consider the drug class instead. |
+| P19 | c-timeline chips | All, Letters, Results, Imaging, Vitals | All, then one chip per kind actually shared (Visits, Results, Prescriptions...) | Vitals are not timeline entries, and a chip should never show an empty list. Figma also tags the blood test "Visit"; the build uses the entry's real kind. |
+| P20 | c-meds chips | "Active", "Expired" | "Active 3", "Expired 2" | The counts help. The order is the database's (newest started first), not the frame's. |
+| P21 | c-end | "Visit type GP" | Always "GP" (the share profile is the GP visit profile) | |
+| P22 | c-end "Edit notes" | Opens editing | Goes back to the record, where the notes panel is | One place to edit. |
+| P23 | c-end before the name loads | "End session with Jane Doe" | "End session" until the name arrives (only on a reload of that page) | |
+| P24 | Footer on every portal screen | "© 2026 trace.health", five links, "End-to-end encrypted · Access audited" | The Phase 1 PortalFooter (section 3) | PLAN.md section 11. |
+| P25 | c-loading | "trace.health/view" | The deployment's real address | PLAN.md Phase 9. |
+| P26 | Dates | "5 JAN 2026" | Same, three-letter months in Irish time ("SEP", not the "SEPT" that en-IE formatting gives) | |

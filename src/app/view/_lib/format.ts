@@ -22,9 +22,7 @@ export function formatDateOnly(iso: string | null | undefined): string {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
-  return new Intl.DateTimeFormat("en-IE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
-    new Date(Date.UTC(y, m - 1, d)),
-  );
+  return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** "34 · Female · DOB 12 Mar 1991" (sidebar), optionally with the city. */
@@ -40,18 +38,21 @@ export function patientDetails(p: Patient | null | undefined, opts: { city?: boo
     .join(" · ");
 }
 
+/** Three-letter months as in Figma ("DEC"); Intl gives "Sept" in en-IE and en-GB. */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function parts(iso: string) {
   const f = new Intl.DateTimeFormat("en-IE", {
     timeZone: TZ,
     day: "numeric",
-    month: "short",
+    month: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     hourCycle: "h23",
   }).formatToParts(new Date(iso));
   const get = (t: string) => f.find((p) => p.type === t)?.value ?? "";
-  return { day: get("day"), month: get("month").replace(".", ""), year: get("year"), hour: get("hour"), minute: get("minute") };
+  return { day: get("day"), month: MONTHS[Number(get("month")) - 1] ?? "", year: get("year"), hour: get("hour"), minute: get("minute") };
 }
 
 /** "5 JAN 2026" */
@@ -83,9 +84,7 @@ export function formatClock(iso: string | null | undefined): string {
 /** "Dec 2025" from a date. */
 export function formatMonthYear(isoDate: string): string {
   const [y, m] = isoDate.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-IE", { month: "short", year: "numeric", timeZone: "UTC" }).format(
-    new Date(Date.UTC(y, (m || 1) - 1, 1)),
-  );
+  return `${MONTHS[(m || 1) - 1]} ${y}`;
 }
 
 /** "Warfarin 5mg" */

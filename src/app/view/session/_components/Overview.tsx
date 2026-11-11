@@ -176,8 +176,8 @@ function VitalsBlock({ vitals }: { vitals: Vitals }) {
   return (
     <section aria-labelledby="ov-vitals" className="flex flex-col gap-4">
       <SectionHeading id="ov-vitals" title="Last recorded vitals" count={formatMonthYear(vitals.recorded_on)} />
-      <ListCard className="py-8 sm:px-11">
-        <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+      <ListCard className="@container py-8 sm:px-11">
+        <dl className="grid grid-cols-2 gap-6 @md:grid-cols-4">
           {items.map((i) => (
             <div key={i.label} className="flex flex-col-reverse gap-2">
               <dd className="flex items-baseline gap-1.5">

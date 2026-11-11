@@ -327,7 +327,7 @@ export function ViewFlow() {
                 }}
                 error={
                   screen.kind === "wrong"
-                    ? `That code doesn't match. ${screen.attemptsLeft} ${screen.attemptsLeft === 1 ? "try" : "tries"} left before a 15 minute pause.`
+                    ? `Wrong code. ${screen.attemptsLeft} ${screen.attemptsLeft === 1 ? "try" : "tries"} left before a 15 minute pause.`
                     : problem ?? undefined
                 }
               />

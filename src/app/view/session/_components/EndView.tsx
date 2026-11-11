@@ -37,8 +37,8 @@ export function EndView() {
     };
   }, [patient, setPatient, refreshStatus]);
 
-  const name = patient ? patientFullName(patient) : "your patient";
-  const first = patient ? patientFirstName(patient) : "the patient";
+  const name = patient ? patientFullName(patient) : null;
+  const first = patient ? patientFirstName(patient) : null;
   const started = status.approved_at;
   const sections = status.scope ? scopeLists(status.scope).shared.length : 0;
   const fields: Array<{ label: string; value: string; wide?: boolean }> = [
@@ -51,7 +51,7 @@ export function EndView() {
   return (
     <div className="pb-16">
       <PortalHero
-        title={`End session with ${name}`}
+        title={name ? `End session with ${name}` : "End session"}
         subtitle="Access closes immediately. Review your notes before saving."
       />
       <dl className="mx-auto mt-8 flex max-w-[600px] flex-wrap justify-center gap-y-4 px-4 text-center">
@@ -73,7 +73,7 @@ export function EndView() {
 
       <section
         aria-labelledby="end-notes"
-        className="mx-4 mt-10 max-w-[880px] rounded-pill-tight bg-surface-card p-6 text-text-primary sm:mx-auto sm:p-8"
+        className="mx-auto mt-10 w-[calc(100%-2rem)] max-w-[880px] rounded-pill-tight bg-surface-card p-6 text-text-primary sm:w-[calc(100%-4rem)] sm:p-8"
       >
         <div className="flex items-center justify-between gap-4 border-b border-border-default pb-4">
           <h2 id="end-notes" className="text-body-sm font-bold">
@@ -101,8 +101,8 @@ export function EndView() {
               ))}
             </div>
             <p className="mt-6 text-body-sm text-text-tertiary">
-              These notes will be written to {first}&rsquo;s Trace record when you end the session. {first} can read
-              everything you write.
+              These notes will be written to {first ? `${first}'s` : "the patient's"} Trace record when you end the
+              session. {first ?? "They"} can read everything you write.
             </p>
             {saveState === "error" && (
               <p role="alert" className="mt-3 text-body-sm text-red-700">
@@ -117,7 +117,7 @@ export function EndView() {
         )}
       </section>
 
-      <div className="mx-4 mt-8 flex max-w-[880px] flex-col-reverse gap-3 sm:mx-auto sm:flex-row sm:justify-between">
+      <div className="mx-auto mt-8 flex w-[calc(100%-2rem)] max-w-[880px] flex-col-reverse gap-3 sm:w-[calc(100%-4rem)] sm:flex-row sm:justify-between">
         <Link
           href="/view/session"
           className="inline-flex h-12 items-center justify-center gap-2 rounded-pill border border-white px-6 text-button-lg font-medium text-white hovered:bg-white/10"
