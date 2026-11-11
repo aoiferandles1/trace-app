@@ -420,5 +420,10 @@ test("signed out: welcome, sign in, sign up and the link-expired page at 320px w
   await checkScreen(page, "/login", /Welcome back/);
   await checkScreen(page, "/signup", /./);
   await checkScreen(page, "/auth/link-expired", /That link didn.t work/);
+  // A real not-found page (Phase 8): title, one line, one text button, and a 404 status.
+  const res = await page.goto("/no-such-page");
+  expect(res?.status()).toBe(404);
+  await checkScreen(page, "/no-such-page", "Page not found");
+  await expect(page.getByRole("link", { name: "Go to Trace" })).toHaveAttribute("href", "/");
   await context.close();
 });
