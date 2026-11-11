@@ -14,9 +14,9 @@ Trace is a portfolio project by Aoife Randles (UX/UI design), not a medical serv
 
 ## What it does
 
-- **Patient app:** sign up (invite only) or try the demo; home, record and timeline, medications, profile; add notes, appointments, conditions and medications; share the record from the appointment-day card on Home or from "Share my record" on Profile; approve or deny each request; watch and end a live session; an access log of every share; export and delete.
-- **Doctor's portal:** name step, code entry, waiting, then the shared record (overview, timeline, medications, care team) with a countdown and session notes that go back to the patient's record when the session ends.
-- **Rules that hold:** nothing opens until the patient taps Allow; critical safety information and medications are always shared; personal notes never are; mental health stays out unless switched on for that share. The database enforces all of this; the portal never talks to it directly.
+- **Patient app** (redesigned, November 2026): sign up (invite only) or try the demo; Home, Record (timeline, conditions, family), the full timeline, visit detail, medications with each one's strength history, the family tree, insurance (a stand-in provider sign-in), documents (PDF, JPEG or PNG), care team, profile; the Add sheet; share from the appointment-day card on Home or from "Share my record" on Profile; approve or deny each request; watch and end a live session; share history; export and delete. From 1024px wide it has a white rail and two panes.
+- **Doctor's portal:** name step, code entry, waiting, then the shared record with a rail built from what the patient shared (overview, recent visits, medications, full timeline, care team, family history, documents, mental health), a countdown, and a resizable notes panel whose notes go back to the patient's record when the session ends.
+- **Rules that hold:** nothing opens until the patient taps Allow; critical safety information and medications are always shared; personal notes never are; insurance is never shared; mental health, documents and family history stay out unless switched on for that share; a patient's notes on a medication's strengths reach the doctor only when the share includes Medication notes and the patient shared that note. The database enforces all of this; the portal never talks to it directly and never fetches a section that was not shared.
 
 ## Stack
 
@@ -43,6 +43,7 @@ About the tests:
 - They run against the real Supabase project, as demo (anonymous) users they create and delete themselves. Supabase allows about 30 anonymous sign-ins an hour from one address, so run single files while working (`npx playwright test tests/e2e/share-loop.spec.ts`) and the whole suite occasionally. If sign-ins start failing with a rate-limit error, wait.
 - Database rules have their own SQL tests in `supabase/tests/` (each runs in a transaction that rolls back); see `supabase/README.md`.
 - No test sends email or calls the daily cleanup with the real secret.
+- Two opt-in specs write the redesign's screenshots: `E2E_SCREENS=1 npx playwright test tests/e2e/patient-screens.spec.ts tests/e2e/portal-screens.spec.ts` (390 x 844 and 1280 x 800, into `docs/redesign/screens/after/`; one demo sign-in each).
 
 ## Operations
 
@@ -66,7 +67,8 @@ They can then use "Create your record". Supabase's built-in email only reaches m
 
 ## Docs
 
-- `docs/REVIEW.md`: everything waiting for the designer's review: differences from Figma, new screens, new copy, reworded claims and what was left out.
+- `docs/REVIEW.md`: everything waiting for the designer's review: differences from Figma and the redesign's boards, new screens, new copy, reworded claims, what was left out and the open questions.
+- `docs/redesign/`: the redesign brief, the supervisor's notes, the approved boards, the final report (`REPORT.md`) and before and after screenshots.
 - `PLAN.md`: the build plan and the decisions behind it.
 - `CLAUDE.md`: conventions for anyone (or any agent) working on the code.
 - `supabase/README.md`: the database contract: tables, functions, errors and operations.

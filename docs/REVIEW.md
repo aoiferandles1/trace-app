@@ -27,21 +27,21 @@ The app now runs on the redesign's tokens, fonts, icons and base components (doc
 
 - **R1. `ring-off` darkened.** The empty ring of the tick toggle is its only sign of "off", so it needs 3:1. The brief's #9096BE is 2.9:1 on white and 2.7:1 on ground. Now #878DB3 (3.2:1 on white, 3.0:1 on ground), the smallest darkening that passes. Nothing was lightened.
 - **R2. Secondary text on an accent card.** The Insurance board's "Connected", "Member number" and "Comprehensive plan" are white at 80% on accent, which is 3.8:1. The build uses full white there (4.9:1). The weight difference still separates the label from the value.
-- **R3. Field and segmented outlines (open question).** The boards draw inputs, code boxes and the segmented control with border-control #DCDFF0, which is 1.3:1 on white and 1.2:1 on ground. The build follows the boards: every field has a visible label, the white fill and a 2px ink focus ring, and the segmented control's choice is the accent fill. This reopens the old A3 (you had approved a 3:1 field outline for the first build). Say if you want the 3:1 outline back on inputs only; a darker border-control near #8A8FB3 would pass.
+- **R3. Field outlines.** The boards draw inputs and code boxes with border-control #DCDFF0, which is 1.3:1 on white. The brief asks 3:1 for controls, so text fields and code boxes use their own darker outline, `border-field` #878DB3 (3.2:1 on white). Cards, rows, the tab bar and the segmented control's container keep the boards' hairline (the segmented control's choice is shown by its accent fill, not its outline).
 - **R4. Everything else passes as specified:** ink 16.3:1 on ground; ink-2 5.7:1 on ground, 6.1:1 on white, 5.1:1 on locked-tint; segment-text 7.8:1; accent 4.9:1 on white and 4.6:1 on ground (text), white on accent 4.9:1; white on session 7.1:1; white at 78% on session 5.0:1; urgent 5.4:1 on its tint; critical 6.3:1 on its tint; the track switch's off colour 3.6:1; white at 50% rings on session 3.0:1; the accent dot on the range band 3.2:1. Accent text on locked-tint is only 4.1:1, so locked tiles use session indigo for their icons (5.9:1) and ink for words.
 - **R5. Focus.** One 2px ink outline with a 2px gap on every control (white on session indigo), as the boards' CSS draws it. Inputs also turn their border accent while focused.
 - **R6. Touch targets.** Every control on the phone has at least 44 x 44: the 32px back arrow, the 36px sheet close, the 24px tick and small buttons keep their drawn size with an invisible larger tap area.
 
 **Where a board differs from the brief's tables (the build follows the board).**
 
-- **B1. Tick toggle ring** is 2px on ShareA2 and InsuranceA2; the brief says 1.5px. Size 24 on the tiles, 28 on Insurance's "Include in shares" row.
+- **B1. Tick toggle ring** is 2px on ShareA2 and InsuranceA2; the brief says 1.5px. Size 24 on the tiles. (Insurance's 28px "Include in shares" row is gone: insurance is personal.)
 - **B2. "Doctor can add notes"** is a 52 x 32 track switch on ShareA2, not the tick. Both exist (`SwitchRow control="track"`); every other toggle is the tick.
 - **B3. Share confirm's "Create share code"** is 56px tall with radius 18 on ShareA2, while ApproveA2, SessionA2 and FamilyA2 use the brief's 52px pill. Built as each board (`Button size="xl"` on Share confirm only). Say if the share screen should match the others.
 - **B4. Segmented control height.** 40px on the Record, Medications, Timeline and Family boards (the brief), 44px for ShareA2's durations, 34px in the portal (PortalRecordE). All three are built.
 - **B5. Session active's time bar** is 6px on SessionA2; the brief says 3px. The portal header's bar is 3px (PortalRecordE). Both are built.
 - **B6. "End sharing now"** is white with ink text on SessionA2; the brief says indigo text. Built as the board.
 - **B7. The portal's End session** is an outlined button with accent text (PortalRecordE); the brief says ink text for secondary buttons. Built as the board.
-- **B8. Approve access backdrop** is #2A3787 on ApproveA2, darker than session indigo. It is a token, `session-deep`.
+- **B8. Approve access backdrop** is #2A3787 on ApproveA2. The request is a sheet over whatever screen is open, so the build draws the usual scrim; over session indigo that scrim comes out at #2B357F, the board's colour within a shade. The `session-deep` token holds the board's value, but no screen needs it.
 - **B9. Rail items** are 44px with radius 12 on PortalRecordE; the brief says radius 10. Built at 12.
 - **B10. Scope tile edges** are 1.5px on ShareA2; the brief says every border is 1px.
 - **B11. Record's safety facts** sit in a critical-tint strip on RecordA2; the brief says plain text. The strip is built as the board.
@@ -183,6 +183,22 @@ Rebuilt on PortalEntryB (Enter code), PortalWaitB (Waiting) and PortalRecordE (t
 - **P17. The countdown reaching zero.** The record leaves the screen at once ("Checking access"), and the database's answer follows within a second (normally Time's up).
 - **Below 1024px, every portal screen.** The layout stacks: the rail becomes a row of section tabs and the notes panel moves under the record.
 
+### 1.5 Final check against every board (Phase 10, November 2026)
+
+Every board was rendered from its file and compared with the built screen, text by text, at 390 x 844 (phone) and 1280 x 800 (portal). These were fixed to match the boards; nothing else changed:
+
+- **X1. Strength chart labels.** On MedDetailA2 and PortalRecordE (as in the build until now) the line dropping from 45mg into the last 36mg runs through that "36mg". The build keeps every label where the boards put it, above its dot, and only where that spot touches the line, a dot or another label does the label move: first under its dot, then beside it. For Concerta that is the last label, which now sits just under its dot. It works the same for any medication's history, on the phone, on a computer and in the portal.
+- **X2. Full timeline.** The year column stays the boards' 52px (56px in the portal), but the title starts 8px after it: on the boards "2026" touches "Chest infection". Rows are 60px with their divider, as drawn (they were 61).
+- **X3. Portal Overview vitals.** At 1280 with the notes open "128/82" ran into "74". The two columns now size to their figures as the board's do, so they keep the 16px gap.
+- **X4. Smaller value-by-value fixes.** The demo strip is 28px plus its hairline (29, as every board; it was 28 in all). Record's "View full timeline" is 14px under the card. The share code screen has the board's 18px under the header and 52px rows. Sheets (the access request, a timeline entry) have the boards' 12px between their parts. Insurance's provider rows are 60px with their divider, and "Enter policy details manually" is a line of text again (its tap area is still 44px). Both rails have the board's 4px between the wordmark and the first item. In the portal's visit and timeline lists the line under each title is 13/16 as drawn.
+- **X5. The access request with the default share.** Your decision to share Full timeline and Medication notes by default makes the request two rows longer than ApproveA2, and at 390 x 844 Allow and Deny had dropped below the bottom of the sheet. The list now scrolls and Allow and Deny stay pinned under it, so both are always on screen together (brief 5.4).
+
+Differences that stay, because the board cannot be followed or a decision overrides it (each is also listed above):
+
+- **X6. Home's today card.** On MainA2 the "9:30" line grows to 73px because of the small "am", which pushes the doctor's row 8px lower and into the card's bottom padding. The build keeps the 18px padding, so that row sits 8px higher.
+- **X7. Small text links keep a large target.** Where a board draws a text link as one line of text (Record's "Add a relative" row at 40px, the portal's "Cancel request"), the build keeps at least a 44px (phone) or 40px (portal) target, so a few rows sit 2 to 13px off the board.
+- **X8. The demo strip and the code screen's "Next: doctor requests access".** The link is the canvas's click-through and is not built (E14).
+
 ---
 
 ## 2. New screens (no Figma frame)
@@ -321,9 +337,9 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 ### Sharing (patient side)
 
-- Share confirm: "Share with Dr Hennessy" (from a visit) or "Share your record" (from Profile) · tiles "Safety info", "Medications", "Conditions", "Recent visits", "Full timeline", "Care team", "Documents", "Family history", "Insurance", "Medication notes", "Mental health" / "Private by default" · "For how long" · "Doctor can add notes" · "5 of 11 shared" · "Create share code" · for screen readers "Shared securely" on the lock, "Always shared" on locked tiles
-- Share code: "Share your record" · "Enter this at <address>/view" · "Expires in 4:59" · "Regenerate" · "Sharing", with lines "Allergies, blood type", "4 active", "3 items", "Last 3", "9 events", "GP, 2 specialists, 1 pharmacy", "2 documents", "7 relatives", the insurer's name or "Not connected" / "Not included in shares", "Notes you chose to share" · "Not shared"
-- Request sheet (ApproveA2): "Access request" · "They will see" · "Can add session notes" · "Not shared: Full timeline, Documents, Family history, Insurance, Medication notes, Mental health." · "Name and practice are as typed. Trace does not check them."
+- Share confirm: "Share with Dr Hennessy" (from a visit) or "Share your record" (from Profile) · tiles "Safety info", "Medications", "Conditions", "Recent visits", "Full timeline", "Care team", "Documents", "Family history", "Medication notes", "Mental health" / "Private by default" · "For how long" · "Doctor can add notes" · "7 of 10 shared" · "Create share code" · for screen readers "Shared securely" on the lock, "Always shared" on locked tiles
+- Share code: "Share your record" · "Enter this at <address>/view" · "Expires in 4:59" · "Regenerate" · "Sharing", with lines "Allergies, blood type", "4 active", "3 items", "Last 3", "9 events", "GP, 2 specialists, 1 pharmacy", "2 documents", "7 relatives", "Notes you chose to share" · "Not shared"
+- Request sheet (ApproveA2): "Access request" · "They will see" · "Can add session notes" · "Not shared: Documents, Family history, Mental health." (with the default share) · "Name and practice are as typed. Trace does not check them."
 - Session active: "Dr Hennessy has access" · "Rathmines Medical Centre, GP visit" · "Time left" · "Dr Hennessy can see" · "End sharing now" · "Access ends at 3:37pm" · "Back to Home" (the chevron, for screen readers)
 - Time's up: "Time's up" · "Add 15 min" · "Add 30 min"
 - Durations on the request: "30 min", "1 hour", "All day", "Until you stop it"
@@ -424,7 +440,6 @@ In the design but not in this version. They are hidden, not shown as "coming lat
 
 Each has a default the build uses until you decide.
 
-- **R3. Field outlines.** The boards' 1.3:1 border on inputs and code boxes, or a 3:1 one? (The boards' border; see 1.1.)
 - **B3. Share confirm's button.** The board's 56px button with radius 18, or the 52px pill every other board uses? (The board's 56px.)
 - **Q4. Board sample data.** CodeA2 says "Medications, 3 active", but Jane has 4 current medications: the build says "4 active". CodeA2 says "Care team, GP, 2 specialists"; Jane's care team also has Boots: the build says "GP, 2 specialists, 1 pharmacy". (What the data says.)
 - **Q10. Levothyroxine's history** (M1). It has two strengths in the demo, so it shows a strength change and a chevron, unlike the board. Keep the data, or seed it with one strength? (Keep.)
@@ -448,6 +463,9 @@ Each has a default the build uses until you decide.
 - **W4. A list's own address on a computer.** One line in the empty right pane, or open the first item as the portal does? (One line.)
 - **W7. Forms on a computer.** The centred column without the rail (a focused task, as the phone hides its tab bar), or the rail kept on every signed-in screen? (Centred, no rail.)
 - **The patient app on a computer** as a whole (W1 to W9): approve, or draw a desktop board.
+- **X1. Where a strength label goes when the line runs through it.** Under its dot (as built), or would you rather move the line? (Under the dot.)
+- **X9. "Live now" in Share history.** A share that is running is tagged "Live now" in plain text (no dot, no pill). The brief rules out a "Live" stamp; this is a status word in a list, but say if you want other words, such as "Sharing now". (Live now.)
+- **X10. The session screens' way back** is a down chevron at the top left ("Back to Home" for screen readers); a left arrow would match every other back control. (Down chevron.)
 
 ---
 
