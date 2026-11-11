@@ -143,7 +143,7 @@ export function PatientSessionGate({
     return (
       <div className="flex min-h-dvh items-center justify-center bg-surface-page px-6 text-center">
         <p role="alert" className="text-body-lg text-text-primary">
-          Trace couldn&rsquo;t load your record. Check your connection and reload the page.
+          Trace couldn&apos;t load your record. Check your connection and reload the page.
         </p>
       </div>
     );
