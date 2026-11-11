@@ -41,6 +41,13 @@ export function EntryForm({
   const [place, setPlace] = useState(entry?.place ?? "");
   const [body, setBody] = useState(entry?.body ?? "");
   const [mental, setMental] = useState(entry?.is_mental_health ?? false);
+  // Visit detail (BRIEF.md 4.3, text kind): reason, assessment and plan; a prescription's own fields.
+  const [reason, setReason] = useState(entry?.reason ?? "");
+  const [assessment, setAssessment] = useState(entry?.assessment ?? "");
+  const [plan, setPlan] = useState(entry?.plan ?? "");
+  const [rxMedication, setRxMedication] = useState(entry?.rx_medication ?? "");
+  const [rxQuantity, setRxQuantity] = useState(entry?.rx_quantity ?? "");
+  const [rxPharmacy, setRxPharmacy] = useState(entry?.rx_pharmacy ?? "");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const isNote = variant === "note";
@@ -67,6 +74,12 @@ export function EntryForm({
       place: isNote ? null : orNull(place),
       body: orNull(body),
       is_mental_health: mental,
+      reason: isNote ? null : orNull(reason),
+      assessment: isNote ? null : orNull(assessment),
+      plan: isNote ? null : orNull(plan),
+      rx_medication: kind === "prescription" ? orNull(rxMedication) : null,
+      rx_quantity: kind === "prescription" ? orNull(rxQuantity) : null,
+      rx_pharmacy: kind === "prescription" ? orNull(rxPharmacy) : null,
     };
     const supabase = createClient();
     const result = entry
@@ -120,6 +133,25 @@ export function EntryForm({
             placeholder="e.g. Rathmines Medical Centre"
             maxLength={200}
           />
+          {kind === "prescription" && (
+            <>
+              <TextField
+                label="Medicine and strength"
+                optional
+                value={rxMedication}
+                onChange={(e) => setRxMedication(e.target.value)}
+                placeholder="e.g. Warfarin 5mg, daily"
+                maxLength={300}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <TextField label="Quantity" optional value={rxQuantity} onChange={(e) => setRxQuantity(e.target.value)} placeholder="e.g. 28 tablets" maxLength={100} />
+                <TextField label="Pharmacy" optional value={rxPharmacy} onChange={(e) => setRxPharmacy(e.target.value)} placeholder="e.g. Boots" maxLength={200} />
+              </div>
+            </>
+          )}
+          <TextArea label="Reason" optional value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Tired for three weeks" maxLength={2000} />
+          <TextArea label="Assessment" optional value={assessment} onChange={(e) => setAssessment(e.target.value)} maxLength={5000} />
+          <TextArea label="Plan" optional value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="e.g. Blood tests" maxLength={5000} />
         </>
       )}
       <TextArea

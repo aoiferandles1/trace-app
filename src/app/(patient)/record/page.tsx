@@ -57,8 +57,8 @@ function safetyFacts(p: Pick<Profile, "allergies" | "blood_type" | "implants">):
 
 /**
  * Record (board RecordA2): the pinned safety facts, then three tabs.
- * - Timeline: upcoming and past entries, upcoming dates in accent; each row
- *   opens the entry (/record/[id]). "View full timeline" leads to
+ * - Timeline: upcoming and past entries, upcoming dates in accent; each past
+ *   row opens the entry (/record/[id]); upcoming rows are not links. "View full timeline" leads to
  *   /record/timeline.
  * - Conditions: each opens its detail; "Add a condition".
  * - Family: the family tree card (/record/family), a short list of
@@ -148,7 +148,8 @@ function TimelineTab({ entries }: { entries: RecordEntry[] }) {
               value={<time dateTime={dayKey(e.occurs_at)}>{formatShortDate(e.occurs_at)}</time>}
               valueStyle={e.upcoming ? "accent" : "caption"}
               srSuffix={e.upcoming ? ", upcoming" : undefined}
-              href={`/record/${e.id}`}
+              // Upcoming items are not clickable; past ones open their detail (BRIEF.md 4.3, 5.6).
+              href={e.upcoming ? undefined : `/record/${e.id}`}
               padY={11}
             />
           </li>
