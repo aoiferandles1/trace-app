@@ -111,7 +111,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
   // The doctor, in a second browser.
   const doctor = await newDoctor(browser);
   await submitCode(doctor.page, code);
-  await expect(doctor.page.getByRole("heading", { name: "Waiting for patient to approve." })).toBeVisible();
+  await expect(doctor.page.getByRole("heading", { name: "Waiting for the patient to approve" })).toBeVisible();
 
   // The request (ApproveA2) over the code screen: who, how long, exactly what.
   const sheet = page.getByRole("dialog", { name: "Dr Hennessy wants access" });
@@ -156,7 +156,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await expectNoSideScroll(page);
 
   // The portal opens the record.
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
 
   // Home while sharing: the card shows who has access and leads back; no today card, no banner on Home.
   await page.getByRole("link", { name: "Back to Home" }).click();
@@ -177,8 +177,8 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await doctor.page.getByLabel("Chief complaint").fill("Ongoing fatigue over the past 6 weeks");
   await doctor.page.getByLabel("Plan").fill("Repeat INR in 2 weeks");
   await expect(doctor.page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
-  await doctor.page.getByRole("region", { name: "Live session" }).getByRole("button", { name: "End session" }).click();
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "End session with Jane Doe" })).toBeVisible();
+  await doctor.page.getByRole("main").getByRole("link", { name: "End session" }).click();
+  await expect(doctor.page.getByRole("heading", { level: 2, name: "End session with Jane Doe" })).toBeVisible();
   await doctor.page.getByRole("main").getByRole("button", { name: "End session" }).click();
   await expect(doctor.page.getByRole("heading", { name: "You ended the session." })).toBeVisible();
 
@@ -364,7 +364,7 @@ test("the patient ends early: the portal closes within seconds", async ({ page, 
   const doctor = await newDoctor(browser);
   await submitCode(doctor.page, code);
   await page.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click();
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("button", { name: "End sharing now" }).click();
   const endedAt = Date.now();
@@ -395,7 +395,7 @@ test("the patient ends after the doctor's notes autosaved: the ended screen and 
   const doctor = await newDoctor(browser);
   await submitCode(doctor.page, code);
   await page.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click();
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
 
   // The doctor types; the draft autosaves. The patient has not left /session.
   await doctor.page.getByLabel("Chief complaint").fill("Tired for six weeks");
@@ -453,7 +453,7 @@ test("share from Profile on a day with no appointment", async ({ page, browser }
   await page.waitForURL(/\/session$/);
   // Started from Profile: the practice alone, no visit named.
   await expect(page.getByText("Rathmines Medical Centre", { exact: true })).toBeVisible();
-  await expect(doctor.page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "End sharing now" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await expect(doctor.page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
@@ -468,7 +468,7 @@ test("regenerate replaces the code; the old one stops working", async ({ page, b
   expect(second).not.toBe(first);
   const doctor = await newDoctor(browser);
   await submitCode(doctor.page, first);
-  await expect(doctor.page.getByText(/Wrong code/)).toBeVisible();
+  await expect(doctor.page.getByText(/That code doesn.t match/)).toBeVisible();
   await doctor.context.close();
 });
 
@@ -556,7 +556,7 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   await laptop.getByRole("button", { name: "Continue" }).click();
 
   await phone.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click({ timeout: 10_000 });
-  await expect(laptop.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+  await expect(laptop.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
   // The two frames did not disturb each other: the phone is still Jane's live session.
   await expect(phone.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
   await expectNoAxeViolations(page);

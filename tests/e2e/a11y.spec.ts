@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
 import { newDoctor } from "../helpers/doctor";
-import { fakeRecord, mockPortal, statusOf } from "../helpers/portal-mocks";
+import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
 
 /**
  * Accessibility beyond one axe run per screen (PLAN.md section 10):
@@ -62,7 +62,10 @@ async function walkKeyboard(page: Page, max = 60): Promise<{ stops: number; prob
       const outline = css.outlineStyle !== "none" && parseFloat(css.outlineWidth) > 0;
       // Text fields show focus as a 2px indigo border (the Figma field's focused state) instead of an outline.
       const field = /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) && css.boxShadow !== "none";
-      const ring = outline || field;
+      // CodeInput: one transparent input over boxes that draw the digits; the active box carries the ring.
+      const boxes = css.opacity === "0" ? el.parentElement?.querySelector('[aria-hidden="true"]') : null;
+      const drawn = Boolean(boxes && [...boxes.children].some((c) => getComputedStyle(c).outlineStyle !== "none"));
+      const ring = outline || field || drawn;
       const offset = parseFloat(css.outlineOffset) || 0;
       const reach = outline ? Math.max(0, parseFloat(css.outlineWidth) + offset) : 0;
       let clippedBy = "";
@@ -251,17 +254,20 @@ test("portal: every screen reflows at 320px and works with the keyboard (stand-i
       const { problems } = await walkKeyboard(page, 80);
       expect(problems, `${path} at ${viewport.width}: ${JSON.stringify(problems, null, 2)}`).toEqual([]);
     };
-    await check("/view", "Enter the patient's code.");
+    await check("/view", "Enter the patient's code");
+    await check("/view/about", "About the portal", 1);
     set({ status: () => statusOf("requested") });
-    await check("/view", "Waiting for patient to approve.");
-    set({ status: () => statusOf("active"), record: () => fakeRecord() });
-    await check("/view/session", "Overview", 1);
-    await check("/view/session/timeline", "Timeline", 1);
-    await check("/view/session/medications", "Medications", 1);
-    set({ status: () => statusOf("active"), record: () => ({ ...fakeRecord("care_team"), care_team: [] }) });
-    await check("/view/session/care-team", "Care team", 1);
-    await check("/view/session/end", /End session/, 1);
-    set({ status: () => statusOf("paused"), record: () => null });
+    await check("/view", "Waiting for the patient to approve");
+    // The live record (stand-in data): the h1 is the patient's name on every view.
+    set({ status: () => statusOf("active") });
+    for (const view of ["", "/visits", "/medications", "/timeline", "/care-team", "/family", "/end"]) {
+      await check("/view/session" + view, "Test Patient", 1);
+    }
+    set({ status: () => statusOf("active", { scope: { ...SCOPE, documents: true, mental_health: true } }) });
+    for (const view of ["/documents", "/mental-health"]) {
+      await check("/view/session" + view, "Test Patient", 1);
+    }
+    set({ status: () => statusOf("paused"), record: null });
     await check("/view/session", "Time's up on this share.");
     set({ status: () => statusOf("ended", { notes_saved_to_record: true }) });
     await check("/view/session", "Your patient ended the session.");

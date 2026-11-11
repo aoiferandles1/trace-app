@@ -11,12 +11,14 @@ import { cn } from "@/lib/cn";
  * the rail and notes sticky. Below 1024px everything stacks: the rail
  * becomes a row of section tabs above the record, and the notes follow it.
  *
- * Pages without a session (the code and waiting steps) pass no sidebar or
- * notes and get one column; `tone="session"` gives the waiting screen's
- * session indigo.
+ * Pages without a session (the code and waiting steps, ended) pass no
+ * sidebar and get one column; `tone="session"` gives the waiting screen's
+ * session indigo. The paused screen passes `notes` alone. <main> is a flex
+ * column, so a child with `flex-1` fills the height between header and
+ * footer.
  *
- * Phase 7 rebuilds the live record shell against PortalRecordE (resizable
- * notes, header facts row); this frame already wears the new tokens.
+ * The live record has its own frame, RecordFrame (components/portal), with
+ * the full-height rail and the resizable notes panel.
  */
 export function PortalShell({
   header,
@@ -72,7 +74,7 @@ export function PortalShell({
             <div className="lg:sticky lg:top-0 lg:max-h-dvh lg:overflow-y-auto">{sidebar}</div>
           </div>
         )}
-        <main id="main" tabIndex={-1} className="min-w-0 flex-1 focus:outline-none">
+        <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col focus:outline-none">
           {children}
         </main>
         {notes && (

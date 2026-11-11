@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { SessionFrame } from "./_components/SessionFrame";
 
 /**
@@ -13,5 +14,12 @@ export const instant = false;
  * so the notes draft and the countdown carry across pages.
  */
 export default function SessionLayout({ children }: LayoutProps<"/view/session">) {
-  return <SessionFrame>{children}</SessionFrame>;
+  // The frame reads the clock (the countdown) as it renders, which cannot be
+  // prerendered, so it renders in the browser behind this boundary. There is
+  // nothing to show before the first status call anyway.
+  return (
+    <Suspense fallback={null}>
+      <SessionFrame>{children}</SessionFrame>
+    </Suspense>
+  );
 }

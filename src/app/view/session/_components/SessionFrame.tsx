@@ -1,37 +1,50 @@
 "use client";
 
-import { Icon } from "@/components/ui/Icon";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
-import { AccessCard, PortalHero } from "@/components/portal/AccessCard";
-import { LiveBanner } from "@/components/portal/LiveBanner";
+import { PatientSummaryCard, type HeaderFact } from "@/components/portal/PatientSummaryCard";
 import { PortalFooter } from "@/components/portal/PortalFooter";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { PortalSidebar, portalNavItems, type PortalSection } from "@/components/portal/PortalSidebar";
-import { SessionNotesPanel, type SaveState, type SessionNotes } from "@/components/portal/SessionNotesPanel";
+import { PortalSidebar } from "@/components/portal/PortalSidebar";
+import { PortalSplit } from "@/components/portal/PortalSplit";
+import { RecordFrame } from "@/components/portal/RecordFrame";
+import {
+  ResizableNotes,
+  SessionNotesPanel,
+  type SaveState,
+  type SessionNotes,
+} from "@/components/portal/SessionNotesPanel";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { Countdown } from "@/components/ui/Countdown";
 import { Notice } from "@/components/ui/Notice";
 import { TextArea } from "@/components/ui/TextArea";
-import { formatCountdown, initialsOf } from "@/lib/format";
-import { clockOffset, portalApi, PortalApiError, type Patient, type PortalStatus } from "../../_lib/api";
-import { formatClock, patientDetails, patientFirstName, patientFullName } from "../../_lib/format";
+import { formatCountdown } from "@/lib/format";
+import { clockOffset, portalApi, PortalApiError, type PortalRecord, type PortalStatus } from "../../_lib/api";
+import { formatClock, initials, patientFirstName, patientFullName, patientLine, sharedForLabel } from "../../_lib/format";
 import { useNow, usePolling } from "../../_lib/hooks";
-import { SessionContext, useSession, type SessionContextValue } from "./SessionContext";
+import { isGranted, VIEWS, viewDef, viewForPath } from "../../_lib/sections";
+import { SessionContext, type SessionContextValue } from "./SessionContext";
+import { NotSharedView } from "./Views";
 
 /**
- * Everything around the record on /view/session/* (PLAN.md sections 6 to 8):
+ * Everything around the record on /view/session/* (BRIEF.md 6.3):
  *
  * - Polls portal_status every 5 seconds while the session is live.
- * - active: PortalShell with the sidebar, the LIVE banner and countdown, the
- *   page (the record), and the notes panel when the patient allowed notes.
- * - paused (new, no frame): the record is gone; notes can still be saved.
- * - ended (new, no frame): by the patient, the doctor or the timer.
+ * - active: the record frame (rail built from the scope, the patient
+ *   header with the facts and the draining bar, the view, the resizable
+ *   notes). The frame loads the overview once for the header; each view
+ *   loads its own section. A view the patient did not grant is never
+ *   mounted: "Not shared" shows in its place and nothing is requested.
+ * - When the countdown reaches zero the record leaves the screen and memory
+ *   at once and the status is checked straight away (the database decides
+ *   what comes next, normally paused).
+ * - paused: the record is gone; the notes can still be saved.
+ * - ended: "Access ended", why, what happened to the notes, one way on.
  * - anything else: back to /view.
  *
- * The record pages render only while the status is active, so their data
- * unmounts the moment a poll says the session paused or ended. The polite
- * live region announces the start, 5 and 1 minutes left, pause and end.
+ * Nothing about the patient is written to browser storage. The polite live
+ * region announces the start, 5 and 1 minutes left, pause and end.
  */
 
 const EMPTY_NOTES: SessionNotes = { chiefComplaint: "", assessment: "", plan: "", followUp: "" };
@@ -50,19 +63,12 @@ function toApi(n: SessionNotes) {
   return { chief_complaint: n.chiefComplaint, assessment: n.assessment, plan: n.plan, follow_up: n.followUp };
 }
 
-function sectionFor(pathname: string): PortalSection {
-  if (pathname.startsWith("/view/session/timeline")) return "timeline";
-  if (pathname.startsWith("/view/session/medications")) return "medications";
-  if (pathname.startsWith("/view/session/care-team")) return "care-team";
-  return "overview";
-}
-
 export function SessionFrame({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [status, setStatus] = useState<PortalStatus | null>(null);
   const [offset, setOffset] = useState(0);
-  const [patient, setPatientState] = useState<Patient | null>(null);
+  const [overview, setOverview] = useState<PortalRecord<"overview"> | null>(null);
   const [notes, setNotesState] = useState<SessionNotes>(EMPTY_NOTES);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [ending, setEnding] = useState(false);
@@ -77,7 +83,6 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   const lastSaved = useRef(JSON.stringify(EMPTY_NOTES));
   const notesRef = useRef(notes);
   const autosave = useRef<number | undefined>(undefined);
-
   const prevStatus = useRef<string | null>(null);
   const allowNotes = useRef(false);
 
@@ -88,8 +93,6 @@ export function SessionFrame({ children }: { children: ReactNode }) {
       allowNotes.current = Boolean(s.allow_notes);
       if (s.status === "active" || s.status === "paused") setNotesAllowed(Boolean(s.allow_notes));
 
-      // Announcements: start, back from a pause, pause, end. (5 and 1 minutes
-      // left come from MilestoneAnnouncer.)
       const prev = prevStatus.current;
       prevStatus.current = s.status;
       if (s.status !== prev) {
@@ -110,7 +113,8 @@ export function SessionFrame({ children }: { children: ReactNode }) {
         window.clearTimeout(autosave.current);
         setUnsaved(notesRef.current);
       }
-      if (s.status !== "active") setPatientState(null);
+      // The record leaves memory the moment access is not active.
+      if (s.status !== "active") setOverview(null);
       if (!["active", "paused", "ended"].includes(s.status)) router.replace("/view");
     },
     [router],
@@ -125,15 +129,64 @@ export function SessionFrame({ children }: { children: ReactNode }) {
     }
   }, [applyStatus]);
 
+  // One first status call, even when React runs the effect twice in
+  // development (a second cookie-less call could mint a second token).
+  const firstStatus = useRef<Promise<PortalStatus> | null>(null);
   useEffect(() => {
-    portalApi
-      .status()
-      .then(applyStatus)
-      .catch(() => setLoadError(true));
+    let cancelled = false;
+    firstStatus.current ??= portalApi.status();
+    firstStatus.current
+      .then((s) => {
+        if (!cancelled) applyStatus(s);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [applyStatus]);
 
   const live = status?.status === "active" || status?.status === "paused";
   usePolling(refreshStatus, 5000, live);
+
+  // ---- The countdown: at zero, drop the record and ask the database ----------
+  const timed = status?.status === "active" && status.duration_kind !== "manual" && Boolean(status.expires_at);
+  const now = useNow(offset, 1000, timed);
+  const msLeft = timed ? Date.parse(status!.expires_at!) - now : null;
+  const timeUp = msLeft !== null && msLeft <= 0;
+  // At zero the record leaves memory in this same render, not after the next poll.
+  if (timeUp && overview) setOverview(null);
+  useEffect(() => {
+    if (!timeUp) return;
+    // Ask now and, while the database still says active (clocks a moment apart), each second.
+    const first = window.setTimeout(() => void refreshStatus(), 0);
+    const id = window.setInterval(() => void refreshStatus(), 1000);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(id);
+    };
+  }, [timeUp, refreshStatus]);
+
+  // ---- The overview, for the header (and the Overview view) -------------------
+  const active = status?.status === "active" && !timeUp;
+  useEffect(() => {
+    if (!active || overview) return;
+    let cancelled = false;
+    portalApi
+      .record("overview")
+      .then((r) => {
+        if (cancelled) return;
+        if (r) setOverview(r);
+        else void refreshStatus();
+      })
+      .catch(() => {
+        if (!cancelled) void refreshStatus();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active, overview, refreshStatus]);
 
   // ---- Notes -------------------------------------------------------------
   const saveNotes = useCallback(async (): Promise<boolean> => {
@@ -170,6 +223,15 @@ export function SessionFrame({ children }: { children: ReactNode }) {
 
   useEffect(() => () => window.clearTimeout(autosave.current), []);
 
+  // Next's route announcer reads the page's h1 when the document has no
+  // title at that moment (between a navigation and its metadata), and keeps
+  // what it read. Here the h1 is the patient's name, which must not outlive
+  // the session, so the document always has a title. Runs before the
+  // announcer's own effect (children's effects run first).
+  useLayoutEffect(() => {
+    if (!document.title) document.title = "Clinical Access Portal";
+  });
+
   const endSession = useCallback(async () => {
     setEnding(true);
     try {
@@ -185,38 +247,32 @@ export function SessionFrame({ children }: { children: ReactNode }) {
     }
   }, [applyStatus, refreshStatus, saveNotes]);
 
-  const setPatient = useCallback((p: Patient) => setPatientState(p), []);
-
-
   const clinician = status?.clinician?.name
-    ? {
-        name: status.clinician.name,
-        role: status.clinician.role ?? undefined,
-        practice: status.clinician.practice ?? undefined,
-      }
+    ? { name: status.clinician.name, role: status.clinician.role ?? undefined, practice: status.clinician.practice ?? undefined }
     : undefined;
-  const header = <PortalHeader clinician={clinician} />;
-  const footer = <PortalFooter />;
   const liveRegion = (
     <p role="status" aria-live="polite" className="sr-only">
       {announcement}
     </p>
   );
+  const patient = overview?.patient ?? null;
+  const firstName = patientFirstName(patient);
 
-  // ---- Loading -------------------------------------------------------------
-  if (!status || !["active", "paused", "ended"].includes(status.status)) {
+  // ---- Loading, or the countdown just ran out ---------------------------------
+  if (!status || !["active", "paused", "ended"].includes(status.status) || timeUp) {
     return (
-      <PortalShell tone="ground" header={header} footer={footer}>
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 px-5 text-center">
-          <h1 className="font-display text-title font-light">
-            {loadError ? "The portal could not reach Trace." : "Loading the record"}
+      <PortalShell tone="ground" header={<PortalHeader clinician={clinician} />} footer={<PortalFooter />}>
+        {liveRegion}
+        <PortalSplit>
+          <h1 className="font-display text-display font-light">
+            {loadError ? "The portal could not reach Trace." : timeUp ? "Checking access" : "Loading the record"}
           </h1>
           {loadError && (
-            <Button variant="text" onClick={() => void refreshStatus()}>
+            <Button variant="text" className="mt-4 self-start" onClick={() => void refreshStatus()}>
               Try again
             </Button>
           )}
-        </div>
+        </PortalSplit>
       </PortalShell>
     );
   }
@@ -224,8 +280,8 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   const ctx: SessionContextValue = {
     status,
     offset,
-    patient,
-    setPatient,
+    overview,
+    firstName,
     refreshStatus,
     notes,
     setNotes,
@@ -235,24 +291,11 @@ export function SessionFrame({ children }: { children: ReactNode }) {
     ending,
   };
 
-  const notesPanel = status.allow_notes ? (
-    <div id="notes">
-      <SessionNotesPanel
-        notes={notes}
-        onChange={setNotes}
-        onSave={() => void saveNotes()}
-        onEndSession={() => router.push("/view/session/end")}
-        saveState={saveState}
-        patientFirstName={patient ? patientFirstName(patient) : "the patient"}
-      />
-    </div>
-  ) : undefined;
-
   // ---- Ended -------------------------------------------------------------------
   if (status.status === "ended") {
     return (
       <SessionContext.Provider value={ctx}>
-        <PortalShell tone="ground" header={header} footer={footer}>
+        <PortalShell tone="ground" header={<PortalHeader clinician={clinician} />} footer={<PortalFooter />}>
           {liveRegion}
           <EndedScreen status={status} unsaved={unsaved} notesAllowed={notesAllowed} />
         </PortalShell>
@@ -260,140 +303,179 @@ export function SessionFrame({ children }: { children: ReactNode }) {
     );
   }
 
+  const notesPanel = (collapse?: { onCollapse: () => void; collapseRef: React.Ref<HTMLButtonElement> }) => (
+    <SessionNotesPanel
+      notes={notes}
+      onChange={setNotes}
+      onSave={() => void saveNotes()}
+      saveState={saveState}
+      patientFirstName={firstName}
+      allowed={Boolean(status.allow_notes)}
+      onCollapse={collapse?.onCollapse}
+      collapseRef={collapse?.collapseRef}
+    />
+  );
+
   // ---- Paused ------------------------------------------------------------------
   if (status.status === "paused") {
     return (
       <SessionContext.Provider value={ctx}>
-        <PortalShell header={header} footer={footer} notes={notesPanel}>
+        <PortalShell
+          tone="ground"
+          header={<PortalHeader clinician={clinician} />}
+          footer={<PortalFooter />}
+          notes={status.allow_notes ? <aside aria-label="Session notes">{notesPanel()}</aside> : undefined}
+        >
           {liveRegion}
-          <PausedScreen status={status} offset={offset} />
+          <PausedScreen status={status} offset={offset} onEnd={() => void endSession()} ending={ending} />
         </PortalShell>
       </SessionContext.Provider>
     );
   }
 
-  // ---- Active: c-end -------------------------------------------------------------
-  if (pathname === "/view/session/end") {
-    return (
-      <SessionContext.Provider value={ctx}>
-        <PortalShell tone="ground" header={header} footer={footer}>
-          {liveRegion}
-          <MilestoneAnnouncer status={status} offset={offset} onAnnounce={setAnnouncement} />
-          {children}
-        </PortalShell>
-      </SessionContext.Provider>
-    );
-  }
-
-  // ---- Active: the record --------------------------------------------------------
-  const scope = status.scope;
-  const locked: PortalSection[] = ["documents", "insurance"];
-  if (scope && !scope.care_team) locked.push("care-team");
-  if (scope && !scope.recent_visits && !scope.full_timeline) locked.push("timeline");
-  const name = patient ? patientFullName(patient) : "Patient";
+  // ---- Active: the record ------------------------------------------------------
+  const viewKey = viewForPath(pathname);
+  const view = viewKey ? viewDef(viewKey) : null;
+  const granted = view ? isGranted(view, status.scope) : true;
+  const rail = (
+    <PortalSidebar
+      views={VIEWS.map((v) => ({ key: v.key, label: v.label, href: v.href, icon: v.icon, shared: isGranted(v, status.scope) }))}
+      active={viewKey}
+      clinician={clinician ? { name: clinician.name, practice: clinician.practice } : undefined}
+    />
+  );
 
   return (
     <SessionContext.Provider value={ctx}>
-      <PortalShell
-        tone="surface"
-        footer={footer}
-        notes={notesPanel}
-        sidebar={
-          <PortalSidebar
-            patient={{
-              name,
-              initials: patient ? initialsOf(name) : "",
-              details: patientDetails(patient),
-            }}
-            items={portalNavItems(locked)}
-            active={sectionFor(pathname)}
-            clinician={clinician}
-          />
-        }
+      <RecordFrame
+        rail={rail}
+        header={<RecordHeader status={status} overview={overview} msLeft={msLeft} />}
+        notes={<ResizableNotes>{(collapse) => notesPanel(collapse)}</ResizableNotes>}
       >
         {liveRegion}
-        <MilestoneAnnouncer status={status} offset={offset} onAnnounce={setAnnouncement} />
-        <div className="flex flex-col gap-6 px-5 pb-12 pt-6 sm:px-10 lg:pt-7">
-          <Banner status={status} offset={offset} patientName={name} />
-          {children}
-        </div>
-      </PortalShell>
+        <MilestoneAnnouncer msLeft={msLeft} onAnnounce={setAnnouncement} />
+        {view && !granted ? <NotSharedView label={view.label} firstName={firstName} /> : children}
+      </RecordFrame>
     </SessionContext.Provider>
   );
 }
 
-function Banner({ status, offset, patientName }: { status: PortalStatus; offset: number; patientName: string }) {
-  const router = useRouter();
-  const manual = status.duration_kind === "manual";
-  const now = useNow(offset, 1000, !manual);
-  const left = status.expires_at ? Date.parse(status.expires_at) - now : null;
+function RecordHeader({
+  status,
+  overview,
+  msLeft,
+}: {
+  status: PortalStatus;
+  overview: PortalRecord<"overview"> | null;
+  msLeft: number | null;
+}) {
+  if (!overview) {
+    return (
+      <p role="status" className="flex min-h-14 items-center text-body-lg text-ink-2">
+        Loading the record&hellip;
+      </p>
+    );
+  }
+  const name = patientFullName(overview.patient);
+  const c = overview.critical;
+  const facts: HeaderFact[] = [
+    c.allergies.length > 0
+      ? { label: c.allergies.length > 1 ? "Allergies" : "Allergy", value: c.allergies.join(", "), tone: "critical" }
+      : { label: "Allergies", value: "None recorded" },
+    { label: "Blood type", value: c.blood_type ?? "Not known" },
+    ...(c.implants.length > 0 ? [{ label: c.implants.length > 1 ? "Implants" : "Implant", value: c.implants.join(", ") }] : []),
+    {
+      label: sharedForLabel(status.duration_kind),
+      value: msLeft !== null ? `${formatCountdown(Math.max(0, msLeft))} left` : status.duration_kind === "manual" ? "No timer" : "",
+    },
+  ];
+  const total =
+    status.approved_at && status.expires_at ? Date.parse(status.expires_at) - Date.parse(status.approved_at) : null;
   return (
-    <LiveBanner
-      patientName={patientName}
-      timeLeft={!manual && left !== null ? formatCountdown(left) : undefined}
-      onEndSession={() => router.push("/view/session/end")}
-    />
+    <PatientSummaryCard
+      name={name}
+      initials={initials(name)}
+      details={patientLine(overview.patient)}
+      facts={facts}
+      action={
+        <ButtonLink href="/view/session/end" variant="secondary" size="sm">
+          End session
+        </ButtonLink>
+      }
+    >
+      {msLeft !== null && total !== null && total > 0 && (
+        <Countdown layout="inline" msLeft={msLeft} msTotal={total} label="Time left" />
+      )}
+    </PatientSummaryCard>
   );
 }
 
 /** Announces 5 minutes and 1 minute left, once each, in the frame's live region. */
-function MilestoneAnnouncer({
-  status,
-  offset,
-  onAnnounce,
-}: {
-  status: PortalStatus;
-  offset: number;
-  onAnnounce: (s: string) => void;
-}) {
-  const manual = status.duration_kind === "manual";
-  const now = useNow(offset, 1000, !manual);
-  const left = status.expires_at ? Date.parse(status.expires_at) - now : null;
+function MilestoneAnnouncer({ msLeft, onAnnounce }: { msLeft: number | null; onAnnounce: (s: string) => void }) {
   const said = useRef<{ five: boolean; one: boolean }>({ five: false, one: false });
   useEffect(() => {
-    if (left === null || manual) return;
-    if (left > 5 * 60_000) said.current = { five: false, one: false };
-    else if (left > 60_000 && !said.current.five) {
+    if (msLeft === null) return;
+    if (msLeft > 5 * 60_000) said.current = { five: false, one: false };
+    else if (msLeft > 60_000 && !said.current.five) {
       said.current.five = true;
       onAnnounce("5 minutes of access left.");
-    } else if (left <= 60_000 && left > 0 && !said.current.one) {
+    } else if (msLeft <= 60_000 && msLeft > 0 && !said.current.one) {
       said.current = { five: true, one: true };
       onAnnounce("1 minute of access left.");
     }
-  }, [left, manual, onAnnounce]);
+  }, [msLeft, onAnnounce]);
   return null;
 }
 
-function PausedScreen({ status, offset }: { status: PortalStatus; offset: number }) {
-  const { endSession, ending } = useSession();
-  const now = useNow(offset, 1000);
+function StateTitle({ label, title }: { label: string; title: string }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
+  return (
+    <div className="flex flex-col gap-2.5">
+      <p className="text-caption font-medium text-ink-2">{label}</p>
+      <h1 ref={heading} tabIndex={-1} className="font-display text-display font-light">
+        {title}
+      </h1>
+    </div>
+  );
+}
+
+function PausedScreen({
+  status,
+  offset,
+  onEnd,
+  ending,
+}: {
+  status: PortalStatus;
+  offset: number;
+  onEnd: () => void;
+  ending: boolean;
+}) {
+  const now = useNow(offset, 1000);
   const closesAt = status.closes_at;
   const left = closesAt ? Date.parse(closesAt) - now : null;
   return (
-    <div className="px-5 py-12 sm:px-10 lg:py-20">
-      <AccessCard
-        headingRef={heading}
-        eyebrow="Access paused"
-        tone="urgent"
-        title="Time's up on this share."
-        body="The patient's timer ran out, so their record is hidden. It comes back here if they add more time."
-      >
-        {left !== null && left > 0 && (
-          <p className="flex items-center gap-2 text-caption text-ink-2">
-            <Icon name="clock" size={18} />
-            If nothing changes, the session closes at {formatClock(closesAt)}.
+    <PortalSplit>
+      <div className="flex flex-col gap-7">
+        <div className="flex flex-col gap-2.5">
+          <StateTitle label="Access paused" title="Time's up on this share." />
+          <p className="text-body-lg text-ink-2">
+            The patient&apos;s timer ran out, so their record is hidden. It comes back here if they add more time.
           </p>
-        )}
-        {status.allow_notes && (
-          <Notice tone="neutral">You can still finish your notes. They go to the record when the session ends.</Notice>
-        )}
-        <Button variant="secondary" size="lg" fullWidth onClick={() => void endSession()} loading={ending}>
+          {left !== null && left > 0 && (
+            <p className="text-caption text-ink-2">If nothing changes, the session closes at {formatClock(closesAt)}.</p>
+          )}
+          {status.allow_notes && (
+            <p className="text-caption text-ink-2">
+              You can still finish your notes. They go to the record when the session ends.
+            </p>
+          )}
+        </div>
+        <Button variant="secondary" size="lg" className="w-full sm:w-55" onClick={onEnd} loading={ending}>
           End session now
         </Button>
-      </AccessCard>
-    </div>
+      </div>
+    </PortalSplit>
   );
 }
 
@@ -429,8 +511,6 @@ function EndedScreen({
   unsaved: SessionNotes | null;
   notesAllowed: boolean | null;
 }) {
-  const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => heading.current?.focus(), []);
   const by = status.ended_by;
   const title =
     by === "patient"
@@ -450,17 +530,18 @@ function EndedScreen({
       ? "No session notes were written, so nothing was added to the record."
       : null;
   return (
-    <>
-      <PortalHero title="Session ended." />
-      <div className="px-5 pb-16 pt-10 sm:px-14">
-        <AccessCard headingRef={heading} eyebrow="Session ended" title={title} body={body}>
-          {notesLine && <Notice tone="neutral">{notesLine}</Notice>}
-          {unsaved && <UnsavedNotes notes={unsaved} />}
-          <ButtonLink href="/view" size="lg" fullWidth>
-            Start a new session
-          </ButtonLink>
-        </AccessCard>
+    <PortalSplit>
+      <div className="flex flex-col gap-7">
+        <div className="flex flex-col gap-2.5">
+          <StateTitle label="Access ended" title={title} />
+          <p className="text-body-lg text-ink-2">{body}</p>
+          {notesLine && <p className="text-body-lg text-ink-2">{notesLine}</p>}
+        </div>
+        {unsaved && <UnsavedNotes notes={unsaved} />}
+        <ButtonLink href="/view" size="lg" className="w-full sm:w-55">
+          Enter a new code
+        </ButtonLink>
       </div>
-    </>
+    </PortalSplit>
   );
 }

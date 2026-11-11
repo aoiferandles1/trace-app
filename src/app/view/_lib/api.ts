@@ -22,7 +22,10 @@ export type Scope = {
   care_team: boolean;
   mental_health: boolean;
   documents: boolean;
+  /** Reported by the database; the portal never shows insurance. */
   insurance: boolean;
+  family_history: boolean;
+  medication_notes: boolean;
 };
 
 export type DraftNotes = {
@@ -68,6 +71,10 @@ export type Patient = {
   city: string | null;
 };
 
+export type Critical = { blood_type: string | null; allergies: string[]; implants: string[] };
+
+/* ---- The redesigned record (portal_get_record version 2, supabase/README.md section 10) ---- */
+
 export type Condition = {
   id: string;
   name: string;
@@ -79,35 +86,117 @@ export type Condition = {
   is_mental_health: boolean;
 };
 
-export type Medication = {
+export type TextDetail = {
+  kind: "text";
+  reason: string | null;
+  assessment: string | null;
+  plan: string | null;
+  follow_up: string | null;
+  medication: string | null;
+  quantity: string | null;
+  pharmacy: string | null;
+};
+
+export type ResultValue = {
   id: string;
   name: string;
-  dose: string | null;
-  form: string | null;
-  frequency: string | null;
-  timing: string | null;
-  drug_class: string | null;
-  prescriber: string | null;
-  prescriber_specialty: string | null;
-  prescriber_org: string | null;
-  indication: string | null;
-  started_on: string | null;
-  ended_on: string | null;
-  instructions: string | null;
-  refill_due_on: string | null;
+  value: number;
+  unit: string | null;
+  ref_low: number | null;
+  ref_high: number | null;
+  flag: "low" | "high" | null;
 };
+
+export type EntryKind = "visit" | "result" | "prescription" | "note" | "letter" | "imaging" | "vaccination" | "session_notes";
 
 export type Entry = {
   id: string;
-  kind: "visit" | "result" | "prescription" | "note" | "letter" | "imaging" | "vaccination" | "session_notes";
+  kind: EntryKind;
   title: string;
   occurs_at: string;
+  upcoming: boolean;
   clinician: string | null;
   place: string | null;
   body: string | null;
   is_mental_health: boolean;
   source: "patient" | "clinician_session";
-  detail: Record<string, string | null> | null;
+  detail: TextDetail | { kind: "result"; results: ResultValue[] } | null;
+};
+
+export type DatePrecision = "day" | "month" | "year";
+
+export type Period = {
+  id: string;
+  strength: number;
+  strength_label: string;
+  start_date: string;
+  end_date: string | null;
+  date_precision: DatePrecision;
+  prescribed_by: string | null;
+  /** Only when the patient shared Medication notes and this note. Otherwise null. */
+  note: string | null;
+};
+
+export type Medication = {
+  id: string;
+  name: string;
+  status: "current" | "past";
+  unit: string | null;
+  strength: number | null;
+  strength_label: string | null;
+  schedule: string | null;
+  form: string | null;
+  frequency: string | null;
+  timing: string | null;
+  prescriber: string | null;
+  started_on: string | null;
+  ended_on: string | null;
+  refill_due_on: string | null;
+  supply_days_left: number | null;
+  period_count: number;
+  /** Newest first. */
+  periods: Period[];
+};
+
+export type HealthEvent = {
+  id: string;
+  kind: "infection" | "condition";
+  title: string;
+  occurred_on: string;
+  date_precision: DatePrecision;
+  clinician: string | null;
+  place: string | null;
+  seen_by: string | null;
+  outcome: "resolved" | "settled" | "ongoing" | "seasonal" | "managed" | null;
+  notes: string | null;
+  is_mental_health: boolean;
+  prescriptions: Array<{ id: string; name: string; detail: string | null }>;
+};
+
+export type Relative = {
+  id: string;
+  relation: string;
+  label: string;
+  generation: number | null;
+  side: "maternal" | "paternal" | null;
+  conditions: Array<{
+    id: string;
+    name: string;
+    age_at_diagnosis: number | null;
+    category: string | null;
+    is_mental_health: boolean;
+    label: string;
+  }>;
+};
+
+export type DocumentItem = {
+  id: string;
+  title: string;
+  content_type: string;
+  byte_size: number;
+  document_date: string | null;
+  created_at: string;
+  is_mental_health: boolean;
 };
 
 export type Vitals = {
@@ -127,19 +216,35 @@ export type CareTeamMember = {
   kind: "gp" | "specialist" | "pharmacy";
 };
 
-export type RecordSection = "overview" | "conditions" | "timeline" | "medications" | "care_team";
+export type RecentVisits = { past: Entry[]; upcoming: Entry[] };
 
-export type PortalRecord = {
-  section: RecordSection;
+export type SectionData = {
+  overview: {
+    conditions: Condition[] | null;
+    recent_visits: RecentVisits | null;
+    medications: Medication[];
+    vitals: Vitals | null;
+  };
+  conditions: { conditions: Condition[] };
+  recent_visits: RecentVisits;
+  medications: { current: Medication[]; past: Medication[] };
+  full_timeline: { events: HealthEvent[]; visits: Entry[] };
+  care_team: { care_team: CareTeamMember[] };
+  family_history: { relatives: Relative[] };
+  documents: { documents: DocumentItem[] };
+  mental_health: { conditions: Condition[]; visits: Entry[]; events: HealthEvent[]; documents: DocumentItem[] };
+};
+
+export type RecordSection = keyof SectionData;
+
+export type PortalRecord<S extends RecordSection = RecordSection> = {
+  version: 2;
+  section: S;
+  shared: true;
   patient: Patient;
-  critical: { blood_type: string | null; allergies: string[]; implants: string[] };
+  critical: Critical;
   scope: Scope;
-  conditions: Condition[] | null;
-  medications: { current: Medication[]; expired: Medication[] } | null;
-  timeline: Entry[] | null;
-  upcoming: Entry[] | null;
-  vitals: Vitals | null;
-  care_team: CareTeamMember[] | null;
+  data: SectionData[S];
 };
 
 export class PortalApiError extends Error {
@@ -179,12 +284,22 @@ export const portalApi = {
   submitCode: (input: { code: string; clinician_name: string; clinician_role: string; clinician_practice: string }) =>
     call<SubmitResult>("/api/portal/code", { method: "POST", body: JSON.stringify(input) }),
   cancel: () => call<PortalStatus>("/api/portal/cancel", { method: "POST", body: "{}" }),
-  record: (section: RecordSection) =>
-    call<{ record: PortalRecord | null }>(`/api/portal/record?section=${section}`).then((r) => r.record),
+  /**
+   * One section. `null` when access is closed (ask for the status). Throws
+   * `not_shared` for a section the patient did not grant: the portal never
+   * asks for one, so that is a bug.
+   */
+  record: <S extends RecordSection>(section: S) =>
+    call<{ record: PortalRecord<S> | null }>(`/api/portal/record?section=${section}`).then((r) => r.record),
   saveNotes: (notes: { chief_complaint: string; assessment: string; plan: string; follow_up: string }) =>
     call<{ saved_at: string }>("/api/portal/notes", { method: "POST", body: JSON.stringify(notes) }),
   end: () => call<PortalStatus>("/api/portal/end", { method: "POST", body: "{}" }),
 };
+
+/** Where a shared document opens (a new tab; the route serves the file itself). */
+export function documentUrl(id: string): string {
+  return `/api/portal/document?id=${encodeURIComponent(id)}`;
+}
 
 /** Milliseconds to add to Date.now() to get the database's clock. */
 export function clockOffset(serverTime: string | null | undefined): number {

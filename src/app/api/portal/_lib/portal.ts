@@ -26,7 +26,24 @@ const COOKIE_PATH = "/api/portal";
 /** Bindings are cleaned up after 24 hours untouched, so the cookie need not outlive that. */
 const COOKIE_MAX_AGE = 60 * 60 * 24;
 
-export const SECTIONS = ["overview", "conditions", "timeline", "medications", "care_team"] as const;
+/**
+ * The redesigned record's sections (portal_get_record version 2,
+ * supabase/README.md section 10). The database decides what each one holds
+ * and refuses the ones the patient did not grant. `insurance` is left out
+ * on purpose: insurance is personal and never shown to a doctor, so this
+ * route refuses it (invalid_section) even if a session granted it.
+ */
+export const SECTIONS = [
+  "overview",
+  "conditions",
+  "recent_visits",
+  "medications",
+  "full_timeline",
+  "care_team",
+  "family_history",
+  "documents",
+  "mental_health",
+] as const;
 export type Section = (typeof SECTIONS)[number];
 
 /**

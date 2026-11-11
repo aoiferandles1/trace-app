@@ -1,40 +1,55 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * The portal's footer (boards PortalEntryB and PortalWaitB): a quiet row of
- * 13px ink-2 text with accent links, on the page, no bar.
- *
- * Copy differs from the old Figma on purpose (PLAN.md section 11, listed in
- * docs/REVIEW.md): "Encrypted in transit · Access logged", and a line saying
- * Trace is a portfolio project, not a medical service, linking to the case
- * study.
+ * The portal's footer outside a session (boards PortalEntryB and
+ * PortalWaitB): a 64px row on the page, no bar. On the left, by default,
+ * "Privacy and security" and "For your practice" (14px 500 accent links to
+ * /view/about); the waiting screen passes its own line instead. On the
+ * right, a 13px ink-2 note: "Demo with sample data" in the demo, otherwise
+ * that Trace is a portfolio project.
  */
 
 export const CASE_STUDY_URL = "https://aoiferandles.com/trace/";
 
-export function PortalFooter({ tone = "default", className }: { tone?: "default" | "session"; className?: string }) {
+export function PortalFooter({
+  tone = "default",
+  demo = false,
+  children,
+  className,
+}: {
+  tone?: "default" | "session";
+  /** The demo (/view?demo=1): "Demo with sample data" on the right. */
+  demo?: boolean;
+  /** Replaces the two links on the left. */
+  children?: ReactNode;
+  className?: string;
+}) {
   const session = tone === "session";
-  const link = cn("font-medium", session ? "text-white underline underline-offset-2" : "text-accent hovered:underline");
+  const link = cn(
+    "flex min-h-8 items-center text-caption font-medium",
+    session ? "text-white underline underline-offset-2" : "text-accent hovered:underline",
+  );
   return (
     <footer
       className={cn(
-        "flex flex-col gap-2 px-5 py-5 text-meta sm:px-14 lg:min-h-16 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:py-0",
+        "flex flex-col gap-3 px-5 py-5 text-meta leading-4 sm:px-14 md:min-h-16 md:flex-row md:items-center md:justify-between md:gap-6 md:py-0",
         session ? "text-on-session-2" : "text-ink-2",
         className,
       )}
     >
-      <p>
-        A portfolio project by Aoife Randles, not a medical service.{" "}
-        <Link href={CASE_STUDY_URL} className={link}>
-          Read the case study
-        </Link>
-        {" · "}
-        <Link href="/terms" className={link}>
-          Terms
-        </Link>
-      </p>
-      <p>Encrypted in transit · Access logged</p>
+      {children ?? (
+        <nav aria-label="About the portal" className="flex gap-6">
+          <Link href="/view/about#privacy" className={link}>
+            Privacy and security
+          </Link>
+          <Link href="/view/about#practice" className={link}>
+            For your practice
+          </Link>
+        </nav>
+      )}
+      <p>{demo ? "Demo with sample data" : "A portfolio project, not a medical service"}</p>
     </footer>
   );
 }

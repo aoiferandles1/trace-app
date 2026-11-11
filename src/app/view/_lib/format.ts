@@ -1,11 +1,14 @@
-import type { Medication, Patient, Scope } from "./api";
+import type { Condition, DatePrecision, DocumentItem, Entry, EntryKind, HealthEvent, Medication, Patient, Period } from "./api";
 
 /**
  * Display helpers for the portal. Dates are shown in Irish time, the
- * database's "today" (supabase/README.md, "Time").
+ * database's "today" (supabase/README.md, "Time"). Words follow the boards
+ * (PortalRecordE) and the contract's notes in section 10.
  */
 
 const TZ = "Europe/Dublin";
+/** Three-letter months; Intl gives "Sept" in en-IE and en-GB. */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function patientFullName(p: Patient | null | undefined): string {
   if (!p) return "Your patient";
@@ -17,6 +20,17 @@ export function patientFirstName(p: Patient | null | undefined): string {
   return p?.first_name?.trim() || "the patient";
 }
 
+/** "JD"; one word gives one letter ("B" for Boots), as on the board. */
+export function initials(name: string): string {
+  const words = name
+    .replace(/[^\p{L}\s'-]/gu, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return "";
+  if (words.length === 1) return words[0][0].toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
 /** "12 Mar 1991" from "1991-03-12" (a date, no time zone shift). */
 export function formatDateOnly(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -25,21 +39,18 @@ export function formatDateOnly(iso: string | null | undefined): string {
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
-/** "34 · Female · DOB 12 Mar 1991" (sidebar), optionally with the city. */
-export function patientDetails(p: Patient | null | undefined, opts: { city?: boolean } = {}): string {
+/** "35, female, born 12 Mar 1991, Dublin" (the record header). */
+export function patientLine(p: Patient | null | undefined): string {
   if (!p) return "";
   return [
     p.age != null ? String(p.age) : null,
-    p.sex,
-    p.date_of_birth ? `DOB ${formatDateOnly(p.date_of_birth)}` : null,
-    opts.city ? p.city : null,
+    p.sex ? p.sex.toLowerCase() : null,
+    p.date_of_birth ? `born ${formatDateOnly(p.date_of_birth)}` : null,
+    p.city,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 }
-
-/** Three-letter months as in Figma ("DEC"); Intl gives "Sept" in en-IE and en-GB. */
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function parts(iso: string) {
   const f = new Intl.DateTimeFormat("en-IE", {
@@ -55,23 +66,22 @@ function parts(iso: string) {
   return { day: get("day"), month: MONTHS[Number(get("month")) - 1] ?? "", year: get("year"), hour: get("hour"), minute: get("minute") };
 }
 
-/** "5 JAN 2026" */
-export function formatEntryDate(iso: string): string {
+/** { day: "29", month: "Dec", year: "2026" } for a timestamp, in Irish time. */
+export function dayMonth(iso: string) {
   const p = parts(iso);
-  return `${p.day} ${p.month} ${p.year}`.toUpperCase();
+  return { day: p.day, month: p.month, year: p.year };
 }
 
-/** { day: "5", month: "JAN", year: "2026" } */
-export function entryDateParts(iso: string) {
-  const p = parts(iso);
-  return { day: p.day, month: p.month.toUpperCase(), year: p.year };
-}
-
-/** "2026-01-05" in Irish time, for <time dateTime>. */
+/** "2026-12-29" in Irish time, for <time dateTime>. */
 export function isoDay(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(
     new Date(iso),
   );
+}
+
+/** The current year in Ireland, on the given clock. */
+export function currentYear(now: number = Date.now()): string {
+  return parts(new Date(now).toISOString()).year;
 }
 
 /** "9:35" (24-hour, Irish time). */
@@ -81,67 +91,6 @@ export function formatClock(iso: string | null | undefined): string {
   return `${p.hour}:${p.minute}`;
 }
 
-/** "Dec 2025" from a date. */
-export function formatMonthYear(isoDate: string): string {
-  const [y, m] = isoDate.split("-").map(Number);
-  return `${MONTHS[(m || 1) - 1]} ${y}`;
-}
-
-/** "Warfarin 5mg" */
-export function medicationName(m: Medication): string {
-  return [m.name, m.dose].filter(Boolean).join(" ");
-}
-
-/** "Once daily · evening · since 2019" (overview row). */
-export function medicationMeta(m: Medication): string {
-  const freq = m.frequency ? m.frequency[0].toUpperCase() + m.frequency.slice(1) : null;
-  return [freq, m.timing, m.started_on ? `since ${m.started_on.slice(0, 4)}` : null].filter(Boolean).join(" · ");
-}
-
-/** "Tablet · once daily · evening" (medication card). */
-export function medicationSummary(m: Medication): string {
-  return [m.form, m.frequency, m.timing].filter(Boolean).join(" · ");
-}
-
-/** "Dr O'Mahony, Mater Private · Cardiology" */
-export function prescriberLine(m: Medication): string {
-  const who = [m.prescriber, m.prescriber_org].filter(Boolean).join(", ");
-  return [who, m.prescriber_specialty].filter(Boolean).join(" · ");
-}
-
-/** The "Shared for this visit / Not included" lists, in c-overview's order and words. */
-export function scopeLists(scope: Scope): { shared: string[]; notShared: string[] } {
-  const rows: Array<[string, boolean]> = [
-    ["Critical safety", scope.critical_safety],
-    ["Active conditions", scope.conditions],
-    ["Medications", scope.medications],
-    ["Recent visits (last 3)", scope.recent_visits && !scope.full_timeline],
-    ["Full timeline", scope.full_timeline],
-    ["Care team", scope.care_team],
-    ["Mental health", scope.mental_health],
-    ["Documents", scope.documents],
-    ["Insurance", scope.insurance],
-  ];
-  const shared = rows.filter(([, on]) => on).map(([l]) => l);
-  // Figma lists "Not included" as Mental health, Documents, Full timeline, Insurance.
-  const notOrder = ["Active conditions", "Recent visits (last 3)", "Care team", "Mental health", "Documents", "Full timeline", "Insurance"];
-  const notShared = notOrder.filter((l) => {
-    if (l === "Recent visits (last 3)") return !scope.recent_visits && !scope.full_timeline;
-    const row = rows.find(([label]) => label === l);
-    return row ? !row[1] : false;
-  });
-  return { shared, notShared };
-}
-
-/** Critical strip items: "Penicillin allergy", "A+", implants. */
-export function criticalItems(c: { blood_type: string | null; allergies: string[]; implants: string[] }): string[] {
-  return [
-    ...c.allergies.map((a) => (/allerg/i.test(a) ? a : `${a} allergy`)),
-    ...(c.blood_type ? [c.blood_type] : []),
-    ...c.implants.map((i) => `Implant: ${i}`),
-  ];
-}
-
 /** "28m", "1h 05m" */
 export function formatDuration(ms: number): string {
   const mins = Math.max(0, Math.round(ms / 60000));
@@ -149,17 +98,158 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
 }
 
-export function durationLabel(kind: string | null | undefined): string {
+/** The header's label over the time left ("Shared for 30 min"). */
+export function sharedForLabel(kind: string | null | undefined): string {
   switch (kind) {
     case "30m":
-      return "30 min session";
+      return "Shared for 30 min";
     case "1h":
-      return "1 hour session";
+      return "Shared for 1 hour";
     case "all_day":
-      return "All-day session";
+      return "Shared until 23:59";
     case "manual":
-      return "Open session";
+      return "Shared until ended";
     default:
-      return "";
+      return "Shared";
   }
+}
+
+/** A date at its precision: "2 Aug 2026", "Feb 2025", "2015". */
+export function formatPrecise(date: string, precision: DatePrecision): string {
+  const [y, m, d] = date.split("-").map(Number);
+  if (precision === "year" || !m) return String(y);
+  if (precision === "month" || !d) return `${MONTHS[m - 1]} ${y}`;
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+/** "Jan 2024 to Mar 2024", "Feb 2025 to now", "2 Aug 2026 to 9 Aug 2026". */
+export function periodRange(p: Period): string {
+  const from = formatPrecise(p.start_date, p.date_precision);
+  const to = p.end_date ? formatPrecise(p.end_date, p.date_precision) : "now";
+  return from === to ? from : `${from} to ${to}`;
+}
+
+/** Oldest first, for the step chart. */
+export function chartPeriods(m: Medication) {
+  return m.periods
+    .slice()
+    .reverse()
+    .map((p) => ({
+      value: p.strength,
+      from: formatPrecise(p.start_date, p.date_precision),
+      to: p.end_date ? formatPrecise(p.end_date, p.date_precision) : "now",
+    }));
+}
+
+/** "Now 36mg, since Feb 2025" or "Stopped 9 Aug 2026". */
+export function medicationLine(m: Medication): string {
+  const now = m.periods[0];
+  if (m.status === "past") {
+    if (now?.end_date) return `Stopped ${formatPrecise(now.end_date, now.date_precision)}`;
+    return m.ended_on ? `Stopped ${formatDateOnly(m.ended_on)}` : "Stopped";
+  }
+  if (!now) return m.strength_label ? `Now ${m.strength_label}` : "";
+  return `Now ${now.strength_label}, since ${formatPrecise(now.start_date, now.date_precision)}`;
+}
+
+/** The list's sub line: the schedule for a current medication, the dates for a past one. */
+export function medicationSub(m: Medication): string {
+  if (m.status === "current") return m.schedule ?? "";
+  const first = m.periods[m.periods.length - 1];
+  const last = m.periods[0];
+  if (first && last) {
+    const from = formatPrecise(first.start_date, first.date_precision);
+    const to = last.end_date ? formatPrecise(last.end_date, last.date_precision) : "now";
+    return `${from} to ${to}`;
+  }
+  return [formatDateOnly(m.started_on), formatDateOnly(m.ended_on)].filter(Boolean).join(" to ");
+}
+
+/** "Managed, since 2019" / "Managed, since childhood". */
+export function conditionSub(c: Condition): string {
+  const status = c.status[0].toUpperCase() + c.status.slice(1);
+  const since = c.diagnosed_year ? `since ${c.diagnosed_year}` : c.diagnosed_note;
+  return [status, since].filter(Boolean).join(", ");
+}
+
+const KIND_WORDS: Record<EntryKind, string> = {
+  visit: "Visit",
+  result: "Result",
+  prescription: "Prescription",
+  note: "Note",
+  letter: "Letter",
+  imaging: "Imaging",
+  vaccination: "Vaccination",
+  session_notes: "Session notes",
+};
+
+export function entryType(e: Entry): string {
+  return KIND_WORDS[e.kind] ?? "Visit";
+}
+
+/** "11 Nov 2026, Dr Hennessy, Rathmines Medical Centre"; a result says "ordered by". */
+export function entryMeta(e: Entry): string {
+  const p = parts(e.occurs_at);
+  const date = `${p.day} ${p.month} ${p.year}`;
+  const who = e.clinician ? (e.kind === "result" ? `ordered by ${e.clinician}` : e.clinician) : null;
+  return [date, who, e.place].filter(Boolean).join(", ");
+}
+
+/** The detail pane's labelled fields for a text kind, in the contract's order. */
+export function entryFields(e: Entry): Array<{ label: string; text: string }> {
+  const d = e.detail;
+  if (!d || d.kind !== "text") return [];
+  const rows: Array<[string, string | null]> =
+    e.kind === "prescription"
+      ? [
+          ["Medication", d.medication],
+          ["Quantity", d.quantity],
+          ["Pharmacy", d.pharmacy],
+          ["Reason", d.reason],
+          ["Assessment", d.assessment],
+          ["Plan", d.plan],
+        ]
+      : [
+          [e.kind === "session_notes" ? "Chief complaint" : "Reason", d.reason],
+          ["Assessment", d.assessment],
+          ["Plan", d.plan],
+          ["Follow-up", d.follow_up],
+          ["Medication", d.medication],
+          ["Quantity", d.quantity],
+          ["Pharmacy", d.pharmacy],
+        ];
+  return rows.filter((r): r is [string, string] => Boolean(r[1])).map(([label, text]) => ({ label, text }));
+}
+
+const EVENT_WORDS = { infection: "Infection", condition: "Condition" } as const;
+
+/** "Aug, Infection" (the list's sub line). */
+export function eventSub(e: HealthEvent): string {
+  const [, m, d] = e.occurred_on.split("-").map(Number);
+  const when =
+    e.date_precision === "year" ? null : e.date_precision === "month" ? MONTHS[m - 1] : `${d} ${MONTHS[m - 1]}`;
+  return [when, EVENT_WORDS[e.kind]].filter(Boolean).join(", ");
+}
+
+/** "Aug 2026, Infection" (the detail pane's meta line). */
+export function eventMeta(e: HealthEvent): string {
+  return `${formatPrecise(e.occurred_on, e.date_precision)}, ${EVENT_WORDS[e.kind]}`;
+}
+
+export function eventYear(e: HealthEvent): string {
+  return e.occurred_on.slice(0, 4);
+}
+
+export function capitalise(s: string | null | undefined): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : "";
+}
+
+/** "PDF" or "Photo". */
+export function documentType(d: DocumentItem): string {
+  return d.content_type === "application/pdf" ? "PDF" : "Photo";
+}
+
+/** "PDF, 3 Oct 2026" */
+export function documentSub(d: DocumentItem): string {
+  return [documentType(d), formatDateOnly(d.document_date ?? d.created_at.slice(0, 10))].filter(Boolean).join(", ");
 }
