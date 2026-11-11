@@ -71,7 +71,8 @@ export function FilterTabs<V extends string>({
     <div
       role="tablist"
       aria-label={label}
-      className={cn("flex gap-2", fill ? "w-full" : "overflow-x-auto py-1.5", className)}
+      // A scrolling row clips: the 4px around the chips (py-1.5, -mx-1 px-1) keeps their focus ring visible.
+      className={cn("flex gap-2", fill ? "w-full" : "-mx-1 scroll-px-1 overflow-x-auto px-1 py-1.5", className)}
     >
       {items.map((item, i) => {
         const active = item.value === value;

@@ -183,7 +183,8 @@ function Action({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3.5 px-4 py-3.5 transition-colors duration-150",
+        // Inside a list that clips its corners: keep the focus ring inside the row.
+        "flex items-center gap-3.5 px-4 py-3.5 transition-colors duration-150 focus-visible:-outline-offset-2",
         highlight ? "bg-brand-indigo-tint hovered:bg-indigo-100" : "hovered:bg-neutral-50",
       )}
     >

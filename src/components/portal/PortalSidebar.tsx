@@ -74,7 +74,8 @@ export function PortalSidebar({
       </div>
       <div aria-hidden="true" className="hidden h-px bg-indigo-divider-dark lg:block" />
       <nav aria-label="Record sections" className="lg:py-4">
-        <ul className="-mx-4 flex gap-0.5 overflow-x-auto px-4 pb-2 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+        {/* Below 1024px a scrolling row, which clips: pt-1 and pb-2 leave room for the focus ring. */}
+        <ul className="-mx-4 flex scroll-px-4 gap-0.5 overflow-x-auto px-4 pb-2 pt-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0 lg:pt-0">
           {items.map((item) => {
             const isActive = item.key === active && !item.locked;
             const content = (

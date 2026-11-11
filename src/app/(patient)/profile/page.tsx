@@ -159,8 +159,9 @@ function CareTeam({ team }: { team: CareMember[] }) {
   );
 }
 
+// The list clips its corners (overflow-hidden), so the focus ring sits inside each row.
 const rowClasses =
-  "flex min-h-14 w-full items-center gap-3 px-4 text-left text-body-lg text-text-primary transition-colors duration-150 hovered:bg-neutral-50";
+  "flex min-h-14 w-full items-center gap-3 px-4 text-left text-body-lg text-text-primary transition-colors duration-150 hovered:bg-neutral-50 focus-visible:-outline-offset-2";
 
 function YourData() {
   const router = useRouter();
