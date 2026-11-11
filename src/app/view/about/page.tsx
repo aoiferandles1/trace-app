@@ -20,7 +20,7 @@ const PRACTICE: Array<[string, string]> = [
   ],
   [
     "Remembered on this computer",
-    "Your details are saved in this browser so you do not have to type them again. Nothing is saved on our side.",
+    "Your details are saved in this browser so you do not have to type them again. Trace keeps them only with each share, in the patient's share history.",
   ],
 ];
 

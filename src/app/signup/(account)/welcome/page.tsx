@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
+import { GP_VISIT_DEFAULTS, joinLabels, sharedScopes } from "@/lib/patient/share";
 import { GP_PROFILE_KEY } from "../_lib/gpProfile";
 import { useStepSave } from "../_lib/useStepSave";
 
@@ -35,11 +36,18 @@ function WelcomeStepScreen() {
   ].filter(Boolean);
 
   return (
-    <PatientShell header={
+    <PatientShell
+      header={
         <div className="px-5 pt-2">
           <ProgressBar value={7} max={7} label="Sign-up progress" valueText="Step 7 of 7" />
         </div>
-      }>
+      }
+      footer={
+        <Button size="lg" fullWidth loading={busy} onClick={() => void save({}, "/home")}>
+          Go to my record
+        </Button>
+      }
+    >
       <div className="flex flex-col gap-6 px-5 pb-10 pt-5">
         <h1 className="font-display text-title font-light">Welcome to Trace{profile.first_name ? `, ${profile.first_name}` : ""}!</h1>
         <p className="text-body text-ink-2">Your record is ready. Here&apos;s what you&apos;ve set up:</p>
@@ -58,7 +66,7 @@ function WelcomeStepScreen() {
             <Item title="GP visit profile">Ready whenever you share. You can check it before every share.</Item>
           ) : (
             <Item done title="GP visit profile ready">
-              Critical safety · medications · conditions · recent visits · care team
+              {joinLabels(sharedScopes(GP_VISIT_DEFAULTS))}
             </Item>
           )}
           <Item title="Add your first entry">Log a visit, write a note, or add a medication</Item>
@@ -68,9 +76,6 @@ function WelcomeStepScreen() {
             {error}
           </Notice>
         )}
-        <Button size="lg" fullWidth loading={busy} onClick={() => void save({}, "/home")}>
-          Go to my record
-        </Button>
       </div>
     </PatientShell>
   );

@@ -8,16 +8,12 @@ import { ProgressHeader } from "@/components/patient/ProgressHeader";
 import { StepIntro } from "@/components/patient/StepIntro";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { GP_VISIT_DEFAULTS, sharedScopes } from "@/lib/patient/share";
 import { GP_PROFILE_KEY } from "../_lib/gpProfile";
 import { useStepSave } from "../_lib/useStepSave";
 
-const SEES = [
-  { label: "Critical safety" },
-  { label: "Medications" },
-  { label: "Conditions" },
-  { label: "Recent visits" },
-  { label: "Care team" },
-];
+/** What a share starts with: the share screen's defaults (owner's decision of 11 Nov 2026), never a list of its own. */
+const SEES = sharedScopes(GP_VISIT_DEFAULTS);
 
 /**
  * Sign-up step 6 of 7 (p-profiles). The GP visit profile is the set of

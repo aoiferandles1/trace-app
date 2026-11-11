@@ -43,8 +43,8 @@ function PrivacyScreen() {
           Please read this before continuing. Under GDPR, you have the right to know exactly what we store and why.
         </StepIntro>
         <InfoCard title="What Trace stores">
-          Your health record: the visits, medications and notes you add. Nothing is collected
-          automatically.
+          Your health record: what you add, from visits, medications and notes to documents and family history.
+          Nothing is collected automatically.
         </InfoCard>
         <InfoCard title="Who can see your data">
           Only doctors you explicitly share with, for a session you control. The database is run by Aoife Randles,

@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Terms" };
 export default function TermsPage() {
   return (
     <PatientShell header={<PageHeader title="Terms" backHref="/" backLabel="Back to Trace" />}>
-      <div className="flex flex-col gap-6 px-5 pb-10 pt-2 text-caption text-ink">
+      <div className="flex flex-col gap-6 px-5 pb-10 pt-2 text-body text-ink">
         <Section title="What Trace is">
           <p>
             Trace is a portfolio project by Aoife Randles. It is not a medical service and it does not give medical
@@ -27,9 +27,10 @@ export default function TermsPage() {
         </Section>
         <Section title="What is stored">
           <p>
-            Only what you type in: your profile, critical safety details, conditions, medications, appointments,
-            notes and care team. When you share with a doctor, Trace also keeps a log of who looked and when, and any
-            notes the doctor adds to your record.
+            Only what you add: your profile, critical safety details, conditions, medications and their strengths,
+            visits, notes, your timeline, family history, documents you upload, insurance details and care team. When
+            you share with a doctor, Trace also keeps a log of who looked and when, and any notes the doctor adds to
+            your record.
           </p>
           <p>Your data is stored in Ireland, encrypted in transit and at rest. It is never sold or used for advertising.</p>
         </Section>
@@ -56,7 +57,7 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-row font-semibold">{title}</h2>
+      <h2 className="font-display text-heading font-light">{title}</h2>
       {children}
     </section>
   );
