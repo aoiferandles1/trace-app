@@ -2,6 +2,37 @@
 
 This is the handoff plan for building Trace as a working web app. It was written after inspecting the Figma file, the portfolio case study, and the GitHub, Vercel and Supabase accounts. Read it top to bottom once before starting. Section 12 lists the build phases in order.
 
+## 0. Build-start amendments (these override anything below that disagrees)
+
+Decided when the build began, after setting up the accounts.
+
+**Where things stand**
+- The Supabase project exists: name `trace`, ref `tpqzmwtcgfgjhursxpsf`, region eu-west-1, URL `https://tpqzmwtcgfgjhursxpsf.supabase.co`. Do not create another.
+- `.env.local` at the repo root holds the URL, the publishable key and three generated secrets (`PORTAL_SERVER_SECRET`, `CRON_SECRET`, `IP_HASH_SALT`). It is git-ignored. Never print, log or commit its values.
+- The Vercel project does not exist yet. Vercel's GitHub app needs access to this repo first, which is Aoife's step. Builders do not touch Vercel; the supervising session does.
+- Anonymous sign-ins are switched off in Supabase Auth and can only be switched on in the dashboard, which is also Aoife's step. Build the demo anyway and handle the "anonymous sign-ins are disabled" error with a plain message.
+
+**Branch and commits**
+- All work stays on `claude/charming-goodall-sivzpd`. Do not create `main` (this replaces the instruction in section 3 and Phase 0).
+- Builders commit locally with clear messages and never push or open a pull request. The supervising session reviews each phase, then pushes.
+
+**No Supabase secret key (replaces "Who can call what" and "How the portal talks to the database" where they mention it)**
+The Supabase secret key cannot be fetched by tooling, and it would bypass every access rule if it leaked. The app does not use it at all.
+- Portal functions are granted to `anon`, and each takes a `server_secret text` argument first. The function compares `sha256(server_secret)` with a hash stored in a table in a `private` schema that the API does not expose, and raises if it does not match. Only the Next.js server knows `PORTAL_SERVER_SECRET`, so only the server can call them. The hash is inserted by hand with SQL, never in a migration file.
+- The Next.js server calls these functions with the ordinary publishable key plus the secret. The portal's browser still never talks to Supabase.
+- The daily cleanup is `cleanup_demo_users(server_secret)`, a security definer function that deletes anonymous auth users older than 24 hours. The cron route calls it.
+- "Delete my account" is `delete_my_account()`, a security definer function that deletes the caller's own auth user.
+- Environment variables are therefore: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `PORTAL_SERVER_SECRET`, `CRON_SECRET`, `IP_HASH_SALT`. There is no `SUPABASE_SECRET_KEY`.
+
+**Invite-only without dashboard settings (replaces the auth hook in section 6)**
+A `before insert` trigger on `auth.users` raises an exception unless the new user is anonymous or their email is in `private.allowed_emails` (compare lower-cased). The app treats that sign-up error as "Trace is invite-only for now."
+
+**Sign-in works with a link or a code**
+Supabase's default email carries a link, not a code, until Aoife edits the template in the dashboard. Support both: a `/auth/confirm` route that accepts the emailed link (`token_hash` and `type`), and the six-box code screen. The verify screen should say to use the link in the email or type the code.
+
+**Testing**
+There is no local Supabase (Docker is not running here), so development and tests use the hosted project. The container can reach it. End-to-end tests drive the patient side as demo (anonymous) users, so they need no inbox; until anonymous sign-ins are switched on they will fail at sign-in, and that is expected. SQL tests live in `supabase/tests/` and run inside a transaction that rolls back. Tests must clean up anything they create.
+
 ## 1. What Trace is, and what this MVP is for
 
 Trace is Aoife Randles's Master's project: a health record that an Irish patient owns and shares with a doctor only when they say so. The design is finished in Figma (30 patient screens, 12 clinician portal screens) and written up at `/trace/` on her portfolio. Until now it has only existed as Figma prototypes.
