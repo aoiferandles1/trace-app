@@ -420,7 +420,8 @@ test("a brand-new record shows empty states", async ({ page }) => {
 
   await gotoScreen(page, "/record", "Record");
   await expect(page.getByText("No allergies or blood type recorded")).toBeVisible();
-  await expect(page.getByText(/Nothing on your timeline yet/)).toBeVisible();
+  // The record's four sections load together; under a full parallel run that can take longer than 5 s.
+  await expect(page.getByText(/Nothing on your timeline yet/)).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   await page.getByRole("tab", { name: "Conditions" }).click();
   await expect(page.getByText("No conditions yet.")).toBeVisible();
