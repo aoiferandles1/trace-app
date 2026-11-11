@@ -41,9 +41,9 @@ function shortDay(day: string): string {
  * entry. Trace never asks for a password.
  */
 function InsuranceScreen() {
+  // Re-read after every change (and whenever this screen shows again), never kept in local state.
   const data = useLoad(loadInsurance);
-  const [connection, setConnection] = useState<InsuranceConnection | null | undefined>(undefined);
-  const current = connection === undefined ? (data.status === "ready" ? data.data : null) : connection;
+  const current = data.status === "ready" ? data.data : null;
 
   return (
     <SubScreen title="Insurance" titleSize="md" backHref="/profile" backLabel="Back to Profile" tabBar>
@@ -51,16 +51,16 @@ function InsuranceScreen() {
         {data.status !== "ready" ? (
           <LoadStatus status={data.status} onRetry={data.reload} />
         ) : current ? (
-          <Connected connection={current} onDisconnected={() => setConnection(null)} />
+          <Connected connection={current} onDisconnected={data.reload} />
         ) : (
-          <Choose onConnected={setConnection} />
+          <Choose onConnected={data.reload} />
         )}
       </div>
     </SubScreen>
   );
 }
 
-function Choose({ onConnected }: { onConnected: (c: InsuranceConnection) => void }) {
+function Choose({ onConnected }: { onConnected: () => void }) {
   const [provider, setProvider] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -70,10 +70,10 @@ function Choose({ onConnected }: { onConnected: (c: InsuranceConnection) => void
     setBusy(true);
     setFailed(false);
     try {
-      const c = await connectWithProvider(provider);
+      await connectWithProvider(provider);
       setBusy(false);
       setProvider(null);
-      onConnected(c);
+      onConnected();
     } catch {
       setBusy(false);
       setFailed(true);

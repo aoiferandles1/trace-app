@@ -108,6 +108,7 @@ function ChangeForm({ formId, m, onSaving }: { formId: string; m: RecordMedicati
       else setSaveError(code === "medication_not_current" ? `${m.name} has ended, so its strength can't change.` : SAVE_FAILED);
       return;
     }
+    onSaving(false); // Next.js may show this screen again: never leave it busy.
     router.push(`/meds/${m.id}`);
   }
 

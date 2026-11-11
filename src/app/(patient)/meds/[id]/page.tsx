@@ -93,7 +93,8 @@ function MedDetail({ m }: { m: RecordMedication }) {
           </SectionHeading>
           <Card as="ol" padding="none" divided className="px-4.5 py-1">
             {m.periods.map((p) => (
-              <PeriodRow key={p.id} medicationId={m.id} period={p} />
+              // Keyed on the saved values, so the switch starts from them again after an edit.
+              <PeriodRow key={`${p.id}:${p.note_shared}:${p.note}`} medicationId={m.id} period={p} />
             ))}
           </Card>
         </section>

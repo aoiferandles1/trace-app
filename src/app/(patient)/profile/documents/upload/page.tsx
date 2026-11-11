@@ -50,6 +50,10 @@ function UploadScreen() {
   const [file, setFile] = useState<File | null>(null);
   const [type, setType] = useState<DocType | null>(null);
   const [title, setTitle] = useState("");
+  // The name the last chosen file filled in; a name the patient typed is never replaced.
+  const [autoTitle, setAutoTitle] = useState("");
+  // Changing it gives a fresh file input (an input's chosen file can't be cleared through state).
+  const [inputKey, setInputKey] = useState(0);
   const [day, setDay] = useState("");
   const [mental, setMental] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -73,7 +77,11 @@ function UploadScreen() {
     else if (f.size > MAX_DOCUMENT_BYTES) problem = `${f.name} is ${formatBytes(f.size)}. Choose a file of 3 MB or less.`;
     else if (f.size === 0) problem = `${f.name} is empty. Choose another file.`;
     setErrors((x) => ({ ...x, file: problem }));
-    if (!title.trim()) setTitle(f.name.replace(/\.[^.]+$/, "").slice(0, 200));
+    if (!title.trim() || title === autoTitle) {
+      const fromName = f.name.replace(/\.[^.]+$/, "").slice(0, 200);
+      setTitle(fromName);
+      setAutoTitle(fromName);
+    }
   }
 
   async function submit(e: FormEvent) {
@@ -117,6 +125,15 @@ function UploadScreen() {
       else setSaveError("This couldn't be uploaded. Check your connection and try again.");
       return;
     }
+    // Next.js may show this screen again: start it empty, never busy.
+    setBusy(false);
+    setFile(null);
+    setType(null);
+    setTitle("");
+    setAutoTitle("");
+    setDay("");
+    setMental(false);
+    setInputKey((k) => k + 1);
     router.push("/profile/documents");
   }
 
@@ -131,6 +148,7 @@ function UploadScreen() {
       <FormFrame id={formId} onSubmit={submit} error={saveError}>
         <Field id={ids.file} label="File" hint={hint} error={errors.file}>
           <input
+            key={inputKey}
             id={ids.file}
             type="file"
             accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"

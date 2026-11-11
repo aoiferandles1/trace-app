@@ -71,7 +71,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   const tabs = page.getByRole("tablist", { name: "Record sections" });
   await expect(tabs.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
   const panel = page.getByRole("tabpanel", { name: "Timeline" });
-  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" })).toHaveText([
+  await expect(panel.getByRole("listitem")).toHaveText([
     /Cardiology follow-up.*Visit.*upcoming/,
     /INR blood test.*Visit.*upcoming/,
     /GP visit.*Visit/,
@@ -79,6 +79,15 @@ test("record: safety facts and the three tabs", async ({ page }) => {
     /Fatigue symptoms.*Note/,
     /Warfarin renewed.*Prescription/,
   ]);
+  // Past rows open their detail; upcoming ones are not clickable (BRIEF.md 4.3).
+  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" })).toHaveText([
+    /GP visit.*Visit/,
+    /Blood count and INR.*Result/,
+    /Fatigue symptoms.*Note/,
+    /Warfarin renewed.*Prescription/,
+  ]);
+  await expect(panel.getByRole("link", { name: /Cardiology follow-up/ })).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: /INR blood test/ })).toHaveCount(0);
   await expect(panel.getByRole("link", { name: "View full timeline" })).toHaveAttribute("href", "/record/timeline");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
@@ -119,31 +128,51 @@ test("record: safety facts and the three tabs", async ({ page }) => {
 
   await page.getByRole("tab", { name: "Timeline" }).click();
   await page.getByRole("link", { name: /Blood count and INR/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Result" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeVisible();
   await expect(page.getByText("Mater Hospital").filter({ visible: true }).first()).toBeVisible();
   await expectNoAxeViolations(page);
 });
 
-test("meds: current and expired", async ({ page }) => {
-  // The medications screen is rebuilt in Phase 4; this checks the current one against the new demo data.
-  await gotoScreen(page, "/meds", "My medication");
-  await expect(page.getByText("4 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
-  const warfarin = page.getByRole("button", { name: /Warfarin 5mg/ });
-  if ((await warfarin.getAttribute("aria-expanded")) !== "true") await warfarin.click();
-  await expect(page.getByText("Take at the same time each evening. Needs regular INR blood tests.")).toBeVisible();
-  await expect(page.getByText("Anticoagulant")).toBeVisible();
-  await expect(page.getByText("Bronchodilator")).toBeVisible();
+test("meds: Current and Past (MedsA2)", async ({ page }) => {
+  await gotoScreen(page, "/meds", "Medications");
+  const tabs = page.getByRole("radiogroup", { name: "Medication list" });
+  await expect(tabs.getByRole("radio", { name: "Current" })).toBeChecked();
+  const current = page.getByRole("list", { name: "Current medications" });
+  // Name, sub line and strength; the warfarin refill is 8 days away, so its line is ordinary (urgent from 5 days).
+  await expect(current.getByRole("link")).toHaveText([
+    /^Concerta\s*Morning, 4 strength changes\s*36mg$/,
+    /^Levothyroxine\s*Morning, 1 strength change\s*50mcg$/,
+    /^Warfarin\s*Evening\s*5mg$/,
+    /^Salbutamol\s*As needed\s*100mcg$/,
+  ]);
   await expect(page.getByRole("button", { name: "Request repeat prescription" })).toHaveCount(0);
   await expectNoAxeViolations(page);
+  await expectNoSideScroll(page);
 
-  await page.getByRole("tab", { name: "Expired" }).click();
-  await expect(page.getByRole("tab", { name: "Expired" })).toHaveAttribute("aria-selected", "true");
-  await page.waitForTimeout(300); // let the tab's colour transition finish before axe measures contrast
-  await expect(page.getByRole("button", { name: /Doxycycline 100mg/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Cetirizine 10mg/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Warfarin/ })).toHaveCount(0);
+  // Past: start and end dates, prescriber and strength.
+  await tabs.getByRole("radio", { name: "Past" }).click();
+  await expect(page).toHaveURL(/\/meds\?tab=past$/);
+  const past = page.getByRole("list", { name: "Past medications" });
+  await expect(past.getByRole("link")).toHaveText([
+    /^Doxycycline\s*2 Aug to 9 Aug 2026, Dr Hennessy\s*100mg$/,
+    /^Prednisolone\s*9 Feb to 14 Feb 2026, Dr Hennessy\s*20mg$/,
+    /^Nitrofurantoin\s*12 Sep to 17 Sep 2025, Dr Hennessy\s*100mg$/,
+    /^Cetirizine\s*1 Apr to 30 Sep 2024, Dr Hennessy\s*10mg$/,
+  ]);
+  await page.waitForTimeout(300); // the segment's colour transition
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
+});
+
+test("meds: a refill 5 days away or less is urgent, in words", async ({ page }) => {
+  const db = clientFor(file);
+  const inThree = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() + 3 * 86_400_000));
+  expect((await db.from("medications").update({ refill_due_on: inThree }).eq("name", "Warfarin")).error).toBeNull();
+  await gotoScreen(page, "/meds", "Medications");
+  await expect(page.getByRole("link", { name: /^Warfarin\s*Evening, 3 days left/ })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await gotoScreen(page, "/home", /^Good/);
+  await expect(page.getByRole("list", { name: "Coming up" }).getByRole("link", { name: /3 days.*Warfarin refill/ })).toBeVisible();
 });
 
 test("add: only the working tiles, then a note from start to delete", async ({ page }) => {
@@ -169,16 +198,16 @@ test("add: only the working tiles, then a note from start to delete", async ({ p
   await page.getByRole("button", { name: "Save note" }).click();
   await page.waitForURL(/\/record$/);
   await page.getByRole("link", { name: /Headaches after lunch/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Note" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch" })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "Three days this week." }).filter({ visible: true })).toBeVisible();
   await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
   await expectNoAxeViolations(page);
 
-  await page.getByRole("link", { name: "Edit" }).click();
+  await page.getByRole("link", { name: "Edit Headaches after lunch" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Edit note" })).toBeVisible();
   await page.getByRole("textbox", { name: "Title" }).fill("Headaches after lunch, better now");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("heading", { level: 2, name: "Headaches after lunch, better now" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch, better now" })).toBeVisible();
 
   await page.getByRole("button", { name: "Delete entry" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete this entry?" });
@@ -222,32 +251,41 @@ test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) 
   await expect(page.getByText("Ranelagh Dental").filter({ visible: true }).first()).toBeVisible();
 });
 
-test("add, edit and delete a medication", async ({ page }) => {
-  await gotoScreen(page, "/add/medication", "Add a medication");
+test("add, edit, end and delete a medication", async ({ page }) => {
+  await gotoScreen(page, "/meds", "Medications");
+  await page.getByRole("link", { name: "Add a medication" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Add a medication" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: "Name" }).fill("Vitamin D");
-  await page.getByRole("textbox", { name: /Dose/ }).fill("1000IU");
+  await page.getByRole("textbox", { name: /^Strength/ }).fill("1000IU");
   await page.getByRole("textbox", { name: /^Form/ }).fill("Capsule");
   await page.getByRole("textbox", { name: /How often/ }).fill("once daily");
+  await page.getByRole("textbox", { name: /^When/ }).fill("morning");
   await page.getByRole("button", { name: "Save medication" }).click();
   await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("5 active prescriptions", { exact: false })).toBeVisible();
-  await page.getByRole("button", { name: /Vitamin D 1000IU/ }).click();
-  await page.getByRole("link", { name: "Edit Vitamin D 1000IU" }).click();
+  // The strength became its first period (the unit was read from "1000IU").
+  await page.getByRole("link", { name: /^Vitamin D\s*Morning\s*1000IU$/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Vitamin D" })).toBeVisible();
+  await expect(page.getByText(/^Now 1000IU, since /)).toBeVisible();
+  await page.getByRole("link", { name: "Edit Vitamin D" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Edit medication" })).toBeVisible();
+  // The strength is not edited here: that is a strength change.
+  await expect(page.getByRole("textbox", { name: /^Strength/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "log a strength change" })).toBeVisible();
   await expectNoAxeViolations(page);
   const yesterday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() - 86_400_000));
   await page.getByLabel(/Ends or ended/).filter({ visible: true }).fill(yesterday);
   await page.getByRole("button", { name: "Save changes" }).click();
-  await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("4 active prescriptions · 3 expired in the last 12 months")).toBeVisible();
-  await page.getByRole("tab", { name: "Expired" }).click();
-  await page.getByRole("button", { name: /Vitamin D/ }).click();
-  await page.getByRole("link", { name: "Edit Vitamin D 1000IU" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Vitamin D" })).toBeVisible();
+  await expect(page.getByText(/^Stopped /)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Log a strength change" })).toHaveCount(0);
+  await gotoScreen(page, "/meds?tab=past", "Medications");
+  await page.getByRole("link", { name: /^Vitamin D/ }).click();
+  await page.getByRole("link", { name: "Edit Vitamin D" }).click();
   await page.getByRole("button", { name: "Delete medication" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete medication" }).click();
   await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("4 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Vitamin D/ })).toHaveCount(0);
 });
 
 test("add and edit a condition with the mental health switch", async ({ page }) => {
@@ -359,7 +397,7 @@ test("a brand-new record shows empty states", async ({ page }) => {
   await page.getByRole("tab", { name: "Conditions" }).click();
   await expect(page.getByText("No conditions yet.")).toBeVisible();
 
-  await gotoScreen(page, "/meds", "My medication");
+  await gotoScreen(page, "/meds", "Medications");
   await expect(page.getByText("No current medications.")).toBeVisible();
   await expectNoAxeViolations(page);
 
@@ -484,11 +522,11 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
 
   // Medications: three current, two expired.
   const meds = [
-    { Name: "Warfarin", Dose: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Drug class": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
-    { Name: "Levothyroxine", Dose: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
-    { Name: "Salbutamol", Dose: "100mcg", Form: "Inhaler", "How often": "as needed", "Drug class": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
-    { Name: "Clarithromycin", Dose: "500mg", Form: "Tablet", "How often": "twice daily", "Drug class": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
-    { Name: "Prednisolone", Dose: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
+    { Name: "Warfarin", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Drug class": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
+    { Name: "Levothyroxine", Strength: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
+    { Name: "Salbutamol", Strength: "100mcg", Form: "Inhaler", "How often": "as needed", "Drug class": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
+    { Name: "Clarithromycin", Strength: "500mg", Form: "Tablet", "How often": "twice daily", "Drug class": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
+    { Name: "Prednisolone", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
   ];
   for (const med of meds) {
     await gotoScreen(page, "/add/medication", "Add a medication");
@@ -566,9 +604,15 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await expect(page.getByRole("link", { name: /Mild asthma.*Dr Hennessy, since childhood/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-record.png"), fullPage: true });
 
-  await gotoScreen(page, "/meds", "My medication");
-  await expect(page.getByText("3 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
-  await expect(page.getByText("Dr O'Mahony, Mater Private · Cardiology").filter({ visible: true })).toBeVisible();
+  await gotoScreen(page, "/meds", "Medications");
+  await expect(page.getByRole("list", { name: "Current medications" }).getByRole("link")).toHaveText([
+    // Newest started first.
+    /^Levothyroxine\s*Morning\s*50mcg$/,
+    /^Warfarin\s*Evening\s*5mg$/,
+    /^Salbutamol\s*As needed\s*100mcg$/,
+  ]);
+  await page.getByRole("radio", { name: "Past" }).click();
+  await expect(page.getByRole("list", { name: "Past medications" }).getByRole("link")).toHaveCount(2);
   await page.screenshot({ path: info.outputPath("by-hand-meds.png"), fullPage: true });
 
   await gotoScreen(page, "/profile", "Profile");

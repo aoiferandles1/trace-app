@@ -42,7 +42,10 @@ function NoteScreen() {
       ) : !found ? (
         <NotFound what="note" />
       ) : (
-        <NoteForm formId={formId} medicationId={id} name={found.name} period={found.period} onSaving={setBusy} />
+        <NoteForm
+          // Next.js may keep this screen in memory: start again from the saved note.
+          key={`${found.period.id}:${found.period.note}:${found.period.note_shared}`}
+          formId={formId} medicationId={id} name={found.name} period={found.period} onSaving={setBusy} />
       )}
     </SubScreen>
   );
@@ -80,6 +83,7 @@ function NoteForm({
       setSaveError(SAVE_FAILED);
       return;
     }
+    onSaving(false); // Next.js may show this screen again: never leave it busy.
     router.push(`/meds/${medicationId}`);
   }
 

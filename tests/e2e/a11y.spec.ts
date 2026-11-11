@@ -118,12 +118,15 @@ async function checkScreen(page: Page, path: string, heading: string | RegExp) {
 }
 
 test("patient app: every screen reflows at 320px and works with the keyboard", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(420_000);
   await page.setViewportSize(NARROW);
   const db = clientFor(file);
   const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
   const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
-  const med = (await db.from("medications").select("id").limit(1).single()).data!.id;
+  const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
+  const period = (await db.from("medication_periods").select("id").eq("medication_id", med).limit(1).single()).data!.id;
+  const event = (await db.from("health_events").select("id").limit(1).single()).data!.id;
+  const relative = (await db.from("relatives").select("id").eq("relation", "paternal_grandfather").single()).data!.id;
   const person = (await db.from("care_team").select("id").limit(1).single()).data!.id;
 
   const screens: [string, string | RegExp][] = [
@@ -131,13 +134,27 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/record", "Record"],
     ["/record?tab=conditions", "Record"],
     ["/record?tab=family", "Record"],
-    [`/record/${entry}`, "Result"],
+    [`/record/${entry}`, "Blood count and INR"],
     [`/record/${entry}/edit`, /^Edit/],
     [`/record/conditions/${condition}`, "Condition"],
     [`/record/conditions/${condition}/edit`, /^Edit/],
     ["/record/conditions/new", /condition/i],
-    ["/meds", "My medication"],
+    ["/meds", "Medications"],
+    ["/meds?tab=past", "Medications"],
+    [`/meds/${med}`, /./],
     [`/meds/${med}/edit`, /^Edit/],
+    [`/meds/${med}/change`, "Log a strength change"],
+    [`/meds/${med}/notes/${period}`, /note/],
+    ["/record/timeline", "Timeline"],
+    ["/record/timeline/new", "Add to your timeline"],
+    [`/record/timeline/${event}/edit`, "Edit timeline"],
+    ["/record/family", "Family history"],
+    ["/record/family/new", "Add a relative"],
+    [`/record/family/${relative}/edit`, /^Edit/],
+    ["/profile/insurance", "Insurance"],
+    ["/profile/insurance/manual", "Policy details"],
+    ["/profile/documents", "Documents"],
+    ["/profile/documents/upload", "Upload a document"],
     ["/add", "Add to my record"],
     ["/add/note", "Write a note"],
     ["/add/appointment", "Log appointment"],

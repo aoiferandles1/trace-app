@@ -340,7 +340,7 @@ test("deny, with the request arriving over another screen", async ({ page, brows
 
   // The patient is reading their medications, not the code screen.
   await page.goto("/meds");
-  await expect(page.getByRole("heading", { level: 1, name: "My medication" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { level: 1, name: "Medications" })).toBeVisible({ timeout: 20_000 });
 
   const doctor = await newDoctor(browser);
   await submitCode(doctor.page, code);

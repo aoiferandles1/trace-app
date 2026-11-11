@@ -117,6 +117,7 @@ export function EventForm({
       setSaveError(SAVE_FAILED);
       return;
     }
+    onSaving(false); // Next.js may show this screen again: never leave it busy.
     router.push(`/record/timeline?event=${eventId}`);
   }
 

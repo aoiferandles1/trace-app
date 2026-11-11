@@ -52,6 +52,7 @@ function ManualScreen() {
       else setSaveError(SAVE_FAILED);
       return;
     }
+    setBusy(false); // Next.js may show this screen again: never leave it busy.
     router.push("/profile/insurance");
   }
 

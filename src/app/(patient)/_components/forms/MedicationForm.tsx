@@ -94,6 +94,7 @@ export function MedicationForm({
       setSaveError(SAVE_FAILED);
       return;
     }
+    onSaving(false); // Next.js may show this screen again: never leave it busy.
     router.push(m ? `/meds/${m.id}` : "/meds");
   }
 
