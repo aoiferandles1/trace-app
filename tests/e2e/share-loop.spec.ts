@@ -235,6 +235,49 @@ test("the patient ends early: the portal closes within seconds", async ({ page, 
   await doctor.context.close();
 });
 
+test("the patient ends after the doctor's notes autosaved: the ended screen and the access log agree", async ({ page, browser }) => {
+  // Ending writes the session row twice in one transaction (ended, then the
+  // notes entry's id), and both realtime updates carry the same updated_at.
+  // Hold back the first one so it lands last, as it did in a live run: the
+  // ended screen must still find the notes.
+  await page.routeWebSocket(/\/realtime\/v1\/websocket/, (ws) => {
+    const server = ws.connectToServer();
+    ws.onMessage((m) => server.send(m));
+    server.onMessage((m) => {
+      const text = typeof m === "string" ? m : m.toString();
+      if (/"status": ?"ended"/.test(text) && /"notes_entry_id": ?null/.test(text)) setTimeout(() => ws.send(m), 1_500);
+      else ws.send(m);
+    });
+  });
+  const code = await generateFrom(page, "card");
+  const doctor = await newDoctor(browser);
+  await submitCode(doctor.page, code);
+  await page.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click();
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible({ timeout: 15_000 });
+
+  // The doctor types; the draft autosaves. The patient has not left /session.
+  await doctor.page.getByLabel("Chief complaint").fill("Tired for six weeks");
+  await expect(doctor.page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await page.waitForTimeout(1_500); // the autosave's realtime update reaches the phone first
+
+  await page.getByRole("button", { name: "End sharing now" }).click();
+  await page.waitForURL(/\/session\/ended\?id=/);
+  // The end writes the notes in the same transaction: the screen must say so, and keep saying so.
+  const notesRow = page.getByRole("definition").filter({ has: page.getByRole("link", { name: "View session notes" }) });
+  await expect(notesRow).toBeVisible();
+  await page.waitForTimeout(2_000);
+  await expect(page.getByText("None written")).toHaveCount(0);
+  await expect(notesRow).toBeVisible();
+  await expect(doctor.page.getByText("Your session notes were saved to the patient's record.")).toBeVisible({ timeout: 8_000 });
+
+  // A reload reads the same thing.
+  await page.reload();
+  await expect(page.getByRole("link", { name: "View session notes" })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("link", { name: "View session notes" }).click();
+  await expect(page.getByText("Tired for six weeks").filter({ visible: true })).toBeVisible();
+  await doctor.context.close();
+});
+
 test("share from Profile on a day with no appointment", async ({ page, browser }) => {
   // Remove today's visit: no appointment today.
   const db = clientFor(file);

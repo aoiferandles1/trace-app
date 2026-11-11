@@ -33,20 +33,38 @@ function EndedScreen() {
   const params = useSearchParams();
   const id = params.get("id");
   const share = useShareSession();
+  const live = share.session && share.session.id === id ? share.session : null;
+  const endedLive = live?.status === "ended";
   const data = useLoad(async () => {
+    const supabase = createClient();
+    let row: unknown;
     if (id && isUuid(id)) {
-      const { data, error } = await createClient().from("share_sessions").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase.from("share_sessions").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
-      return normaliseSession(data);
+      row = data;
+    } else {
+      const { data, error } = await supabase.rpc("my_share_session");
+      if (error) throw error;
+      row = data;
     }
-    const { data, error } = await createClient().rpc("my_share_session");
+    const s = normaliseSession(row);
+    if (!s || s.status !== "ended" || s.notes_entry_id) return s;
+    // The notes on the timeline are the truth: the same entry the access log links to.
+    const { data: notes, error } = await supabase
+      .from("entries")
+      .select("id")
+      .eq("session_id", s.id)
+      .eq("kind", "session_notes")
+      .limit(1);
     if (error) throw error;
-    return normaliseSession(data);
-  }, [id]);
+    return { ...s, notes_entry_id: notes?.[0]?.id ?? null };
+    // Read again once the live copy says the session ended, in case this read came first.
+  }, [id, endedLive]);
 
-  // If the row was read before the end reached the table, the live copy is newer.
-  const fromContext = share.session && share.session.id === (data.status === "ready" ? data.data?.id : id) ? share.session : null;
-  const session = fromContext ?? (data.status === "ready" ? data.data : null);
+  // An ended session is final, so the row read here (after the end) is the
+  // truth. The live copy only helps while that read is still behind.
+  const read = data.status === "ready" ? data.data : null;
+  const session = read?.status === "ended" ? read : (live ?? read);
 
   return (
     <PatientShell

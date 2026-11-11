@@ -63,11 +63,24 @@ export function useShareSession(): ShareContextValue {
 
 const POLL_MS = 3000;
 
-/** The newer of two rows: the same session by updated_at, else the later-created one. */
+/**
+ * The newer of two rows: the same session by updated_at, else the later-created one.
+ *
+ * Ending a session writes its row twice in one transaction (ended, then the
+ * notes entry's id), and both versions carry the same updated_at. Realtime,
+ * the function result and a poll can arrive in any order, so on a tie the
+ * version with the notes entry wins: within one transaction that id only
+ * ever goes from null to set.
+ */
 function pick(cur: ShareSession | null, next: ShareSession | null): ShareSession | null {
   if (!next) return cur;
   if (!cur) return next;
-  if (cur.id === next.id) return Date.parse(next.updated_at) >= Date.parse(cur.updated_at) ? next : cur;
+  if (cur.id === next.id) {
+    const a = Date.parse(cur.updated_at);
+    const b = Date.parse(next.updated_at);
+    if (b !== a) return b > a ? next : cur;
+    return cur.notes_entry_id && !next.notes_entry_id ? cur : next;
+  }
   // A live session always wins over a finished one.
   if (isLive(cur) && !isLive(next)) return cur;
   if (isLive(next) && !isLive(cur)) return next;
