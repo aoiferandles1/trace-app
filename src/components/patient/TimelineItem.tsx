@@ -13,7 +13,7 @@ import { Pill, type Tone } from "@/components/ui/Pill";
  *     <TimelineItem kind="result" date="5 JAN 2026" title="Blood test..." meta="Mater Hospital" href="/record/..." />
  *   </TimelineList>
  *
- * A dot on a grey spine marks each entry; its colour follows the entry kind
+ * A dot on a grey spine marks each entry (the spine runs on to the next dot); its colour follows the entry kind
  * (ENTRY_KINDS) and the kind is also written in a tag, so colour is never the
  * only signal. Upcoming entries get a hollow dot and grey text.
  */
@@ -92,7 +92,7 @@ export function TimelineItem({
           {upcoming && <span className="sr-only">Upcoming, </span>}
           {date}
         </time>
-        <span className="flex flex-wrap items-center gap-2">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
               "text-label font-medium",
@@ -101,7 +101,6 @@ export function TimelineItem({
           >
             {title}
           </span>
-          <span aria-hidden="true" className="size-1 rounded-full bg-border-default" />
           <Pill tone={k.tone} size="sm">
             {k.label}
           </Pill>
@@ -130,7 +129,7 @@ export function TimelineItem({
             upcoming ? "border-2 border-border-strong bg-surface-card" : dot[k.tone],
           )}
         />
-        <span className="absolute bottom-0 top-7 w-0.5 bg-timeline-spine group-last:hidden" />
+        <span className="absolute -bottom-10 top-7 w-0.5 bg-timeline-spine group-last:hidden" />
       </span>
       {href ? (
         <Link href={href} className={cardClasses}>

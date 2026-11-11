@@ -29,24 +29,24 @@ export function CriticalSafetyStrip({
     <section
       aria-label="Critical safety information"
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-2 rounded-card border px-4 py-2.5",
+        "flex items-center gap-3 rounded-card border px-4 py-2.5",
         variant === "patient"
           ? "border-status-danger bg-status-danger-tint shadow-strip"
           : "border-[rgba(216,90,74,0.2)] bg-[rgba(251,234,231,0.45)] px-6 shadow-strip",
         className,
       )}
     >
-      <p className="flex items-center gap-1.5 text-body-tiny font-bold uppercase tracking-[0.04em] text-red-700">
+      <p className="flex shrink-0 items-center gap-1.5 text-body-tiny font-bold uppercase tracking-[0.04em] text-red-700">
         <TriangleAlert aria-hidden="true" className="size-4" />
         Critical
       </p>
       {items.length > 0 ? (
-        <ul className="flex flex-wrap gap-2">
+        <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
           {items.map((item) => (
             <li
               key={item}
               className={cn(
-                "rounded-md px-3 py-1 text-label font-medium",
+                "rounded-md px-2.5 py-1 text-label font-medium",
                 variant === "patient"
                   ? "border border-status-danger bg-critical-pill text-white"
                   : "border border-status-danger bg-white text-red-700",

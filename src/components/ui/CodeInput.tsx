@@ -11,6 +11,8 @@ import { describedBy, Field, fieldIds } from "./Field";
  *
  * It is ONE real <input> (numeric keyboard, paste, autofill of one-time codes,
  * a single field for screen readers) laid over boxes that only draw the digits.
+ * Non-digits are stripped and the value is cut to `length`, so pasting
+ * "72-94" or " 7294 " works (there is deliberately no maxLength).
  *
  * States: empty, filled, active (focused, next digit), error, disabled.
  * Pass `error` as words; the boxes also turn red.
@@ -110,7 +112,6 @@ export function CodeInput({
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete={autoComplete ?? (length === 6 ? "one-time-code" : "off")}
-          maxLength={length}
           value={value}
           onChange={handleChange}
           onFocus={() => setFocused(true)}

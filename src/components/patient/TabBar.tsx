@@ -48,7 +48,7 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
     <nav
       aria-label="Main"
       className={cn(
-        "rounded-t-sheet bg-white/90 px-6 pb-[max(22px,env(safe-area-inset-bottom))] pt-1 shadow-tabbar backdrop-blur-md",
+        "rounded-t-sheet bg-white/90 px-2 min-[375px]:px-6 pb-[max(22px,env(safe-area-inset-bottom))] pt-1 shadow-tabbar backdrop-blur-md",
         className,
       )}
     >
@@ -87,7 +87,7 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex h-12 w-14 flex-col items-center justify-end gap-0.5 rounded-md [&_svg]:size-6",
+                  "flex h-12 w-12 min-[375px]:w-14 flex-col items-center justify-end gap-0.5 rounded-md [&_svg]:size-6",
                   isActive ? "text-indigo-text" : "text-text-tertiary hovered:text-text-primary",
                 )}
               >

@@ -56,7 +56,7 @@ export function PortalSidebar({
     <aside
       aria-label="Patient record"
       className={cn(
-        "on-dark flex flex-col bg-indigo-surface-dark px-4 text-white lg:pb-6 lg:pt-8",
+        "on-dark flex min-w-0 flex-col bg-indigo-surface-dark px-4 text-white lg:pb-6 lg:pt-8",
         className,
       )}
     >

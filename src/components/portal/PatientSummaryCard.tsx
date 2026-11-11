@@ -39,9 +39,9 @@ export function PatientSummaryCard({
         <p className="text-h3 font-medium">{name}</p>
         <p className="text-body-tiny text-indigo-text">{details}</p>
       </div>
-      <dl className="flex divide-x divide-brand-indigo">
+      <dl className="flex flex-wrap gap-y-2 divide-x divide-brand-indigo">
         {figures.map((f) => (
-          <div key={f.label} className="flex flex-col-reverse items-center px-[18px]">
+          <div key={f.label} className="flex flex-col-reverse items-center px-3 first:pl-0 sm:px-[18px]">
             <dt className="text-body-tiny font-bold uppercase tracking-[0.045em] text-text-tertiary">{f.label}</dt>
             <dd className="font-display text-[17px] font-bold text-text-tertiary">{f.value}</dd>
           </div>

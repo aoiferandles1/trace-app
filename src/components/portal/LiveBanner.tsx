@@ -45,7 +45,7 @@ export function LiveBanner({
         patient record · shared today · {profile} ·{" "}
         <strong className="font-bold text-indigo-text">read-only</strong>
       </p>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         {timeLeft && (
           <span className="flex items-center gap-2 rounded-full bg-surface-card py-[7px] pl-3 pr-3.5 text-label font-medium text-indigo-text">
             <Clock aria-hidden="true" className="size-4" />

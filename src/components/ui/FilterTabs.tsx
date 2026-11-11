@@ -86,7 +86,7 @@ export function FilterTabs<V extends string>({
             role="tab"
             id={ids.tab}
             aria-selected={active}
-            aria-controls={ids.panel}
+            aria-controls={active ? ids.panel : undefined}
             tabIndex={active ? 0 : -1}
             data-force={!active ? forceState : forceState === "focus" ? "focus" : undefined}
             onClick={() => onChange(item.value)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
@@ -8,8 +8,9 @@ import { cn } from "@/lib/cn";
  * panel with 28px top corners and a grabber, over a dark scrim.
  *
  * It is a modal <dialog> opened with showModal(), so the browser moves focus
- * in, traps it, makes the page behind inert, and returns focus to whatever
- * opened it when it closes.
+ * in, makes the page behind inert, and returns focus to whatever opened it
+ * when it closes. Tab and Shift+Tab also wrap inside the sheet, so focus
+ * cannot leave it for the browser's own controls.
  *
  * - `title` is the dialog's accessible name (rendered as the sheet's h2).
  * - Escape calls `onClose`. Set `dismissible={false}` to ignore Escape and
@@ -57,9 +58,30 @@ export function BottomSheet({
     }
   }, [open, initialFocusId]);
 
+  function trapTab(e: KeyboardEvent<HTMLDialogElement>) {
+    if (e.key !== "Tab" || !ref.current) return;
+    const focusable = Array.from(
+      ref.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || !ref.current.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
     <dialog
       ref={ref}
+      onKeyDown={trapTab}
       aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();

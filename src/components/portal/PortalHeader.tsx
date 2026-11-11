@@ -31,8 +31,10 @@ export function PortalHeader({
           trace
           <span className="sr-only"> clinical access portal home</span>
         </Link>
-        <span aria-hidden="true" className="h-6 w-px bg-border-default" />
-        <span className="text-label font-medium text-text-tertiary">Clinical Access Portal</span>
+        <span aria-hidden="true" className={cn("h-6 w-px bg-border-default", clinician && "hidden sm:block")} />
+        <span className={cn("text-label font-medium text-text-tertiary", clinician && "hidden sm:inline")}>
+          Clinical Access Portal
+        </span>
       </div>
       {clinician && (
         <div className="flex min-w-0 items-center gap-2.5">

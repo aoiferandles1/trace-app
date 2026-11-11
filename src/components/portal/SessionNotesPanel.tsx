@@ -84,7 +84,6 @@ export function SessionNotesPanel({
           label={f.label}
           labelStyle="eyebrow"
           density="compact"
-          optional
           rows={3}
           placeholder="Type notes here..."
           value={notes[f.key]}
