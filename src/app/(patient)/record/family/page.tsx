@@ -138,7 +138,7 @@ function FamilyBody({
       )}
 
       {/* Scrolls sideways inside itself when the family is wider than the screen; the padding keeps focus rings in view. */}
-      <div className="-m-1 overflow-x-auto p-1">
+      <div className="-m-1 scroll-px-2 overflow-x-auto p-1">
         <ul aria-label="Family tree" className="relative" style={{ width: tree.width, height: tree.height }}>
           <svg
             aria-hidden="true"
