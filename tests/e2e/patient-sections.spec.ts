@@ -332,6 +332,8 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
   await expectNoSideScroll(page);
 
   await page.getByRole("link", { name: "Back to Record" }).click();
+  // From 1024px the entry's screen has the Record list beside it: wait for that screen to go.
+  await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeHidden();
   await page.getByRole("link", { name: /GP visit/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "GP visit" })).toBeVisible();
   await expect(page.getByRole("term")).toHaveText(["Reason", "Assessment", "Plan"]);
@@ -341,6 +343,7 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
 
   // A prescription shows its own fields first.
   await page.getByRole("link", { name: "Back to Record" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "GP visit" })).toBeHidden();
   await page.getByRole("link", { name: /Warfarin renewed/ }).click();
   await expect(page.getByRole("term")).toHaveText(["Medication", "Quantity", "Pharmacy"]);
   await expect(page.getByRole("definition")).toHaveText(["Warfarin 5mg, daily", "28 tablets", "Boots, Rathmines"]);
