@@ -176,6 +176,126 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
   for (const [path, heading] of screens) await checkScreen(page, path, heading);
 });
 
+/** Where the desktop layout's pieces are: the rail, the content column or panes, and the tab bar. */
+async function desktopBoxes(page: Page) {
+  return page.evaluate(() => {
+    const box = (el: Element | null) => {
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 ? { left: r.left, right: r.right, top: r.top, width: r.width } : null;
+    };
+    const visible = (els: Element[]) => els.find((e) => (e as HTMLElement).offsetParent !== null) ?? null;
+    return {
+      rail: box(visible([...document.querySelectorAll('nav[aria-label="Main"]')].filter((n) => !n.querySelector("button")))),
+      tabBar: box(visible([...document.querySelectorAll('nav[aria-label="Main"]')].filter((n) => Boolean(n.querySelector("button"))))),
+      main: box(visible([...document.querySelectorAll("main#main")])),
+      details: box(visible([...document.querySelectorAll('section[aria-label="Details"]')])),
+      h1: box(visible([...document.querySelectorAll("h1")])),
+      widest: Math.max(
+        ...[...document.querySelectorAll("main#main *, section[aria-label='Details'] *")]
+          .filter((e) => (e as HTMLElement).offsetParent !== null)
+          .map((e) => e.getBoundingClientRect().right),
+      ),
+    };
+  });
+}
+
+test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe and the keyboard", async ({ page }) => {
+  test.setTimeout(600_000);
+  const db = clientFor(file);
+  await reseed(db);
+  const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
+  const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
+  const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
+  // [path, h1, layout]: "column" (rail, one 640px column), "list" (rail, list with a pane beside it),
+  // "detail" (rail, the list beside this detail), "focused" (no rail: forms and sharing keep the centred column).
+  const screens: [string, string | RegExp, "column" | "list" | "detail" | "focused"][] = [
+    ["/home", /^Good (morning|afternoon|evening), Jane$/, "column"],
+    ["/record", "Record", "list"],
+    [`/record/${entry}`, "Blood count and INR", "detail"],
+    [`/record/conditions/${condition}`, "Atrial fibrillation", "detail"],
+    ["/meds", "Medications", "list"],
+    [`/meds/${med}`, "Concerta", "detail"],
+    ["/record/timeline", "Timeline", "list"],
+    ["/record/family", "Family history", "column"],
+    ["/add", "Add to my record", "column"],
+    ["/profile", "Profile", "column"],
+    ["/profile/insurance", "Insurance", "column"],
+    ["/profile/documents", "Documents", "column"],
+    ["/profile/care-team", "Care team", "column"],
+    ["/profile/privacy", "Privacy and security", "column"],
+    ["/access-log", "Share history", "column"],
+    ["/add/note", "Log a note", "focused"],
+    ["/share", "Share your record", "focused"],
+  ];
+  for (const width of [1024, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [path, heading, layout] of screens) {
+      await checkScreen(page, path, heading);
+      const b = await desktopBoxes(page);
+      const where = `${path} at ${width}`;
+      expect(b.tabBar, `${where}: no tab bar`).toBeNull();
+      if (layout === "focused") {
+        expect(b.rail, `${where}: no rail on a focused flow`).toBeNull();
+        expect(b.main!.width, where).toBeLessThanOrEqual(430);
+        continue;
+      }
+      expect(b.rail, `${where}: the rail`).not.toBeNull();
+      expect(b.rail!.width, where).toBe(232);
+      // Content starts beside the rail and is never wider than about 1120px.
+      expect(b.main!.left, where).toBeGreaterThanOrEqual(232);
+      expect(b.widest - 232, `${where}: content width`).toBeLessThanOrEqual(1120);
+      if (layout === "column") {
+        expect(b.details, where).toBeNull();
+      } else {
+        // Two panes side by side: the list (360px) on the left, the detail on the right.
+        const list = layout === "list" ? b.main! : null;
+        const right = layout === "list" ? b.details! : b.main!;
+        expect(right, where).not.toBeNull();
+        if (list) expect(list.width, where).toBe(360);
+        expect(right.left, where).toBeGreaterThanOrEqual(232 + 20 + 360 - 1);
+      }
+    }
+    // The rail marks where you are, with the same five items as the tab bar.
+    await page.goto(`/meds/${med}`);
+    const rail = page.getByRole("navigation", { name: "Main" });
+    await expect(rail.getByRole("link")).toHaveText(["Home", "Record", "Add", "Medications", "Profile"]);
+    await expect(rail.getByRole("link", { name: "Medications" })).toHaveAttribute("aria-current", "page");
+    // The open medication is marked in the list beside it.
+    await expect(page.getByRole("list", { name: "Current medications" }).getByRole("link", { name: /^Concerta/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    // Full timeline: a row opens the event in the pane, not a sheet.
+    await page.goto("/record/timeline");
+    await page.getByRole("button", { name: /Asthma flare/ }).click();
+    const pane = page.getByRole("region", { name: "Details" });
+    await expect(pane.getByRole("heading", { level: 2, name: "Asthma flare" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expectNoAxeViolations(page);
+  }
+});
+
+test("patient app at 768: the phone column, centred, with its tab bar", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  for (const [path, heading] of [
+    ["/home", /^Good/],
+    ["/record", "Record"],
+    ["/meds", "Medications"],
+    ["/profile", "Profile"],
+  ] as const) {
+    await checkScreen(page, path, heading);
+    const b = await desktopBoxes(page);
+    expect(b.rail, path).toBeNull();
+    expect(b.tabBar, path).not.toBeNull();
+    expect(b.details, path).toBeNull();
+    // The 430px column, centred, not stretched to the window.
+    expect(b.main!.width, path).toBeLessThanOrEqual(430);
+    expect(Math.abs(b.main!.left - (768 - b.main!.right)), path).toBeLessThanOrEqual(2);
+  }
+});
+
 test("patient app: the share loop screens at 320px, and the request sheet with the keyboard alone", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize(NARROW);
