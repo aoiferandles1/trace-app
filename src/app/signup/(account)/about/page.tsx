@@ -53,7 +53,7 @@ function AboutScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="About You" title="Tell us a little about yourself.">
+        <StepIntro eyebrow="About you" title="Tell us a little about yourself.">
           This information helps identify your record and is never shared without your permission.
         </StepIntro>
         <form id="about-form" onSubmit={submit} noValidate className="flex flex-col gap-5">

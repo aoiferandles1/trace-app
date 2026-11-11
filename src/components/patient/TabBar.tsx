@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { AddSheet } from "@/components/patient/AddSheet";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
@@ -10,6 +12,9 @@ import { cn } from "@/lib/cn";
  * border-tabbar hairline on top. Five slots: Home, Record, the centre Add
  * (a 48px accent disc with a white plus, the one filled circle besides
  * avatars), Medications, Profile.
+ *
+ * The centre plus opens the Add sheet (BRIEF.md section 7, `AddSheet`),
+ * a bottom sheet of plain rows, each opening its form.
  *
  * The active tab comes from the URL (or `active`, for /kit): accent 600,
  * with aria-current="page"; the others ink-2 500. Hide the bar during focused
@@ -38,6 +43,7 @@ const TABS: Tab[] = [
 export function TabBar({ active, className }: { active?: TabKey | "none"; className?: string }) {
   const pathname = usePathname() ?? "";
   const activeKey = active ?? TABS.find((t) => t.match(pathname))?.key ?? "none";
+  const [adding, setAdding] = useState(false);
 
   return (
     <nav
@@ -50,14 +56,17 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
           if (tab.key === "add") {
             return (
               <li key={tab.key} className="flex flex-1 items-center justify-center">
-                <Link
-                  href={tab.href}
+                <button
+                  type="button"
                   aria-label={tab.label}
+                  aria-haspopup="dialog"
                   aria-current={isActive ? "page" : undefined}
-                  className="flex size-12 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 ease-out hovered:bg-accent-alt"
+                  onClick={() => setAdding(true)}
+                  className="flex size-12 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 ease-out hovered:bg-accent-alt pressed:bg-accent-alt"
                 >
                   <Icon name="plus" strokeWidth={2} />
-                </Link>
+                </button>
+                <AddSheet open={adding} onClose={() => setAdding(false)} />
               </li>
             );
           }

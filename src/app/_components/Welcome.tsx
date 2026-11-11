@@ -98,7 +98,7 @@ export function Welcome() {
             I already have an account
           </ButtonLink>
         </div>
-        <div className="flex flex-col items-center gap-2 border-t border-border-card pt-5">
+        <div className="flex flex-col items-center gap-2 pt-3">
           <p className="text-center text-caption text-ink-2">Just looking? Try Trace with sample data.</p>
           <Button variant="text" size="md" onClick={startDemo} loading={demoBusy}>
             Try the demo

@@ -120,8 +120,9 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   // A condition's detail goes back to the Conditions tab.
   await tabs.getByRole("tab", { name: "Conditions" }).click();
   await conditions.getByRole("link", { name: /Atrial fibrillation/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Condition" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Atrial fibrillation" })).toBeVisible();
+  // The condition is the title, with its status and since when under it (as visit detail).
+  await expect(page.getByRole("heading", { level: 1, name: "Atrial fibrillation" })).toBeVisible();
+  await expect(page.getByText("Managed, since 2019")).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "Back to Record" }).click();
   await expect(page.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
@@ -175,18 +176,43 @@ test("meds: a refill 5 days away or less is urgent, in words", async ({ page }) 
   await expect(page.getByRole("list", { name: "Coming up" }).getByRole("link", { name: /3 days.*Warfarin refill/ })).toBeVisible();
 });
 
-test("add: only the working tiles, then a note from start to delete", async ({ page }) => {
+test("add: the sheet of plain rows, then a note from start to delete", async ({ page }, info) => {
+  const rows = [
+    ["Add a visit", "/add/appointment"],
+    ["Add a medication", "/add/medication"],
+    ["Add a condition", "/record/conditions/new"],
+    ["Add a relative", "/record/family/new"],
+    ["Upload a document", "/profile/documents/upload"],
+    ["Log a note", "/add/note"],
+    ["Add to your timeline", "/record/timeline/new"],
+  ];
+  // The address shows the rows as a screen (the desktop rail's Add goes here).
   await gotoScreen(page, "/add", "Add to my record");
-  await expect(page.getByRole("link", { name: /Log appointment/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Add a relative/ })).toHaveAttribute("href", "/record/family/new");
-  await expect(page.getByRole("link", { name: /Upload a document/ })).toHaveAttribute("href", "/profile/documents/upload");
+  const list = page.getByRole("list", { name: "What to add" });
+  await expect(list.getByRole("link")).toHaveText(rows.map(([name]) => name));
+  for (const [name, href] of rows) await expect(list.getByRole("link", { name })).toHaveAttribute("href", href);
   for (const hidden of ["Scan or photograph", "Record a vaccination", "Upload a receipt"]) {
     await expect(page.getByText(hidden)).toHaveCount(0);
   }
   await expectNoAxeViolations(page);
 
-  await page.getByRole("link", { name: /Write a note/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Write a note" })).toBeVisible();
+  if (info.project.name === "phone") {
+    // On the phone the tab bar's plus opens the same rows as a sheet over the current screen.
+    await gotoScreen(page, "/home", /^Good/);
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    const sheet = page.getByRole("dialog", { name: "Add to my record" });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole("link")).toHaveText(rows.map(([name]) => name));
+    await expectNoAxeViolations(page, "dialog");
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.getByRole("button", { name: "Add", exact: true })).toBeFocused();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await sheet.getByRole("link", { name: "Log a note" }).click();
+  } else {
+    await list.getByRole("link", { name: "Log a note" }).click();
+  }
+  await expect(page.getByRole("heading", { level: 1, name: "Log a note" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("button", { name: "Save note" }).click();
   await expect(page.getByText("Give the note a title.")).toBeVisible();
@@ -232,7 +258,7 @@ test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) 
       expect((await db.from("entries").delete().eq("id", v.id)).error).toBeNull();
     }
   }
-  await gotoScreen(page, "/add/appointment", "Log appointment");
+  await gotoScreen(page, "/add/appointment", "Add a visit");
   await expectNoAxeViolations(page);
   const inTwoDays = new Date(Date.now() + 2 * 86_400_000);
   const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(inTwoDays);
@@ -303,7 +329,7 @@ test("add and edit a condition with the mental health switch", async ({ page }) 
   await page.getByRole("link", { name: "Edit" }).click();
   await page.getByRole("combobox", { name: "Status" }).selectOption("resolved");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("resolved", { exact: true })).toBeVisible();
+  await expect(page.getByText("Resolved, since 2021")).toBeVisible();
   await page.getByRole("link", { name: "Back to Record" }).click();
   await expect(page.getByRole("tabpanel", { name: "Conditions" }).getByRole("link", { name: /Anxiety.*since 2021.*Resolved/ })).toBeVisible();
 });
@@ -547,7 +573,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     { kind: "visit", title: "Cardiology follow-up", day: 48, time: "14:00", doctor: "Dr O'Mahony", where: "Mater Private" },
   ];
   for (const e of entries) {
-    await gotoScreen(page, "/add/appointment", "Log appointment");
+    await gotoScreen(page, "/add/appointment", "Add a visit");
     await page.getByRole("combobox", { name: "What kind" }).selectOption(e.kind);
     await page.getByRole("textbox", { name: "Title" }).fill(e.title);
     await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(e.day));
@@ -557,7 +583,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("button", { name: "Save to my record" }).click();
     await page.waitForURL(/\/record$/);
   }
-  await gotoScreen(page, "/add/note", "Write a note");
+  await gotoScreen(page, "/add/note", "Log a note");
   await page.getByRole("textbox", { name: "Title" }).fill("Personal note added");
   await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(-11));
   await page.getByLabel("Time").filter({ visible: true }).fill("20:00");

@@ -58,7 +58,7 @@ function MedicalScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="Medical Basics" title="Critical safety information.">
+        <StepIntro eyebrow="Medical basics" title="Critical safety information.">
           This is always shown to any doctor you share with. It can never be hidden. Adding it now means every doctor
           you share with sees it first.
         </StepIntro>

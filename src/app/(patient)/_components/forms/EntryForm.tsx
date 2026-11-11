@@ -13,8 +13,8 @@ import { checkErrors, FormFrame, MentalHealthSwitch, SAVE_FAILED, type FieldErro
 
 /**
  * Add or edit a timeline entry. No Figma frame (PLAN.md section 8):
- * - `variant="note"`: Write a note (kind `note`, never shared with a doctor).
- * - `variant="appointment"`: Log appointment. Defaults to a visit, and also
+ * - `variant="note"`: Log a note (kind `note`, never shared with a doctor).
+ * - `variant="appointment"`: Add a visit. Defaults to a visit, and also
  *   takes results, prescriptions, letters and scans, so a whole record can be
  *   entered by hand.
  * Editing uses whichever fits the entry's kind. Session notes written by a

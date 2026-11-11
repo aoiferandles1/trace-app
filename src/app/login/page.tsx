@@ -29,14 +29,14 @@ export default function LoginPage() {
       <div className="flex flex-col gap-6 px-5 pb-10">
         {email ? (
           <>
-            <StepIntro eyebrow="Sign In" title="Check your email.">
+            <StepIntro eyebrow="Sign in" title="Check your email.">
               We sent a 6-digit code to {email}
             </StepIntro>
             <CodeForm email={email} mode="login" />
           </>
         ) : (
           <>
-            <StepIntro eyebrow="Sign In" title="Welcome back.">
+            <StepIntro eyebrow="Sign in" title="Welcome back.">
               Enter the email you signed up with. We&apos;ll send you a code to sign in.
             </StepIntro>
             <EmailForm mode="login" onSent={setEmail} />

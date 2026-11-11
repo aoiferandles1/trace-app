@@ -6,14 +6,14 @@ import { EntryForm } from "../../_components/forms/EntryForm";
 import { SaveButton } from "../../_components/forms/FormBits";
 import { SubScreen } from "../../_components/Screens";
 
-/** Log appointment (no Figma frame): a past or upcoming visit, or another dated entry. */
+/** Add a visit (no board; the Add sheet's row): a past or upcoming visit, or another dated entry. */
 function AddAppointmentScreen() {
   // Unique per screen: Next.js keeps earlier screens in the page, hidden.
   const formId = useId();
   const [busy, setBusy] = useState(false);
   return (
     <SubScreen
-      title="Log appointment"
+      title="Add a visit"
       backHref="/add"
       footer={<SaveButton form={formId} busy={busy}>Save to my record</SaveButton>}
     >

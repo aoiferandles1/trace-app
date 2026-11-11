@@ -56,7 +56,7 @@ function ProfilesScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="Share Profiles" title="Set up your first share profile.">
+        <StepIntro eyebrow="Share profiles" title="Set up your first share profile.">
           A share profile is a preset of what information a doctor can see. We&apos;ll create a GP visit profile to
           get you started.
         </StepIntro>

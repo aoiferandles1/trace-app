@@ -39,7 +39,7 @@ function PrivacyScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="Privacy & Consent" title="Your data, your rights.">
+        <StepIntro eyebrow="Privacy and consent" title="Your data, your rights.">
           Please read this before continuing. Under GDPR, you have the right to know exactly what we store and why.
         </StepIntro>
         <InfoCard title="What Trace stores">

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
+import { ThemeColor } from "@/components/ui/ThemeColor";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { createClient } from "@/lib/supabase/client";
@@ -76,6 +77,9 @@ export function AccessRequestSheet() {
   const name = clinicianName(session);
 
   return (
+    <>
+    {/* Session indigo in the browser's chrome while the request is open (BRIEF.md section 7). */}
+    {open && <ThemeColor tone="session" />}
     <BottomSheet
       open={open}
       onClose={() => {}}
@@ -127,5 +131,6 @@ export function AccessRequestSheet() {
         )}
       </div>
     </BottomSheet>
+    </>
   );
 }
