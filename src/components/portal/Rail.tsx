@@ -69,5 +69,5 @@ export function RailNotShared({ icon, label, className }: { icon: IconName; labe
 }
 
 export function RailDivider({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("mx-0 my-2 h-px bg-on-session-border", className)} />;
+  return <div aria-hidden="true" className={cn("mb-2 mt-3 h-px bg-on-session-border", className)} />;
 }

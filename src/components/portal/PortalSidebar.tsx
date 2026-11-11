@@ -3,97 +3,73 @@ import { cn } from "@/lib/cn";
 import { RailDivider, RailItem, RailNotShared } from "./Rail";
 
 /**
- * The portal's left rail (board PortalRecordE): session indigo, the "trace"
- * wordmark, the shared sections as RailItems, a hairline, then the sections
- * this share leaves out as dimmed "Not shared" rows (not links), built from
- * the share's scope.
+ * The live record's left rail (BRIEF.md 6.3, board PortalRecordE): session
+ * indigo, full height, 232px. The "trace" wordmark, the views the patient
+ * granted as links (the current one a white pill, aria-current="page"), a
+ * hairline, then the views this share leaves out as dimmed "Not shared"
+ * rows that are not links, and at the foot the doctor's name and practice
+ * as they typed them.
  *
- * From 1024px it is the 232px left column. Below 1024px (PortalShell puts it
- * above the record) it becomes a horizontal, scrollable row of the shared
- * sections; the not-shared rows follow in the same row.
- *
- * Until Phase 7 moves the patient into the record's header, the patient's
- * name and details sit under the wordmark. The doctor's name and practice
- * (as typed) sit at the foot of the rail.
+ * Built from the share's scope by the caller: pass every view with
+ * `shared` set. Below 1024px the rail becomes a bar above the record: the
+ * wordmark, then one row of the views that scrolls sideways inside itself.
  */
 
-export type PortalSection = "overview" | "timeline" | "medications" | "documents" | "care-team" | "insurance";
-
-export type PortalNavItem = {
-  key: PortalSection;
+export type RailView = {
+  key: string;
   label: string;
   href: string;
   icon: IconName;
-  /** Not part of this share: drawn as a "Not shared" row, not a link. */
-  locked?: boolean;
+  shared: boolean;
 };
 
-/** The default section list. Pass the keys this share leaves out. */
-export function portalNavItems(lockedKeys: PortalSection[] = ["documents", "insurance"]): PortalNavItem[] {
-  const items: PortalNavItem[] = [
-    { key: "overview", label: "Overview", href: "/view/session", icon: "grid" },
-    { key: "timeline", label: "Timeline", href: "/view/session/timeline", icon: "clock" },
-    { key: "medications", label: "Medications", href: "/view/session/medications", icon: "pill" },
-    { key: "documents", label: "Documents", href: "#", icon: "document" },
-    { key: "care-team", label: "Care team", href: "/view/session/care-team", icon: "person" },
-    { key: "insurance", label: "Insurance", href: "#", icon: "shield" },
-  ];
-  return items.map((i) => ({ ...i, locked: lockedKeys.includes(i.key) }));
-}
-
 export function PortalSidebar({
-  patient,
-  items,
+  views,
   active,
   clinician,
   className,
 }: {
-  patient: { name: string; initials: string; details: string };
-  items: PortalNavItem[];
-  active: PortalSection;
-  clinician?: { name: string; role?: string; practice?: string };
+  views: RailView[];
+  active: string | null;
+  clinician?: { name: string; practice?: string | null };
   className?: string;
 }) {
-  const shared = items.filter((i) => !i.locked);
-  const notShared = items.filter((i) => i.locked);
+  const shared = views.filter((v) => v.shared);
+  const notShared = views.filter((v) => !v.shared);
   return (
-    <aside
+    <nav
       aria-label="Patient record"
-      className={cn("on-session flex min-w-0 flex-col bg-session px-3.5 text-white lg:min-h-dvh lg:pb-6 lg:pt-7", className)}
+      className={cn(
+        "on-session flex min-w-0 flex-col bg-session px-3.5 pt-4 text-white lg:h-full lg:w-58 lg:shrink-0 lg:overflow-y-auto lg:pb-6 lg:pt-7",
+        className,
+      )}
     >
-      <p className="px-3.5 pt-4 font-display text-wordmark font-light lg:pb-7 lg:pt-0">trace</p>
-      <div className="flex min-w-0 flex-col px-3.5 py-3 lg:pb-5 lg:pt-0">
-        <p className="truncate text-row font-medium">{patient.name}</p>
-        <p className="truncate text-meta text-on-session-2">{patient.details}</p>
-      </div>
-      <nav aria-label="Record sections">
-        {/* Below 1024px a scrolling row, which clips: pt-1 and pb-2 leave room for the focus ring. */}
-        <ul className="-mx-3.5 flex scroll-px-3.5 gap-1 overflow-x-auto px-3.5 pb-2 pt-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0 lg:pt-0">
-          {shared.map((item) => (
-            <li key={item.key} className="shrink-0">
-              <RailItem icon={item.icon} label={item.label} href={item.href} current={item.key === active} />
-            </li>
-          ))}
-          {notShared.length > 0 && (
-            <li aria-hidden="true" className="hidden lg:block">
-              <RailDivider />
-            </li>
-          )}
-          {notShared.map((item) => (
-            <li key={item.key} className="shrink-0">
-              <RailNotShared icon={item.icon} label={item.label} />
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <p className="px-3.5 font-display text-wordmark font-light lg:pb-7">trace</p>
+      {/* Below 1024px a scrolling row, which clips: pt-2 and pb-3 leave room for the focus ring. */}
+      <ul className="-mx-3.5 flex scroll-px-3.5 gap-1 overflow-x-auto px-3.5 pb-3 pt-2 [scrollbar-width:thin] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0 lg:pt-0">
+        {shared.map((v) => (
+          <li key={v.key} className="shrink-0">
+            <RailItem icon={v.icon} label={v.label} href={v.href} current={v.key === active} />
+          </li>
+        ))}
+        {notShared.length > 0 && (
+          <li aria-hidden="true" className="hidden lg:block">
+            <RailDivider />
+          </li>
+        )}
+        {notShared.map((v) => (
+          <li key={v.key} className="shrink-0">
+            <RailNotShared icon={v.icon} label={v.label} />
+          </li>
+        ))}
+      </ul>
       {clinician && (
         <div className="hidden flex-col gap-0.5 border-t border-on-session-border px-3.5 pt-4 lg:mt-auto lg:flex">
           <p className="text-caption font-semibold">{clinician.name}</p>
-          {(clinician.role || clinician.practice) && (
-            <p className="text-meta text-on-session-2">{[clinician.role, clinician.practice].filter(Boolean).join(", ")}</p>
-          )}
+          {clinician.practice && <p className="text-meta text-on-session-2">{clinician.practice}</p>}
         </div>
       )}
-    </aside>
+    </nav>
   );
 }
+

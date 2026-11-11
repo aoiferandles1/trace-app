@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Overview } from "./_components/Overview";
+import { OverviewView } from "./_components/Views";
 
-/** Held back until the session is confirmed active (see ../layout.tsx). */
+/** Held back until the session is confirmed active (see the session layout). */
 export const instant = false;
 
 export const metadata: Metadata = { title: "Overview" };
 
-export default function SessionOverviewPage() {
-  return <Overview />;
+export default function OverviewPage() {
+  return <OverviewView />;
 }

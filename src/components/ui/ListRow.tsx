@@ -181,6 +181,7 @@ export function SelectableRow({
   onClick,
   leading,
   leadingWidth = 64,
+  titleSize = "md",
   title,
   caption,
   value,
@@ -190,6 +191,8 @@ export function SelectableRow({
   onClick: () => void;
   leading?: ReactNode;
   leadingWidth?: 56 | 64;
+  /** "lg": a 16/22 title in 9px rows (the portal's medication list); "md": 15/20 (visits, timeline). */
+  titleSize?: "md" | "lg";
   title: ReactNode;
   caption?: ReactNode;
   value?: ReactNode;
@@ -201,7 +204,9 @@ export function SelectableRow({
       aria-pressed={selected}
       onClick={onClick}
       className={cn(
-        "grid w-full items-center gap-x-2 border-l-3 py-2 pl-3 text-left text-ink",
+        // The ring is inset: these rows sit in panes that scroll, which clip.
+        "grid w-full items-center gap-x-2 border-l-3 pl-3 text-left text-ink focus-visible:-outline-offset-2",
+        titleSize === "lg" ? "py-2.25" : "py-2",
         selected ? "border-accent" : "border-transparent",
         leading !== undefined
           ? leadingWidth === 56
@@ -213,7 +218,7 @@ export function SelectableRow({
     >
       {leading !== undefined && <span>{leading}</span>}
       <span className="flex min-w-0 flex-col">
-        <span className="text-label font-medium">{title}</span>
+        <span className={titleSize === "lg" ? "text-row font-medium" : "text-label font-medium"}>{title}</span>
         {caption && <span className="text-meta text-ink-2">{caption}</span>}
       </span>
       {value !== undefined ? (

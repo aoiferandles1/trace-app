@@ -1,24 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
-import { AccessCard, PortalHero, StepList } from "@/components/portal/AccessCard";
 import { PortalFooter } from "@/components/portal/PortalFooter";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { Avatar } from "@/components/ui/Card";
+import { PortalSplit, StepRow, StepRows } from "@/components/portal/PortalSplit";
 import { Button } from "@/components/ui/Button";
 import { CodeInput } from "@/components/ui/CodeInput";
+import { Icon } from "@/components/ui/Icon";
 import { Notice } from "@/components/ui/Notice";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TextField } from "@/components/ui/TextField";
 import { ThemeColor } from "@/components/ui/ThemeColor";
-import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
-import { clockOffset, portalApi, PortalApiError, type PortalRecord, type PortalStatus } from "../_lib/api";
-import { durationLabel, patientFirstName, patientFullName } from "../_lib/format";
+import { formatCountdown, formatCountdownSpoken } from "@/lib/format";
+import { clockOffset, portalApi, PortalApiError, type PortalStatus } from "../_lib/api";
+import { formatClock } from "../_lib/format";
 import {
   DEMO_CLINICIAN,
-  prefersReducedMotion,
   readClinician,
   saveClinician,
   useNow,
@@ -26,44 +24,36 @@ import {
   useStoredClinician,
   type Clinician,
 } from "../_lib/hooks";
-import { FirstTimeAccordion } from "./FirstTimeAccordion";
 
 /**
- * /view: everything before the record opens (PLAN.md section 6).
+ * /view: everything before the record opens (BRIEF.md 6.1 and 6.2, boards
+ * PortalEntryB and PortalWaitB).
  *
- *   loading (c-loading) -> name step (new) -> code (c-code)
- *     wrong (c-code-error) / expired (c-code-expired) / locked (c-code-locked)
- *   -> waiting (c-waiting, polls every 2 s) -> denied (c-denied)
- *                                          -> timed out (new) / withdrawn (new)
- *                                          -> opening (c-opening) -> /view/session
+ *   loading -> name (who is asking) -> code
+ *     wrong / expired / locked: the code step with the error under the boxes
+ *   -> waiting (session indigo, polls every 2 s)
+ *     -> denied / timed out / withdrawn: one line and "Try again"
+ *     -> approved: straight to /view/session
  *
- * The browser only talks to /api/portal/*. Nothing about the patient is known
- * here until the session is active; the opening screen reads the patient's
- * name from the first record call.
+ * The browser only talks to /api/portal/*. Nothing about the patient is
+ * known here; the record opens on /view/session.
  */
+
+type CodeError =
+  | { kind: "wrong"; attemptsLeft: number }
+  | { kind: "expired" }
+  | { kind: "locked"; until: string };
 
 type Screen =
   | { kind: "loading" }
   | { kind: "name" }
-  | { kind: "code" }
-  | { kind: "wrong"; attemptsLeft: number; digits: string }
-  | { kind: "expired" }
-  | { kind: "locked"; until: string }
+  | { kind: "code"; error?: CodeError }
   | { kind: "waiting"; requestExpiresAt: string | null }
   | { kind: "denied" }
   | { kind: "timedout" }
-  | { kind: "withdrawn" }
-  | { kind: "opening"; record: PortalRecord; durationKind: string | null };
+  | { kind: "withdrawn" };
 
-function siteHost(): string {
-  const url = process.env.NEXT_PUBLIC_SITE_URL;
-  if (!url) return "Trace";
-  try {
-    return new URL(url).host;
-  } catch {
-    return "Trace";
-  }
-}
+const CODE_ID = "portal-code";
 
 export function ViewFlow() {
   const router = useRouter();
@@ -85,33 +75,21 @@ export function ViewFlow() {
     setScreen(next);
   }, []);
 
-  // Move focus to the new state's heading (or the code field), so keyboard and
-  // screen reader users land on what changed.
+  // Move focus to what changed: the new step's heading, or the code field
+  // (which carries any error through aria-describedby).
   useEffect(() => {
     if (focusTarget.current === "heading") headingRef.current?.focus();
-    if (focusTarget.current === "code") document.getElementById("portal-code")?.focus();
+    if (focusTarget.current === "code") document.getElementById(CODE_ID)?.focus();
     focusTarget.current = "none";
   }, [screen]);
 
-  const openRecord = useCallback(
-    async (status: PortalStatus) => {
-      const record = await portalApi.record("overview");
-      if (!record) {
-        // Access closed between the poll and this call. Let the session page explain.
-        router.replace("/view/session");
-        return;
-      }
-      go({ kind: "opening", record, durationKind: status.duration_kind });
-    },
-    [go, router],
-  );
-
-  /** Routes a portal_status to the right screen. Returns true if it handled it. */
+  /** Routes a portal_status to the right screen. */
   const applyStatus = useCallback(
-    async (s: PortalStatus, initial: boolean) => {
-      setOffset(clockOffset(s.server_time));
-      if (s.locked_until && Date.parse(s.locked_until) > Date.now() + clockOffset(s.server_time)) {
-        if (initial) go({ kind: "locked", until: s.locked_until });
+    (s: PortalStatus, initial: boolean) => {
+      const off = clockOffset(s.server_time);
+      setOffset(off);
+      if (s.locked_until && Date.parse(s.locked_until) > Date.now() + off) {
+        if (initial) go({ kind: "code", error: { kind: "locked", until: s.locked_until } }, "heading");
         return;
       }
       switch (s.status) {
@@ -120,9 +98,6 @@ export function ViewFlow() {
           else setScreen((cur) => (cur.kind === "waiting" ? { ...cur, requestExpiresAt: s.request_expires_at } : cur));
           return;
         case "active":
-          if (initial) router.replace("/view/session");
-          else await openRecord(s);
-          return;
         case "paused":
           router.replace("/view/session");
           return;
@@ -141,24 +116,22 @@ export function ViewFlow() {
           if (!initial) go({ kind: "code" }, "code");
           // No session yet: the name step, or straight to the code if this
           // browser remembers the doctor (and this is not the demo).
-          else if (readClinician() && !new URLSearchParams(window.location.search).has("demo")) go({ kind: "code" }, "code");
-          else go({ kind: "name" });
+          else if (readClinician() && !new URLSearchParams(window.location.search).has("demo")) go({ kind: "code" }, "none");
+          else go({ kind: "name" }, "none");
       }
     },
-    [go, openRecord, router],
+    [go, router],
   );
 
-  // First load: c-loading while the status call sets the portal cookie.
+  // First load: the status call also sets the portal cookie.
   useEffect(() => {
     let cancelled = false;
-    const started = Date.now();
     portalApi
       .status()
-      .then(async (s) => {
-        if (!cancelled) setDemo(new URLSearchParams(window.location.search).has("demo"));
-        const wait = prefersReducedMotion() ? 0 : Math.max(0, 600 - (Date.now() - started));
-        await new Promise((r) => setTimeout(r, wait));
-        if (!cancelled) await applyStatus(s, true);
+      .then((s) => {
+        if (cancelled) return;
+        setDemo(new URLSearchParams(window.location.search).has("demo"));
+        applyStatus(s, true);
       })
       .catch(() => {
         if (!cancelled) setProblem("The portal could not reach Trace. Check your connection and reload the page.");
@@ -168,13 +141,9 @@ export function ViewFlow() {
     };
   }, [applyStatus]);
 
-
-  // Waiting: poll every 2 seconds (PLAN.md section 6).
+  // Waiting: poll every 2 seconds.
   usePolling(
-    async () => {
-      const s = await portalApi.status();
-      await applyStatus(s, false);
-    },
+    async () => applyStatus(await portalApi.status(), false),
     2000,
     screen.kind === "waiting",
   );
@@ -186,6 +155,7 @@ export function ViewFlow() {
     }
     if (code.length !== 4) {
       setProblem("Enter all 4 digits of the code.");
+      document.getElementById(CODE_ID)?.focus();
       return;
     }
     setSubmitting(true);
@@ -197,22 +167,21 @@ export function ViewFlow() {
         clinician_role: clinician.role,
         clinician_practice: clinician.practice,
       });
+      setDigits("");
       if (r.result === "requested") {
         go({ kind: "waiting", requestExpiresAt: r.request_expires_at });
       } else if (r.result === "locked" || (r.attempts_left === 0 && r.locked_until)) {
-        go({ kind: "locked", until: r.locked_until ?? new Date(Date.now() + 15 * 60_000).toISOString() });
+        const until = r.locked_until ?? new Date(Date.now() + offset + 15 * 60_000).toISOString();
+        go({ kind: "code", error: { kind: "locked", until } }, "heading");
       } else if (r.result === "expired") {
-        go({ kind: "expired" });
+        go({ kind: "code", error: { kind: "expired" } }, "code");
       } else {
-        go({ kind: "wrong", attemptsLeft: r.attempts_left ?? 0, digits: code });
-        return;
+        go({ kind: "code", error: { kind: "wrong", attemptsLeft: r.attempts_left ?? 0 } }, "code");
       }
-      setDigits("");
     } catch (e) {
       if (e instanceof PortalApiError && e.code === "portal_busy") {
         // This browser already has a live request or session.
-        const s = await portalApi.status();
-        await applyStatus(s, true);
+        applyStatus(await portalApi.status(), true);
         return;
       }
       setProblem("The code could not be checked. Check your connection and try again.");
@@ -233,132 +202,57 @@ export function ViewFlow() {
     }
   }
 
-  const onSession = screen.kind === "waiting";
-  const header = <PortalHeader clinician={clinician ?? undefined} tone={onSession ? "session" : "default"} />;
-  const footer = <PortalFooter tone={onSession ? "session" : "default"} />;
+  const waiting = screen.kind === "waiting";
+  const tone = waiting ? "session" : "default";
+  const header = <PortalHeader clinician={clinician} tone={tone} />;
 
   if (screen.kind === "loading") {
     return (
-      <PortalShell tone="ground" header={header} footer={footer}>
-        <div className="flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-4 px-5 py-16 text-center">
-          <h1 className="font-display text-display-xl font-light">
-            trace
-            <span className="sr-only"> Clinical Access Portal</span>
-          </h1>
-          <p className="text-body-lg text-ink-2">{siteHost()}/view, Clinical Access Portal</p>
+      <PortalShell tone="ground" header={header} footer={<PortalFooter demo={demo} />}>
+        <PortalSplit>
+          <h1 className="sr-only">Clinical Access Portal</h1>
           {problem ? (
-            <Notice tone="critical" live="assertive" className="max-w-[420px] text-left">
+            <Notice tone="critical" live="assertive">
               {problem}
             </Notice>
           ) : (
-            <p role="status" className="text-caption text-ink-2">
+            <p role="status" className="text-body-lg text-ink-2">
               Loading the portal&hellip;
             </p>
           )}
-        </div>
+        </PortalSplit>
       </PortalShell>
     );
   }
 
-  return (
-    <PortalShell tone={onSession ? "session" : "ground"} header={header} footer={footer}>
-      {onSession && <ThemeColor tone="session" />}
-      <PortalHero
-        tone={onSession ? "session" : "default"}
-        title="Read your patient's record."
-        subtitle="Nothing to install. No hospital integration. Your patient controls exactly what you see, and for how long."
-      />
-      <div className="px-5 pt-10 sm:px-14">
-        {screen.kind === "name" && (
-          <NameCard
-            headingRef={headingRef}
-            initial={demo ? DEMO_CLINICIAN : (stored ?? null)}
-            onDone={(c) => {
-              saveClinician(c);
-              go({ kind: "code" }, "code");
-            }}
-          />
-        )}
-
-        {(screen.kind === "code" || screen.kind === "wrong") && (
-          <AccessCard
-            headingRef={headingRef}
-            eyebrow={screen.kind === "wrong" ? "Incorrect code" : "New session"}
-            tone={screen.kind === "wrong" ? "critical" : "default"}
-            title={screen.kind === "wrong" ? "That code doesn't match." : "Enter the patient's code."}
-            body={
-              screen.kind === "wrong"
-                ? "Check with your patient and try again."
-                : "Ask your patient to generate a share code in their Trace app."
-            }
-          >
-            <form
-              noValidate
-              className="flex flex-col gap-5"
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                if (screen.kind === "wrong") {
-                  // "Try again": clear the boxes and start over.
-                  setDigits("");
-                  go({ kind: "code" }, "code");
-                  return;
-                }
-                void submitCode(digits);
-              }}
-            >
-              <CodeInput
-                id="portal-code"
-                length={4}
-                size="lg"
-                label="Patient's share code"
-                labelHidden
-                value={digits}
-                onChange={(v) => {
-                  if (screen.kind === "wrong") go({ kind: "code" }, "none");
-                  setProblem(null);
-                  setDigits(v);
-                }}
-                error={
-                  screen.kind === "wrong"
-                    ? `Wrong code. ${screen.attemptsLeft} ${screen.attemptsLeft === 1 ? "try" : "tries"} left before a 15 minute pause.`
-                    : problem ?? undefined
-                }
-              />
-              <Button type="submit" size="lg" fullWidth loading={submitting}>
-                {screen.kind === "wrong" ? "Try again" : "Continue"}
-              </Button>
-            </form>
-            {clinician && <RequestingAs clinician={clinician} onChange={() => go({ kind: "name" })} />}
-            <NeedHelp />
-          </AccessCard>
-        )}
-
-        {screen.kind === "expired" && (
-          <AccessCard
-            headingRef={headingRef}
-            eyebrow="Code expired"
-            tone="urgent"
-            title="This code has expired."
-            body="Codes last 5 minutes. Ask your patient for a new one."
-          >
-            <Button size="lg" fullWidth onClick={() => go({ kind: "code" }, "code")}>
-              Enter a new code
-            </Button>
-            <NeedHelp />
-          </AccessCard>
-        )}
-
-        {screen.kind === "locked" && (
-          <LockedCard
-            headingRef={headingRef}
-            until={screen.until}
-            offset={offset}
-            onUnlock={() => go({ kind: "code" }, "code")}
-          />
-        )}
-
-        {screen.kind === "waiting" && (
-          <WaitingCard
+  if (waiting) {
+    return (
+      <PortalShell
+        tone="session"
+        header={header}
+        footer={
+          <PortalFooter tone="session" demo={demo}>
+            <p className="text-caption">The patient keeps their code and can still share later.</p>
+          </PortalFooter>
+        }
+      >
+        <ThemeColor tone="session" />
+        <PortalSplit
+          aside={
+            <StepRows tone="session" label="Progress">
+              <StepRow tone="session" marker={<StepDone />}>
+                Code accepted
+              </StepRow>
+              <StepRow tone="session" current marker={<StepRing />}>
+                Waiting for approval
+              </StepRow>
+              <StepRow tone="session" muted marker={<StepRing muted />}>
+                Open record
+              </StepRow>
+            </StepRows>
+          }
+        >
+          <WaitingStep
             headingRef={headingRef}
             requestExpiresAt={screen.requestExpiresAt}
             offset={offset}
@@ -366,106 +260,152 @@ export function ViewFlow() {
             cancelling={submitting}
             problem={problem}
           />
-        )}
+        </PortalSplit>
+      </PortalShell>
+    );
+  }
 
-        {screen.kind === "denied" && (
-          <AccessCard
-            headingRef={headingRef}
-            eyebrow="Not shared"
-            title="Your patient chose not to share their record."
-            body="You can ask them to share again, or continue the consultation without it."
-          >
-            <Notice tone="neutral" icon="info">
-              This is normal. Patients are in control.
-            </Notice>
-            <div className="flex flex-col gap-3">
-              <Button size="lg" fullWidth onClick={() => go({ kind: "code" }, "code")}>
-                Enter a new code
-              </Button>
-              <Button variant="text" className="self-center" onClick={() => go({ kind: "name" })}>
-                Close
-              </Button>
-            </div>
-            <NeedHelp />
-          </AccessCard>
-        )}
+  const whatNext = <WhatHappensNext />;
 
-        {screen.kind === "timedout" && (
-          <AccessCard
+  return (
+    <PortalShell tone="ground" header={header} footer={<PortalFooter demo={demo} />}>
+      {screen.kind === "name" && (
+        <PortalSplit aside={whatNext}>
+          <NameStep
             headingRef={headingRef}
-            eyebrow="No answer"
-            tone="urgent"
-            title="Your patient didn't answer in time."
-            body="Requests close after 5 minutes. Ask your patient for a new code."
-          >
-            <Button size="lg" fullWidth onClick={() => go({ kind: "code" }, "code")}>
-              Enter a new code
-            </Button>
-            <NeedHelp />
-          </AccessCard>
-        )}
-
-        {screen.kind === "withdrawn" && (
-          <AccessCard
-            headingRef={headingRef}
-            eyebrow="Not shared"
-            title="Your patient withdrew the code."
-            body="They cancelled the share before answering. Ask them for a new code if you still need their record."
-          >
-            <Button size="lg" fullWidth onClick={() => go({ kind: "code" }, "code")}>
-              Enter a new code
-            </Button>
-            <NeedHelp />
-          </AccessCard>
-        )}
-
-        {screen.kind === "opening" && (
-          <OpeningCard
-            headingRef={headingRef}
-            record={screen.record}
-            durationKind={screen.durationKind}
-            onDone={() => {
-              // Next keeps this route alive (hidden) after navigating away;
-              // drop the patient's name from it before leaving.
-              go({ kind: "loading" }, "none");
-              router.replace("/view/session");
+            initial={demo ? DEMO_CLINICIAN : (stored ?? null)}
+            onDone={(c) => {
+              saveClinician(c);
+              go({ kind: "code" }, "code");
             }}
           />
-        )}
-      </div>
-      {!onSession && <FirstTimeAccordion className="mx-5 mb-16 mt-16 sm:mx-14 sm:mt-20" />}
+        </PortalSplit>
+      )}
+
+      {screen.kind === "code" && (
+        <PortalSplit aside={whatNext}>
+          <CodeStep
+            headingRef={headingRef}
+            digits={digits}
+            onDigits={(v) => {
+              setProblem(null);
+              setDigits(v);
+              // Typing again clears a wrong or expired code's message; a lock stays.
+              if (screen.error && screen.error.kind !== "locked") setScreen({ kind: "code" });
+            }}
+            error={screen.error}
+            problem={problem}
+            offset={offset}
+            submitting={submitting}
+            onSubmit={() => void submitCode(digits)}
+            onUnlock={() => go({ kind: "code" }, "none")}
+            clinician={clinician}
+            onChangeDetails={() => go({ kind: "name" })}
+          />
+        </PortalSplit>
+      )}
+
+      {screen.kind === "denied" && (
+        <PortalSplit>
+          <Outcome
+            headingRef={headingRef}
+            label="Request declined"
+            title="Your patient chose not to share their record."
+            body="You can ask them to share again, or continue the consultation without it."
+            onTryAgain={() => go({ kind: "code" }, "code")}
+          />
+        </PortalSplit>
+      )}
+
+      {screen.kind === "timedout" && (
+        <PortalSplit>
+          <Outcome
+            headingRef={headingRef}
+            label="No answer"
+            title="Your patient didn't answer in time."
+            body="Requests close after 5 minutes. Ask your patient for a new code."
+            onTryAgain={() => go({ kind: "code" }, "code")}
+          />
+        </PortalSplit>
+      )}
+
+      {screen.kind === "withdrawn" && (
+        <PortalSplit>
+          <Outcome
+            headingRef={headingRef}
+            label="Code withdrawn"
+            title="Your patient withdrew the code."
+            body="They cancelled the share before answering. Ask them for a new code if you still need their record."
+            onTryAgain={() => go({ kind: "code" }, "code")}
+          />
+        </PortalSplit>
+      )}
     </PortalShell>
   );
 }
 
-function NeedHelp() {
+/* ---------------------------------------------------------------- pieces */
+
+function Title({ headingRef, children }: { headingRef: React.Ref<HTMLHeadingElement>; children: ReactNode }) {
   return (
-    <a
-      href="#first-time"
-      className="flex min-h-11 w-fit items-center text-caption font-semibold text-accent hovered:underline"
-      onClick={() => setTimeout(() => document.getElementById("first-time")?.focus(), 0)}
-    >
-      Need help?
-    </a>
+    <h1 ref={headingRef} tabIndex={-1} className="font-display text-display font-light">
+      {children}
+    </h1>
   );
 }
 
-function RequestingAs({ clinician, onChange }: { clinician: Clinician; onChange: () => void }) {
+/** PortalEntryB's right column. */
+function WhatHappensNext() {
+  const steps = ["The patient generates a code", "You enter it here", "They approve, you read what they chose to share"];
   return (
-    <p className="text-caption text-ink-2">
-      Requesting as {[clinician.name, clinician.role, clinician.practice].filter(Boolean).join(", ")}.{" "}
-      <button
-        type="button"
-        onClick={onChange}
-        className="hit-area font-semibold text-accent hovered:underline"
-      >
-        Change details
-      </button>
-    </p>
+    <section aria-labelledby="what-next">
+      <h2 id="what-next" className="mb-2 text-caption font-semibold text-ink-2">
+        What happens next
+      </h2>
+      <StepRows>
+        {steps.map((s, i) => (
+          <StepRow
+            key={s}
+            marker={
+              <span aria-hidden="true" className="w-7 shrink-0 font-display text-numeral-lg font-light text-accent">
+                {i + 1}
+              </span>
+            }
+          >
+            {s}
+          </StepRow>
+        ))}
+      </StepRows>
+    </section>
   );
 }
 
-function NameCard({
+function StepDone() {
+  return (
+    <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-session">
+      <Icon name="tick" size={14} strokeWidth={3.5} />
+    </span>
+  );
+}
+
+function StepRing({ muted = false }: { muted?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={muted ? "size-6 shrink-0 rounded-full border-2 border-on-session-ring" : "size-6 shrink-0 rounded-full border-2 border-white"}
+    />
+  );
+}
+
+function ChangeDetails({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="hit-area font-semibold text-accent hovered:underline">
+      Change details
+    </button>
+  );
+}
+
+function NameStep({
   initial,
   onDone,
   headingRef,
@@ -480,12 +420,13 @@ function NameCard({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <AccessCard
-      headingRef={headingRef}
-      eyebrow="New session"
-      title="Who is asking?"
-      body="Your patient sees these details on their phone before they decide. Trace does not check them."
-    >
+    <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-2.5">
+        <Title headingRef={headingRef}>Who is asking?</Title>
+        <p className="text-body-lg text-ink-2">
+          Your patient sees these details before they decide. Trace does not check them.
+        </p>
+      </div>
       <form
         noValidate
         className="flex flex-col gap-5"
@@ -530,60 +471,101 @@ function NameCard({
           value={practice}
           onChange={(e) => setPractice(e.target.value)}
         />
-        <Button type="submit" size="lg" fullWidth>
-          Continue
-        </Button>
+        <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Button type="submit" size="lg" className="w-full sm:w-55">
+            Continue
+          </Button>
+          <p className="text-caption text-ink-2">Remembered on this computer for next time.</p>
+        </div>
       </form>
-      <p className="text-caption text-ink-2">Remembered on this computer for next time.</p>
-    </AccessCard>
+    </div>
   );
 }
 
-function LockedCard({
-  until,
-  offset,
-  onUnlock,
+function codeErrorText(error: CodeError | undefined, lockedTime: string, unlocked: boolean): string | undefined {
+  if (!error) return undefined;
+  if (error.kind === "wrong")
+    return `That code doesn't match. ${error.attemptsLeft} ${error.attemptsLeft === 1 ? "try" : "tries"} left before a 15 minute pause.`;
+  if (error.kind === "expired") return "That code has expired. Codes last 5 minutes. Ask your patient for a new one.";
+  return unlocked
+    ? undefined
+    : `Too many attempts. Code entry is paused on this browser until ${lockedTime}. Ask your patient for a new code.`;
+}
+
+function CodeStep({
   headingRef,
+  digits,
+  onDigits,
+  error,
+  problem,
+  offset,
+  submitting,
+  onSubmit,
+  onUnlock,
+  clinician,
+  onChangeDetails,
 }: {
-  until: string;
-  offset: number;
-  onUnlock: () => void;
   headingRef: React.Ref<HTMLHeadingElement>;
+  digits: string;
+  onDigits: (v: string) => void;
+  error?: CodeError;
+  problem: string | null;
+  offset: number;
+  submitting: boolean;
+  onSubmit: () => void;
+  onUnlock: () => void;
+  clinician?: Clinician;
+  onChangeDetails: () => void;
 }) {
-  const now = useNow(offset, 1000);
-  const left = Date.parse(until) - now;
-  const unlocked = left <= 0;
-  const time = new Intl.DateTimeFormat("en-IE", {
-    hour: "numeric",
-    minute: "2-digit",
-    hourCycle: "h23",
-    timeZone: "Europe/Dublin",
-  }).format(new Date(until));
+  const locked = error?.kind === "locked";
+  const now = useNow(offset, 1000, locked);
+  const unlocked = locked && Date.parse(error.until) <= now;
+  useEffect(() => {
+    if (unlocked) onUnlock();
+  }, [unlocked, onUnlock]);
+  const lockedTime = locked ? formatClock(error.until) : "";
+
   return (
-    <AccessCard
-      headingRef={headingRef}
-      eyebrow="Too many attempts"
-      tone="critical"
-      title="Too many attempts."
-      body={
-        <>
-          <p>Ask your patient to generate a new code.</p>
-          <p className="mt-2 text-caption">
-            {unlocked ? "You can try again now." : `Code entry is paused for this browser until ${time}.`}
-          </p>
-        </>
-      }
-    >
-      <CodeInput id="portal-code" length={4} size="lg" label="Patient's share code" labelHidden value="" onChange={() => {}} disabled />
-      <Button size="lg" fullWidth disabled={!unlocked} onClick={onUnlock}>
-        Enter a new code
-      </Button>
-      <NeedHelp />
-    </AccessCard>
+    <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-2.5">
+        <Title headingRef={headingRef}>Enter the patient&apos;s code</Title>
+        <p className="text-body-lg text-ink-2">Ask your patient to generate a share code in their Trace app.</p>
+      </div>
+      <form
+        noValidate
+        className="flex flex-col gap-7"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
+        <CodeInput
+          id={CODE_ID}
+          length={4}
+          size="lg"
+          label="Patient's share code"
+          labelHidden
+          value={digits}
+          onChange={onDigits}
+          disabled={locked && !unlocked}
+          error={codeErrorText(error, lockedTime, unlocked) ?? problem ?? undefined}
+        />
+        <div className="flex flex-col gap-x-6 gap-y-3 sm:flex-row sm:items-center">
+          <Button type="submit" size="lg" className="w-full shrink-0 sm:w-55" loading={submitting} disabled={locked && !unlocked}>
+            Continue
+          </Button>
+          {clinician && (
+            <p className="text-caption text-ink-2">
+              Requesting as {clinician.name}. <ChangeDetails onClick={onChangeDetails} />
+            </p>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }
 
-function WaitingCard({
+function WaitingStep({
   requestExpiresAt,
   offset,
   onCancel,
@@ -599,116 +581,57 @@ function WaitingCard({
   headingRef: React.Ref<HTMLHeadingElement>;
 }) {
   const now = useNow(offset, 1000);
-  const left = requestExpiresAt ? Date.parse(requestExpiresAt) - now : null;
+  const left = requestExpiresAt ? Math.max(0, Date.parse(requestExpiresAt) - now) : null;
   return (
-    <AccessCard
-      headingRef={headingRef}
-      surface="session"
-      eyebrow="Request sent"
-      title="Waiting for patient to approve."
-      body="Patient will see exactly what you're asking to view, and chooses what to share."
-    >
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2.5">
+        <p className="text-caption font-medium">Request sent</p>
+        <Title headingRef={headingRef}>Waiting for the patient to approve</Title>
+      </div>
       {left !== null && (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           <p className="text-caption text-on-session-2">Patient has</p>
           <p aria-hidden="true" className="font-display text-display-xl font-light tabular-nums">
             {formatCountdown(left)}
           </p>
-          <p className="sr-only">The patient has about {formatCountdownSpoken(Math.ceil(left / 60000) * 60000)} to respond</p>
+          <p className="sr-only">About {formatCountdownSpoken(Math.ceil(left / 60000) * 60000)} to respond</p>
         </div>
       )}
-      <StepList
-        tone="session"
-        steps={[
-          { label: "Code accepted", state: "done" },
-          { label: "Waiting for approval", state: "current" },
-          { label: "Open record", state: "todo" },
-        ]}
-      />
       {problem && (
         <Notice tone="critical" live="assertive" surface="session">
           {problem}
         </Notice>
       )}
-      <div className="flex flex-col items-start gap-1">
-        <Button variant="text" tone="session" size="md" onClick={onCancel} loading={cancelling}>
-          Cancel request
-        </Button>
-        <p className="text-caption text-on-session-2">The patient keeps their code and can still share later</p>
-      </div>
-    </AccessCard>
+      <Button variant="text" tone="session" className="self-start" onClick={onCancel} loading={cancelling}>
+        Cancel request
+      </Button>
+    </div>
   );
 }
 
-function OpeningCard({
-  record,
-  durationKind,
-  onDone,
+function Outcome({
   headingRef,
+  label,
+  title,
+  body,
+  onTryAgain,
 }: {
-  record: PortalRecord;
-  durationKind: string | null;
-  onDone: () => void;
   headingRef: React.Ref<HTMLHeadingElement>;
+  label: string;
+  title: string;
+  body: string;
+  onTryAgain: () => void;
 }) {
-  const [progress, setProgress] = useState(0);
-  const first = patientFirstName(record.patient);
-  const full = patientFullName(record.patient);
-  const done = useRef(onDone);
-  useEffect(() => {
-    done.current = onDone;
-  });
-
-  useEffect(() => {
-    const reduce = prefersReducedMotion();
-    const step = reduce ? 100 : 20;
-    const id = window.setInterval(() => {
-      setProgress((p) => {
-        const next = Math.min(100, p + step);
-        if (next >= 100) {
-          window.clearInterval(id);
-          window.setTimeout(() => done.current(), reduce ? 0 : 300);
-        }
-        return next;
-      });
-    }, 250);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const steps = ["Critical safety", "Conditions & medications", "Recent visits & care team"];
   return (
-    <AccessCard
-      headingRef={headingRef}
-      eyebrow="Approved"
-      title={`Opening ${first}'s record.`}
-      body={`Loading the sections ${first} chose to share.`}
-    >
-      <div className="flex items-center gap-3">
-        <Avatar initials={initialsOf(full)} size={44} tone="solid" />
-        <div className="min-w-0">
-          <p className="text-row font-medium">{full}</p>
-          <p className="text-caption text-ink-2">
-            {["GP visit profile", durationLabel(durationKind)].filter(Boolean).join(" · ")}
-          </p>
-        </div>
+    <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-2.5">
+        <p className="text-caption font-medium text-ink-2">{label}</p>
+        <Title headingRef={headingRef}>{title}</Title>
+        <p className="text-body-lg text-ink-2">{body}</p>
       </div>
-      <div className="flex flex-col gap-2">
-        <p className="flex justify-between text-caption">
-          <span className="text-ink-2">Loading record</span>
-          <span aria-hidden="true" className="font-semibold">
-            {progress}%
-          </span>
-        </p>
-        <ProgressBar value={progress} label="Loading record" valueText={`${progress}%`} />
-      </div>
-      <StepList
-        tone="default"
-        steps={steps.map((label, i) => ({
-          label,
-          state: progress >= (i + 1) * 33 ? "done" : progress >= i * 33 ? "current" : "todo",
-        }))}
-      />
-      <p className="text-caption text-ink-2">Encrypted in transit · read-only · access logged</p>
-    </AccessCard>
+      <Button size="lg" className="w-full sm:w-55" onClick={onTryAgain}>
+        Try again
+      </Button>
+    </div>
   );
 }

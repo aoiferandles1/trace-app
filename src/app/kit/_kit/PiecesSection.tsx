@@ -10,9 +10,8 @@ import { SessionStatusRow, SharedSummaryCard } from "@/components/patient/Shared
 import { ShareTodayCard } from "@/components/patient/ShareTodayCard";
 import { StatTile } from "@/components/patient/StatTile";
 import { TimelineItem, TimelineList, TimelineYear } from "@/components/patient/TimelineItem";
-import { AccessCard, StepList } from "@/components/portal/AccessCard";
-import { LiveBanner } from "@/components/portal/LiveBanner";
 import { PatientSummaryCard } from "@/components/portal/PatientSummaryCard";
+import { StepRow, StepRows } from "@/components/portal/PortalSplit";
 import { RailDivider, RailItem, RailNotShared } from "@/components/portal/Rail";
 import { SessionNotesPanel, type SessionNotes } from "@/components/portal/SessionNotesPanel";
 import { BannerCard } from "@/components/ui/BannerCard";
@@ -181,7 +180,7 @@ export function PortalPiecesSection() {
     <KitSection
       id="portal"
       title="Portal pieces"
-      description="The rail (session indigo), its items and its Not shared form; the patient header; the session notes panel. Phase 7 composes them into PortalRecordE."
+      description="The rail (session indigo), its items and its Not shared form; the patient header; the entry and waiting steps; the session notes panel. /kit/portal composes them as PortalRecordE."
     >
       <div className="grid gap-10 xl:grid-cols-2">
         <Specimen title="Rail items" surface="session" desk className="max-w-[232px]">
@@ -206,38 +205,44 @@ export function PortalPiecesSection() {
             </li>
           </ul>
         </Specimen>
-        <Specimen title="Patient header" surface="surface" desk>
+        <Specimen title="Patient header (PortalRecordE)" surface="surface" desk>
           <PatientSummaryCard
             name="Jane Doe"
             initials="JD"
             details="35, female, born 12 Mar 1991, Dublin"
-            figures={[
+            facts={[
+              { label: "Allergy", value: "Penicillin", tone: "critical" },
               { label: "Blood type", value: "A+" },
               { label: "Shared for 30 min", value: "29:54 left" },
             ]}
+            action={
+              <Button variant="secondary" size="sm">
+                End session
+              </Button>
+            }
           />
         </Specimen>
-        <Specimen title="Session line (until Phase 7)" surface="surface" desk>
-          <LiveBanner patientName="Jane Doe" timeLeft="24:31" onEndSession={() => {}} />
-        </Specimen>
-        <Specimen title="Waiting steps (PortalWaitB)" surface="session" desk>
-          <StepList
-            steps={[
-              { label: "Code accepted", state: "done" },
-              { label: "Waiting for approval", state: "current" },
-              { label: "Open record", state: "todo" },
-            ]}
-          />
-        </Specimen>
-        <Specimen title="Step content block" surface="ground" desk>
-          <AccessCard eyebrow="Code expired" tone="urgent" title="This code has expired." body="Codes last 5 minutes. Ask your patient for a new one.">
-            <Button size="lg" fullWidth>
-              Enter a new code
-            </Button>
-          </AccessCard>
+        <Specimen title="Steps (PortalEntryB, PortalWaitB)" surface="ground" desk>
+          <StepRows label="What happens next">
+            {["The patient generates a code", "You enter it here", "They approve, you read what they chose to share"].map((s, i) => (
+              <StepRow
+                key={s}
+                marker={
+                  <span aria-hidden="true" className="w-7 shrink-0 font-display text-numeral-lg font-light text-accent">
+                    {i + 1}
+                  </span>
+                }
+              >
+                {s}
+              </StepRow>
+            ))}
+          </StepRows>
         </Specimen>
         <Specimen title="Session notes panel" surface="ground" desk bleed className="max-w-[300px]">
-          <SessionNotesPanel notes={notes} onChange={setNotes} onSave={() => {}} onEndSession={() => {}} patientFirstName="Jane" />
+          <SessionNotesPanel notes={notes} onChange={setNotes} onSave={() => {}} patientFirstName="Jane" />
+        </Specimen>
+        <Specimen title="Session notes, not allowed" surface="ground" desk bleed className="max-w-[300px]">
+          <SessionNotesPanel notes={notes} onChange={setNotes} onSave={() => {}} patientFirstName="Jane" allowed={false} />
         </Specimen>
       </div>
     </KitSection>
