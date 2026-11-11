@@ -19,57 +19,52 @@ The live app is at https://trace-app-liard-eta.vercel.app (the patient app), wit
 
 ## 1. Differences from Figma
 
-### 1.1 Accessibility changes (WCAG 2.2 AA)
+### 1.1 The redesign's foundation (Phase 1, November 2026)
 
-Contrast ratios are against white unless noted.
+The app now runs on the redesign's tokens, fonts, icons and base components (docs/redesign/BRIEF.md sections 1 to 3 and the canvas boards). The old Figma colours, DM Sans, the lucide icons, shadows, pills, eyebrows and tinted icon tiles are gone everywhere. Screens keep their old layouts until their phase rebuilds them against the boards, but every one is already drawn with the new pieces. What changed from the brief or the boards, and what needs your eye:
 
-- **A1. Secondary text, everywhere** (helper text, meta lines, placeholders, tab labels, "Step 3 of 7"). Figma uses Text/Secondary #8A94A3 (3.1:1, 2.9:1 on the page colour). The build uses Text/Tertiary #5C677A (5.7:1) for any secondary text that carries meaning, and keeps #8A94A3 for decoration only.
-- **A2. Indigo text** (secondary and ghost button labels, links, the selected choice card label, the live banner's time chip, the portal's "trace" wordmark, eyebrows). Figma uses Brand/Indigo #5B7AE8 (3.9:1). The build uses Indigo/Text #4258CB (6.0:1). Several final screens already use #4258CB; the Design System components still use #5B7AE8.
-- **A3. Field outlines** (text inputs, text areas, selects, empty code boxes). Figma's Border/Default #E1E4EA is 1.3:1, so a field's edge is nearly invisible. The build adds a Border/Control colour, #7A8495 (3.8:1). This is the most visible change: fields read slightly heavier than in Figma.
-- **A4. Switch "off" track.** Figma #C8CED8 (1.6:1); the build uses Border/Control #7A8495, so the off state is visible.
-- **A5. Selected choice card description.** Figma has Brand/Indigo at 75% opacity; the build uses Indigo/Text at full opacity.
-- **A6. Secondary buttons and critical strip pills.** Figma's 0.5px borders are 1px in the build; half-pixel lines vanish on many screens.
-- **A7. Portal session notes fields.** 12px text in Figma, 14px in the build. Labels stay 12px caps.
-- **A8. Small controls** (small and medium buttons, filter tabs, switches). Same look, with an invisible 44px tall tap area.
-- **A9. Medication card.** Figma's chevron is the button; in the build the whole card header is one button, so it is easy to tap and has a proper name for screen readers.
-- **A10. Tab bar.** Tabs are 56 by 48, and 48 by 48 below 375px wide so the bar fits a 320px screen.
-- **A11. Focus rings.** Figma draws a 2px white then 2px indigo shadow. The build draws a 2px Indigo/Text outline with a 2px gap (white on indigo screens). Same look, and it also shows in Windows high contrast mode. Every control has one.
-- **A12. Field errors.** Figma has a red border and red helper text. The build adds an alert icon and a message that says what is wrong in words.
-- **A13. Code boxes** (sign-in and portal). Drawn as boxes, but one real field underneath: numeric keyboard, paste works, the phone can fill in an emailed code, and a screen reader hears one field.
-- **A14. Tab bar, current tab.** Figma shows it by colour only (Indigo/Text against Text/Tertiary is 1.1:1). The build also makes the current label bold.
-- **A15. Peach and teal icon tiles with white icons** (refill card, banner cards). White on peach is 2.4:1, on teal 3.0:1. Unchanged, because the icons are decorative and the text beside them carries the meaning. Flagged in case you want darker tiles.
-- **A16. Large avatar on p-active.** White initials on Brand/Indigo (3.9:1) kept, because at 96px it is large text. Smaller avatars use Indigo/Accessible or the indigo tint.
-- **P1. Welcome screen "trace" wordmark.** Kept in Brand/Indigo. At 40px bold it passes as large text (3.9:1); flagged because it is the last Brand/Indigo text.
-- **P2. p-splash.** Shown only while the browser checks whether you are signed in, usually a blink. It is a loading state on the web, not a screen.
-- **P4. Field errors on every form.** Not designed. Words under the field, a red border and icon, and the cursor moves to the first field with a problem.
-- **P5. Medication card.** The open card ends with an "Edit" link, since editing has to start somewhere.
-- **P6. Delete and other destructive actions.** Not designed. A confirm sheet with the action and "Cancel" as two equal buttons; the action is the indigo primary button, because there is no red button in the kit. Say if you want one.
-- **S1. Access request sheet (p-request), where the cursor starts.** On the request itself, not on "Allow access", so a stray Enter cannot grant access. Tab reaches Allow, then Deny. Escape and tapping outside do nothing.
-- **S2. Time's up (p-paused), "+15m" and "+30m".** Screen readers hear "+15m, add 15 minutes" and "+30m, add 30 minutes".
-- **S3. Every countdown** (banner, Home card, p-code, p-active). The ticking time is never read aloud. Screen readers hear only: "Sharing started. Dr Hennessy can see your record.", "5 minutes of sharing left.", "1 minute of sharing left.", "Time's up. Dr Hennessy's access is paused until you decide." and "Sharing ended. Dr Hennessy no longer has access to your record."
-- **S4. p-code digits.** The four boxes are hidden from screen readers, which hear one line instead: "Your code: 4 8 3 7".
-- **S5. p-code "Regenerate" and the p-paused buttons.** Same look, 44px tall tap areas.
-- **S6. Status rows on p-active, p-paused and p-ended.** A coloured dot plus the words ("Session active"), and the clock time has a spoken form ("24 minutes 31 seconds left").
-- **S25. Focus ring on list rows.** On My profile's "Your data" list and the ended screen's "What would you like to do?" list, the focus ring now sits just inside each row, because the list's rounded corners cut it off outside. *(New in the hardening pass.)*
-- **P14. Portal accordion body text.** Figma has white at 75%; the build uses 90%, as 75% on the tinted cards is close to 4:1.
+**Contrast (WCAG 2.2 AA). Every pairing in the token table was measured; the /kit Tokens section shows the live ratios.**
 
-### 1.2 Components
+- **R1. `ring-off` darkened.** The empty ring of the tick toggle is its only sign of "off", so it needs 3:1. The brief's #9096BE is 2.9:1 on white and 2.7:1 on ground. Now #878DB3 (3.2:1 on white, 3.0:1 on ground), the smallest darkening that passes. Nothing was lightened.
+- **R2. Secondary text on an accent card.** The Insurance board's "Connected", "Member number" and "Comprehensive plan" are white at 80% on accent, which is 3.8:1. The build uses full white there (4.9:1). The weight difference still separates the label from the value.
+- **R3. Field and segmented outlines (open question).** The boards draw inputs, code boxes and the segmented control with border-control #DCDFF0, which is 1.3:1 on white and 1.2:1 on ground. The build follows the boards: every field has a visible label, the white fill and a 2px ink focus ring, and the segmented control's choice is the accent fill. This reopens the old A3 (you had approved a 3:1 field outline for the first build). Say if you want the 3:1 outline back on inputs only; a darker border-control near #8A8FB3 would pass.
+- **R4. Everything else passes as specified:** ink 16.3:1 on ground; ink-2 5.7:1 on ground, 6.1:1 on white, 5.1:1 on locked-tint; segment-text 7.8:1; accent 4.9:1 on white and 4.6:1 on ground (text), white on accent 4.9:1; white on session 7.1:1; white at 78% on session 5.0:1; urgent 5.4:1 on its tint; critical 6.3:1 on its tint; the track switch's off colour 3.6:1; white at 50% rings on session 3.0:1; the accent dot on the range band 3.2:1. Accent text on locked-tint is only 4.1:1, so locked tiles use session indigo for their icons (5.9:1) and ink for words.
+- **R5. Focus.** One 2px ink outline with a 2px gap on every control (white on session indigo), as the boards' CSS draws it. Inputs also turn their border accent while focused.
+- **R6. Touch targets.** Every control on the phone has at least 44 x 44: the 32px back arrow, the 36px sheet close, the 24px tick and small buttons keep their drawn size with an invisible larger tap area.
 
-- **G1. Spacing.** Foundations shows 4, 8, 12, 16, 24, 32, 48, 64, 80; the build plan also lists 20, which the Button uses. Both are available. Is 20 intended?
-- **G2. Radius 12 and 28.** Used widely in Figma as raw values (hint strips, choice cards, timeline cards, selects; tab bar and sheet corners), not as variables. The build adds them as named sizes.
-- **G3. Display/SM line height.** Figma says 100%; built at 1.2 so two-line headings ("Dr Hennessy has access") do not touch.
-- **G4. Field labels.** Input labels are 14px Regular and Select labels 12px Medium in the Design System. All form labels are 14px Regular, one style.
-- **G5. Portal sidebar.** The Design System's Doctor Sidebar is indigo/600 with an indigo/700 active row; c-overview uses Surface-Dark #3A4EBF with an Indigo/Accessible active row. Built from c-overview.
-- **G6. Critical safety strip.** Figma has three versions: Design System (outlined pills), p-record (filled #B83C2E pills, a raw value) and c-overview (white pills, lighter tint). Built as a patient version and a portal version; #B83C2E is now a named colour.
-- **G7. Condition tags.** p-record uses the 600 shade, the Pill component the 700. Built with the 700 shades; both pass AA.
-- **G9. Timeline title row.** Figma's text runs under the chevron on phones. The kind tag wraps under the title when there is no room, and the small dot between title and tag is gone.
-- **G10. Tertiary button, disabled.** Figma has an indigo fill with Brand/Indigo text; built as translucent white with white text. Disabled states are exempt from contrast, but check the look.
-- **G11. Header bell.** Not built (out of scope). The header has an empty slot on the right instead.
-- **G12. Switch, "critical" tone.** Built (red when on), but no screen uses it yet.
-- **G13. Access request sheet buttons.** Allow and Deny are both outlined buttons of equal weight, as in p-request.
-- **G14. Expired medication card.** There was no expired card design when the kit was built: the name is greyed, the class tag neutral, and "Expired · " starts the summary line. Compare with p-meds-expired.
-- **D20. Pills on p-profiles.** The kit's medium pill (12px corners), not fully round.
-- **P13. Portal accordion icons.** Lucide icons in place of the Figma icon assets. The "For your practice" and "Privacy and security" header icons are guesses.
+**Where a board differs from the brief's tables (the build follows the board).**
+
+- **B1. Tick toggle ring** is 2px on ShareA2 and InsuranceA2; the brief says 1.5px. Size 24 on the tiles, 28 on Insurance's "Include in shares" row.
+- **B2. "Doctor can add notes"** is a 52 x 32 track switch on ShareA2, not the tick. Both exist (`SwitchRow control="track"`); every other toggle is the tick.
+- **B3. Share confirm's "Create share code"** is 56px tall with radius 18 on ShareA2. ApproveA2, SessionA2 and FamilyA2 use the brief's 52px pill, so the button is built as the 52px pill. Say if the share screen should differ.
+- **B4. Segmented control height.** 40px on the Record, Medications, Timeline and Family boards (the brief), 44px for ShareA2's durations, 34px in the portal (PortalRecordE). All three are built.
+- **B5. Session active's time bar** is 6px on SessionA2; the brief says 3px. The portal header's bar is 3px (PortalRecordE). Both are built.
+- **B6. "End sharing now"** is white with ink text on SessionA2; the brief says indigo text. Built as the board.
+- **B7. The portal's End session** is an outlined button with accent text (PortalRecordE); the brief says ink text for secondary buttons. Built as the board.
+- **B8. Approve access backdrop** is #2A3787 on ApproveA2, darker than session indigo. It is a token, `session-deep`.
+- **B9. Rail items** are 44px with radius 12 on PortalRecordE; the brief says radius 10. Built at 12.
+- **B10. Scope tile edges** are 1.5px on ShareA2; the brief says every border is 1px.
+- **B11. Record's safety facts** sit in a critical-tint strip on RecordA2; the brief says plain text. The strip is built as the board.
+- **B12. Detail screen titles** are 24/30 on FamilyA2, InsuranceA2, ShareA2 and CodeA2, and 28/34 on TimelineA2 and MedDetailA2. Both sizes are tokens (`text-title-sm`, `text-title`).
+- **B13. Not-shared rings on CodeA2** are solid (white at 50%); the brief says dashed. The portal rail's are dashed (PortalRecordE). Built as each board.
+- **B14. Portal "Save notes"** is 48px on PortalRecordE; the portal's Continue is 52px on PortalEntryB. Both use the 52px button for now.
+
+**Kept from the first build's accessibility work:** whole-row tap targets (A9), errors in words with an icon (A12), one real field under the code boxes (A13), the access request's first focus on the request (S1), the spoken forms of times and codes (S2 to S4), and the confirm sheets closing after their action (S24b).
+
+### 1.2 New and changed words in Phase 1
+
+- Tab bar: "Timeline" is now "Record" and "Meds" is "Medications" (the boards).
+- Demo marker: "Demo with sample data" (was "Demo · sample data"), a 28px strip at the very top.
+- Access request: "Deny" (was "Deny access"), a text button under the filled "Allow access"; the disclaimer reads "Name and practice are as typed. Trace does not check them."; the not-shared line reads "Not shared: ...".
+- Share code: the "Not shared" items are a list with an empty ring each; the timer line is "Expires in 4:59".
+- Portal waiting: "Patient has" over the large countdown (was "Patient has 4:59 to respond").
+- Portal session notes: "Added to Jane's record when the session ends." (was "Notes are written back to..." and "Patient granted permission to add notes"); the "Type notes here..." placeholders are gone.
+- Portal session line: "Reading Jane Doe's record, shared today, GP visit profile. Read only." and "Access expires in 24:31", with no LIVE stamp and no tinted banner.
+- Portal footer: "Trace · Clinical Access Portal" is gone (the wordmark says it).
+- Rail: "Not shared" under each section the share leaves out.
+- Home's header date is sentence case ("Wednesday 11 Nov 2026", was capitals).
+- The splash is the wordmark on ground, not on indigo (session indigo is kept for sharing).
+- Every delete action is a text button in the critical colour; its confirm sheet has the action filled and "Cancel" as a text button (replaces P6).
 
 ### 1.3 Patient app screens
 
@@ -81,17 +76,17 @@ Contrast ratios are against white unless noted.
 - **D11. p-profiles.** "Add Emergency and Specialist profiles later" is hidden. Both buttons move on: the GP visit profile is the defaults every share starts from, so there is nothing to store. After "I'll do this later", Welcome shows "GP visit profile" / "Ready whenever you share. You can check it before every share." without a tick.
 - **D12. p-welcome.** "Add your first entry" says "Log a visit, write a note, or add a medication". If no critical safety details were entered, it shows "Add your critical safety details" / "Blood type, allergies and implants, from Profile", without a tick, so it never claims something was saved.
 - **P3. Sign-up step 3 (About you).** No back link: the code step is behind you once you are signed in. Steps 4 to 6 go back one step.
-- **D13. p-home.** No bell and no "Upload doc", so four quick actions across the row. "Upcoming" is the next future visit, with "Today" or "2d". The refill card shows the current medication whose refill date is nearest (today or later); the third stat tile ("8 days until refill") hides when there is none. "Recently added" is the three latest past entries.
+- **D13. p-home.** No bell and no "Upload doc", so four quick actions, two to a row. "Upcoming" is the next future visit, with "Today" or "2d". The refill card shows the current medication whose refill date is nearest (today or later); the third stat tile ("8 days until refill") hides when there is none. "Recently added" is the three latest past entries.
 - **D14. p-home.** "added this month" counts entries created this calendar month.
 - **D15. p-record.** No bell. Under Ongoing conditions, an "Add a condition" link. Resolved conditions get their own list. An empty critical strip adds an "Add allergies or blood type" link to Edit profile.
 - **D16. p-meds and p-meds-expired.** No "Request repeat prescription". An "Add a medication" button ends the list. The first current medication starts open. Cards are in the order they were added; expired ones most recently ended first.
 - **D17. p-add.** Only Log appointment, Add a medication and Write a note, plus a new "Add a condition" tile ("A diagnosis or ongoing health issue").
 - **D18. p-profile.** No back arrow (it is a tab), no "Verified", no PPS number. The third stat is "conditions" (Figma: "documents"). Settings (Push notifications, Face ID unlock, Share anonymised data) and the Share / Export / Help / Privacy tiles are replaced by a "Your data" list: Share my record, Access log, Export my data, Privacy and terms, Delete my account (and Reset demo on the demo). "Sign out" stays as the last button. Personal details add Sex and Email when known; empty ones read "Not added".
-- **D19. Care team on p-profile.** The tag is the role as typed ("GP", "Cardiology", "Pharmacy"); the line under it is the organisation, or "Specialist" / "GP" / "Pharmacy" when there is none. Pharmacies are teal, everyone else indigo.
+- **D19. Care team on p-profile.** The tag is the role as typed ("GP", "Cardiology", "Pharmacy"); the line under it is the organisation, or "Specialist" / "GP" / "Pharmacy" when there is none.
 - **S7. p-apptday.** The card shows the visit's place only ("Rathmines Medical Centre"), not "· Dublin": an entry has one "Where" field. No bell, no "Upload doc".
 - **S8. p-apptday.** The card shows on the day of a visit until a share started from that visit has ended. Then Home goes back to normal for the rest of the day.
 - **S9. p-home-live.** The Upcoming card is hidden while the live card shows, as in the frame. At Time's up the card reads "Time's up" / "Dr Hennessy · GP visit" / "Access paused · Decide now" with no time; a Manual share reads "No timer · View session".
-- **S10. Live banner while paused.** "Dr Hennessy's access is paused" and "Time's up" with a peach dot, in place of "can see your record" and the time, which would be untrue.
+- **S10. Live banner while paused.** "Dr Hennessy's access is paused" and "Time's up", in place of "can see your record" and the time, which would be untrue.
 - **S11. p-prefs (Confirm preferences).** No Documents or Insurance switches. Back goes to Home (from the card) or My profile (from Profile). "Recent visits (last 3)" and "Full timeline" are separate switches; with both on, the doctor sees the full timeline.
 - **S12. p-prefs.** If a doctor can already see the record: "A doctor can already see your record. View session".
 - **S13. p-code.** "trace.health/view" is the real address. The heading is set at 36px so it fits one line at 390 wide.
@@ -124,7 +119,7 @@ Contrast ratios are against white unless noted.
 - **P23. c-end before the name loads.** "End session" until the name arrives (only after a reload of that page).
 - **P25. c-loading.** The deployment's real address in place of "trace.health/view".
 - **P26. Dates.** "5 JAN 2026" as in Figma, three-letter months in Irish time ("SEP", not "SEPT").
-- **Below 1024px, every portal screen.** The layout stacks: the sidebar becomes a row of section tabs and the notes panel moves under the record. The LIVE banner wraps by its own width.
+- **Below 1024px, every portal screen.** The layout stacks: the rail becomes a row of section tabs and the notes panel moves under the record.
 
 ---
 
@@ -175,14 +170,17 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 ### Shared pieces
 
 - Critical safety strip, empty: "No allergies or blood type recorded"
-- Locked switch rows, for screen readers: "Locked on", read after "Critical safety. Always shared for your safety"
+- Locked rows and tiles, for screen readers: "Always shared", on the lock disc
 - After an optional field's label: "(optional)". Fields are required unless marked.
 - Field error examples on the component sheet: "Enter an email address like name@example.ie", "That code doesn't match. Check it with your patient and try again.", "Too many attempts. Try again in 15 minutes."
-- Expired medication card: "Expired · " before the summary
+- Expired medication card: "Expired, " before the drug class and summary
 - Timeline, upcoming entries, for screen readers: "Upcoming, " before the date
 - Live share banner, for screen readers: ". View session" after the visible text
 - Sign-up progress back link, for screen readers: ". Back to the previous step" after "Step 3 of 7"
-- Access request, for screen readers: "Duration: " before "30 min"
+- Access request, for screen readers: "For " before "30 min"
+- Range bars, for screen readers: "Ferritin 18 µg/L, low. Normal range 30 to 300." (the reading in words)
+- Strength chart, for screen readers: a table with Strength, From and To for every period
+- Countdown, when a screen has no other announcer: "5 minutes left", "1 minute left", "10 seconds left"
 
 ### Welcome, sign up and sign in
 
@@ -240,7 +238,7 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 - "trace" · "Try both sides of a GP visit" · "Start on the phone: tap Try the demo and share Jane's record. Then type the code into the laptop. Sample data only. Trace is a portfolio project by Aoife Randles, not a medical service. Terms" · captions "Jane's phone", "Dr Hennessy's laptop" · frame names for screen readers "Patient app, on a phone", "Doctor's portal, on a laptop"
 - Narrower: "Start on the phone: tap Try the demo and share Jane's record. Then open the doctor's portal and type the code." · "Open the doctor's portal" (screen readers add "(opens in a new tab)")
-- Demo marker: "Demo · sample data"
+- Demo marker: "Demo with sample data" (the board's words)
 
 ### Doctor's portal
 
@@ -322,7 +320,8 @@ In the design but not in this version. They are hidden, not shown as "coming lat
 
 Each has a default the build uses until you decide.
 
-- **G8. Condition colours.** Figma gives each condition its own colour (indigo, peach, teal) rather than one per status. Built that way, cycling in that order; resolved conditions get a neutral tag. Should colour mean something, such as status or specialty?
+- **R3. Field outlines.** The boards' 1.3:1 border on inputs and code boxes, or a 3:1 one? (The boards' border; see 1.1.)
+- **B3. Share confirm's button.** The board's 56px button with radius 18, or the 52px pill every other board uses? (52px pill.)
 - **D2. Welcome feature line.** Now reworded (section 4); confirm or rewrite.
 - **D5, D6, D8, D9.** The About, Medical and Privacy lines are now reworded (section 4); confirm or rewrite.
 - **D13. Refill card on Home.** It shows the nearest refill date however far away. Should it only show within, say, 14 days? (Any date.)
@@ -331,7 +330,6 @@ Each has a default the build uses until you decide.
 - **S23. "Add notes or receipts" on p-ended.** (Kept; suggest "Add notes".)
 - **P3 (portal). c-denied "Close".** Back to the name step. Is that what you meant?
 - **P18. "ongoing" tag on portal medications.** (Kept; consider the drug class.)
-- **P6. Destructive actions.** Do you want a red button for delete? (Indigo primary.)
 - **Sign-up step 3 cannot be left.** Once signed in, the About you step has no back link and no sign out, so the only way out is to finish sign-up (or close the tab). Should it have a "Sign out" link? (No link.) *(Found in the hardening pass.)*
 - **How long Time's up waits, and how long a Manual share can run.** (30 minutes, and 12 hours.)
 - **Six code boxes** where Figma shows four (a Supabase limit). (Six boxes, same style.)
@@ -346,5 +344,6 @@ For developers. Aoife can skip this.
 - Ending a session writes the row twice in one transaction (ended, then `notes_entry_id`), and both realtime updates carry the same `updated_at`. `ShareSession.tsx`'s `pick()` keeps the version with the notes entry on a tie, and the ended screen reads the row and the notes entry itself.
 - Sign out and Delete my account do a full page load of `/`, so screens Next.js keeps hidden in memory (with the previous person's record) are dropped.
 - Every route sends `X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and a `Permissions-Policy` turning off camera, microphone, location and payment.
-- Component sources for the items above: the UI kit is in `src/components/ui`, patient pieces in `src/components/patient`, portal pieces in `src/components/portal`, and the development-only component sheet at `/kit` (404 in production).
+- Component sources for the items above: the base components are in `src/components/ui`, patient pieces in `src/components/patient`, portal pieces in `src/components/portal`, and the development-only component sheet at `/kit` (404 in production), which shows every component in every state with phone and desktop tokens and computes the contrast table live.
+- Tokens are in `src/app/globals.css`. Phone and desktop differ only through the variables `.desk` resets (radii, control heights, title, heading, numeral and code sizes), so one utility gives the right value in either app.
 - `tests/e2e/a11y.spec.ts` checks every screen of both apps at 320px wide (no sideways scroll, axe) and tabs once round each screen (every stop visible, with a focus ring that is not clipped).
