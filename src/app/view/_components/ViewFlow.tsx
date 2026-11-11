@@ -433,7 +433,12 @@ export function ViewFlow() {
             headingRef={headingRef}
             record={screen.record}
             durationKind={screen.durationKind}
-            onDone={() => router.replace("/view/session")}
+            onDone={() => {
+              // Next keeps this route alive (hidden) after navigating away;
+              // drop the patient's name from it before leaving.
+              go({ kind: "loading" }, "none");
+              router.replace("/view/session");
+            }}
           />
         )}
       </div>
