@@ -27,11 +27,12 @@ import { useNow } from "@/lib/useNow";
  * Both render <DemoMarker /> (demo accounts only, at the very top) and
  * <LiveBannerSlot /> (the strip while a doctor has access).
  *
- * From 1024px both take the desktop layout (PatientShell): the rail in place
- * of the tab bar, on every screen framed here, forms included (the phone
- * hides its tab bar on forms for room; the rail costs none). `aside` (a
- * detail screen's list) and `detail` (what a list screen shows beside it)
- * make two panes; they are mounted only at desktop widths.
+ * From 1024px they take the desktop layout (PatientShell): the rail in place
+ * of the tab bar, and `aside` (a detail screen's list) or `detail` (what a
+ * list screen shows beside it) for two panes, mounted only at desktop
+ * widths. A screen with a pinned primary action (`footer`: every form, the
+ * upload, Your details) is a focused task, as the brief's upload is: no
+ * rail, the centred column, as the sharing screens and sign-up.
  */
 
 /** The live share banner (p-home-live), on every screen while a session is active or paused. */
@@ -119,6 +120,7 @@ export function SubScreen({
   children: ReactNode;
 }) {
   const desktop = useDesktop();
+  const rail = desktop && !footer;
   return (
     <PatientShell
       demo={<DemoMarker />}
@@ -128,9 +130,9 @@ export function SubScreen({
       }
       footer={footer}
       tabBar={tabBar && !desktop ? <TabBar /> : undefined}
-      rail={desktop ? <PatientRail /> : undefined}
-      aside={desktop ? aside : undefined}
-      detail={desktop ? detail : undefined}
+      rail={rail ? <PatientRail /> : undefined}
+      aside={rail ? aside : undefined}
+      detail={rail ? detail : undefined}
     >
       {children}
     </PatientShell>

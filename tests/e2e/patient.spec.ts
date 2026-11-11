@@ -125,6 +125,8 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   await expect(page.getByText("Managed, since 2019")).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "Back to Record" }).click();
+  // From 1024px the condition's screen has the Record list beside it: wait for that screen to go.
+  await expect(page.getByRole("heading", { level: 1, name: "Atrial fibrillation" })).toBeHidden();
   await expect(page.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
 
   await page.getByRole("tab", { name: "Timeline" }).click();

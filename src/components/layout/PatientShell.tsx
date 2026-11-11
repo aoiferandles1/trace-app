@@ -35,7 +35,7 @@ import { cn } from "@/lib/cn";
  *
  * The content starts beside the rail and is never wider than 1120px. A
  * screen with neither `aside` nor `detail` is one 640px column; with one of
- * them it is two panes, a 400px list on the left and the detail on the
+ * them it is two panes, a 360px list on the left and the detail on the
  * right, each scrolling on its own (the portal's two-pane pattern). The
  * demo strip runs across the top, the live banner and the pinned footer
  * stay with the content. The phone layout (no `rail`) is unchanged.
@@ -142,14 +142,14 @@ function DesktopFrame({
             <div className="flex min-h-0 w-full max-w-[1120px] flex-1 px-5 pt-4">
               {aside ? (
                 <>
-                  <div className="flex w-100 shrink-0 flex-col overflow-y-auto">{aside}</div>
+                  <div className="flex w-90 shrink-0 flex-col overflow-y-auto">{aside}</div>
                   <main id="main" className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto border-l border-border-tabbar">
                     {content}
                   </main>
                 </>
               ) : (
                 <>
-                  <main id="main" className="flex min-h-0 w-100 shrink-0 flex-col overflow-y-auto">
+                  <main id="main" className="flex min-h-0 w-90 shrink-0 flex-col overflow-y-auto">
                     {content}
                   </main>
                   <section

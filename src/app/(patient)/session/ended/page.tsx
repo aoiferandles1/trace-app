@@ -2,31 +2,32 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
-import type { IconName } from "@/components/ui/Icon";
-import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
-import { ButtonLink } from "@/components/ui/Button";
-import { Card, SectionHeading } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
+import { DetailBlock } from "@/components/ui/DetailBlock";
 import { ListRow } from "@/components/ui/ListRow";
-import { PageState } from "@/components/ui/StateMessage";
+import { StateMessage } from "@/components/ui/StateMessage";
 import {
   clinicianName,
   clinicianWithRole,
   formatDuration,
+  joinLabels,
   minutesBetween,
   normaliseSession,
+  sharedScopes,
   type ShareSession,
 } from "@/lib/patient/share";
 import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
-import { DemoMarker, LoadStatus } from "../../_components/Screens";
+import { LoadStatus, SubScreen } from "../../_components/Screens";
 
 /**
- * Session ended (no board; reached from Home's "View summary" after a share ends): who had access, for how long, and the doctor's
- * notes if they wrote any. Reads the session named by `?id=` (falling back
+ * Session ended (no board; reached from Home's "View summary" after a share
+ * ends), in the visit detail's pattern: the title, one line on who ended it,
+ * labelled blocks (doctor, practice, how long, what was shared, the
+ * doctor's notes if they wrote any), then two rows of what to do next. Reads the session named by `?id=` (falling back
  * to the latest one), so it still makes sense after a reload.
  */
 function EndedScreen() {
@@ -67,26 +68,19 @@ function EndedScreen() {
   const session = read?.status === "ended" ? read : (live ?? read);
 
   return (
-    <PatientShell
-      demo={<DemoMarker />}
-      footer={
-        <ButtonLink href="/home" size="lg" fullWidth>
-          Back to home
-        </ButtonLink>
-      }
-    >
+    <SubScreen title="Session ended" backHref="/home" backLabel="Back to Home">
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !session || session.status !== "ended" ? (
-        <PageState
-          title="No ended session to show"
-          message="Your share history has every share you have made."
+        <StateMessage
+          className="px-5 pt-2"
+          message="No ended session to show. Your share history has every share you have made."
           action={{ label: "View share history", href: "/access-log" }}
         />
       ) : (
         <EndedBody session={session} />
       )}
-    </PatientShell>
+    </SubScreen>
   );
 }
 
@@ -100,61 +94,49 @@ function endedLine(s: ShareSession): string {
 function EndedBody({ session }: { session: ShareSession }) {
   const minutes = minutesBetween(session.approved_at, session.ended_at);
   return (
-    <div className="flex flex-col gap-6 px-5 pb-8 pt-1">
-      <div className="flex flex-col items-center gap-2 pt-6 text-center">
-        <h1 className="font-display text-title font-light">Session ended</h1>
-        <p className="text-body-lg text-ink-2">{endedLine(session)}</p>
-      </div>
-
-      <Card as="article" className="px-4.5">
-        <dl className="divide-y divide-border-row">
-          <Row label="Doctor">{clinicianWithRole(session)}</Row>
-          <Row label="Duration">{formatDuration(minutes)}</Row>
-          <Row label="Profile used">GP visit</Row>
-          <Row label="Session notes">
-            {session.notes_entry_id ? (
-              <Link
-                href={`/record/${session.notes_entry_id}`}
-                className="font-semibold text-accent underline-offset-2 hovered:underline"
-                aria-label="View session notes"
-              >
-                View
-              </Link>
-            ) : session.allow_notes ? (
-              "None written"
-            ) : (
-              "Not allowed"
-            )}
-          </Row>
-        </dl>
+    <div className="flex flex-col gap-5 px-5 pb-6 pt-3.5">
+      <p className="-mt-1.5 text-body text-ink-2">{endedLine(session)}</p>
+      <dl className="flex flex-col gap-4">
+        <DetailBlock term label="Doctor">
+          {clinicianWithRole(session)}
+        </DetailBlock>
+        {session.clinician_practice && (
+          <DetailBlock term label="Practice">
+            {session.clinician_practice}
+          </DetailBlock>
+        )}
+        <DetailBlock term label="Duration">
+          {formatDuration(minutes)}
+        </DetailBlock>
+        <DetailBlock term label="Shared">
+          {joinLabels(sharedScopes(session))}
+        </DetailBlock>
+        <DetailBlock term label="Session notes">
+          {session.notes_entry_id ? (
+            <Link
+              href={`/record/${session.notes_entry_id}`}
+              className="font-semibold text-accent underline-offset-2 hovered:underline"
+              aria-label="View session notes"
+            >
+              View
+            </Link>
+          ) : session.allow_notes ? (
+            "None written"
+          ) : (
+            "Not allowed"
+          )}
+        </DetailBlock>
+      </dl>
+      <Card as="ul">
+        <li>
+          <ListRow href="/add" icon="document-plus" title="Add to your record" caption="While the appointment is fresh" chevron />
+        </li>
+        <li>
+          <ListRow href="/access-log" icon="history" title="View share history" caption="Every share you have made" chevron />
+        </li>
       </Card>
-
-      <section aria-labelledby="next-label" className="flex flex-col gap-2">
-        <SectionHeading id="next-label">What would you like to do?</SectionHeading>
-        <Card as="ul">
-          <li>
-            <Action href="/add" icon="document-plus" title="Add to your record" detail="While the appointment is fresh" />
-          </li>
-          <li>
-            <Action href="/access-log" icon="history" title="View share history" detail="Every share you have made" />
-          </li>
-        </Card>
-      </section>
     </div>
   );
-}
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-14 items-center justify-between gap-3 py-3">
-      <dt className="text-caption text-ink-2">{label}</dt>
-      <dd className="text-right text-body text-ink">{children}</dd>
-    </div>
-  );
-}
-
-function Action({ href, icon, title, detail }: { href: string; icon: IconName; title: string; detail: string }) {
-  return <ListRow href={href} icon={icon} title={title} caption={detail} chevron />;
 }
 
 export default function SessionEndedPage() {

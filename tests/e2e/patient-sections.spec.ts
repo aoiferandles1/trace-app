@@ -65,6 +65,18 @@ async function expectChartFits(page: Page) {
   expect(fit).toEqual({ scrolls: false, outside: 0 });
 }
 
+/** True in the desktop layout (1024px and wider). */
+function desktop(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) >= 1024;
+}
+
+/** Where a timeline event opens: its sheet on the phone, the pane beside the list at desktop widths. */
+function eventView(page: Page, title: string, wide: boolean) {
+  return wide
+    ? page.getByRole("region", { name: "Details" }).filter({ has: page.getByRole("heading", { level: 2, name: title }) })
+    : page.getByRole("dialog", { name: title });
+}
+
 test("Concerta shows exactly 18, 27, 36, 45, 36 with dates, prescriber and notes (MedDetailA2)", async ({ page }) => {
   await gotoScreen(page, "/meds", "Medications");
   await page.getByRole("link", { name: /^Concerta/ }).click();
@@ -237,7 +249,8 @@ test("full timeline: the filter, and the sheet with Seen by, Outcome, Prescribed
 
   const row = list.getByRole("button", { name: /Asthma flare/ });
   await row.click();
-  const sheet = page.getByRole("dialog", { name: "Asthma flare" });
+  // The phone opens a sheet; from 1024px the event opens in the pane beside the list (the portal's pattern).
+  const sheet = eventView(page, "Asthma flare", desktop(page));
   await expect(sheet).toBeVisible();
   await expect(sheet.getByText("Feb 2026, Condition")).toBeVisible();
   await expect(sheet.getByText("Seen by")).toBeVisible();
@@ -251,6 +264,13 @@ test("full timeline: the filter, and the sheet with Seen by, Outcome, Prescribed
   await expect(sheet.getByText("Doctor's notes")).toBeVisible();
   await expect(sheet.getByText("Wheeze after a cold. Peak flow improved on treatment.")).toBeVisible();
   await page.waitForTimeout(300);
+  if (desktop(page)) {
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(row).toHaveAttribute("aria-pressed", "true");
+    await expect(list.getByRole("button", { name: /Chest infection/ })).toHaveAttribute("aria-pressed", "false");
+    await expectNoAxeViolations(page);
+    return;
+  }
   await expectNoAxeViolations(page, "dialog");
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
@@ -273,8 +293,8 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await expectNoAxeViolations(page);
   await page.getByRole("button", { name: "Save to timeline" }).click();
 
-  // Back on the timeline with the new event open.
-  const sheet = page.getByRole("dialog", { name: "Ear infection" });
+  // Back on the timeline with the new event open (a sheet on the phone, the pane beside the list from 1024px).
+  const sheet = eventView(page, "Ear infection", desktop(page));
   await expect(sheet).toBeVisible({ timeout: 10_000 });
   await expect(sheet.getByText("Oct 2026, Infection")).toBeVisible();
   await expect(sheet.getByText("Clarithromycin 250mg")).toBeVisible();
@@ -283,7 +303,7 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await page.getByRole("button", { name: "Remove medicine 1" }).click();
   await page.getByRole("textbox", { name: /Doctor's notes/ }).fill("Cleared in a week.");
   await page.getByRole("button", { name: "Save changes" }).click();
-  const again = page.getByRole("dialog", { name: "Ear infection" });
+  const again = eventView(page, "Ear infection", desktop(page));
   await expect(again.getByText("Cleared in a week.")).toBeVisible({ timeout: 10_000 });
   await expect(again.getByText("Prescribed")).toHaveCount(0);
   await again.getByRole("link", { name: "Edit Ear infection" }).click();

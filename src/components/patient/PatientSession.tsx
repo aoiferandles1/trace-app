@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { isAuthRetryableFetchError } from "@supabase/supabase-js";
+import { StatePage } from "@/components/layout/StatePage";
 import { createClient } from "@/lib/supabase/client";
 import { pathForStep, stepIndex, STEPS } from "@/lib/patient/auth";
 import type { Profile } from "@/lib/patient/types";
@@ -176,10 +177,12 @@ export function PatientSessionGate({
 
   if (state.status === "error") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-ground px-6 text-center">
-        <p role="alert" className="text-body-lg text-ink">
-          Trace couldn&apos;t load your record. Check your connection and reload the page.
-        </p>
+      <div role="alert" className="contents">
+        <StatePage
+          title="Your record couldn't load"
+          message="Trace couldn't load your record. Check your connection and try again."
+          action={{ label: "Try again", onClick: () => window.location.reload() }}
+        />
       </div>
     );
   }

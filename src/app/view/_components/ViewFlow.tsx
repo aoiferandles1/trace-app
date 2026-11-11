@@ -11,6 +11,7 @@ import { CodeInput } from "@/components/ui/CodeInput";
 import { Icon } from "@/components/ui/Icon";
 import { Notice } from "@/components/ui/Notice";
 import { TextField } from "@/components/ui/TextField";
+import { StateMessage } from "@/components/ui/StateMessage";
 import { ThemeColor } from "@/components/ui/ThemeColor";
 import { formatCountdown, formatCountdownSpoken } from "@/lib/format";
 import { clockOffset, portalApi, PortalApiError, type PortalStatus } from "../_lib/api";
@@ -140,7 +141,7 @@ export function ViewFlow() {
         applyStatus(s, true);
       })
       .catch(() => {
-        if (!cancelled) setProblem("The portal could not reach Trace. Check your connection and reload the page.");
+        if (!cancelled) setProblem("The portal could not reach Trace. Check your connection and try again.");
       });
     return () => {
       cancelled = true;
@@ -218,9 +219,11 @@ export function ViewFlow() {
         <PortalSplit>
           <h1 className="sr-only">Clinical Access Portal</h1>
           {problem ? (
-            <Notice tone="critical" live="assertive">
-              {problem}
-            </Notice>
+            <StateMessage
+              tone="error"
+              message={problem}
+              action={{ label: "Try again", onClick: () => window.location.reload() }}
+            />
           ) : (
             <p role="status" className="text-body-lg text-ink-2">
               Loading the portal&hellip;
