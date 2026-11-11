@@ -68,22 +68,28 @@ export function useShareSummary(
   conditionWord: "items" | "diagnoses",
 ): SummaryRow[] | null {
   const counts = useLoad(loadCounts);
-  if (!prefs || counts.status !== "ready") return null;
-  const c = counts.data;
+  if (!prefs || counts.status === "loading") return null;
+  // If the counts could not load (offline), the rows still say what is shared, without numbers.
+  const c = counts.status === "ready" ? counts.data : null;
   const rows: SummaryRow[] = [
     { label: "Critical safety", detail: criticalLine(profile) },
-    { label: "Medications", detail: `${c.medications} active` },
+    { label: "Medications", detail: c ? `${c.medications} active` : "Always shared" },
   ];
   if (prefs.share_conditions) {
-    const n = c.conditions.filter((x) => !x.mental || prefs.share_mental_health).length;
+    const n = c ? c.conditions.filter((x) => !x.mental || prefs.share_mental_health).length : null;
     rows.push({
       label: "Active conditions",
-      detail: conditionWord === "items" ? plural(n, "1 item", "items") : plural(n, "1 diagnosis", "diagnoses"),
+      detail:
+        n === null
+          ? "Included"
+          : conditionWord === "items"
+            ? plural(n, "1 item", "items")
+            : plural(n, "1 diagnosis", "diagnoses"),
     });
   }
   if (prefs.share_full_timeline) rows.push({ label: "Full timeline", detail: "Every entry" });
   else if (prefs.share_recent_visits) rows.push({ label: "Recent visits", detail: "Last 3" });
-  if (prefs.share_care_team) rows.push({ label: "Care team", detail: teamLine(c.team) });
+  if (prefs.share_care_team) rows.push({ label: "Care team", detail: c ? teamLine(c.team) : "Included" });
   if (prefs.share_mental_health) rows.push({ label: "Mental health history", detail: "Included" });
   return rows;
 }

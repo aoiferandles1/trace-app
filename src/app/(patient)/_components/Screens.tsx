@@ -105,19 +105,32 @@ export function SubScreen({
   );
 }
 
-/** Loading and failed states for a screen's data. */
-export function LoadStatus({ status, onRetry }: { status: "loading" | "error"; onRetry: () => void }) {
+/** Loading and failed states for a screen's data. `tone="indigo"` on the full-bleed indigo screens. */
+export function LoadStatus({
+  status,
+  onRetry,
+  tone = "page",
+}: {
+  status: "loading" | "error";
+  onRetry: () => void;
+  tone?: "page" | "indigo";
+}) {
   if (status === "loading") {
     return (
-      <p role="status" className="px-5 py-10 text-center text-body-sm text-text-tertiary">
+      <p
+        role="status"
+        className={tone === "indigo" ? "px-5 py-10 text-center text-body-sm" : "px-5 py-10 text-center text-body-sm text-text-tertiary"}
+      >
         Loading&hellip;
       </p>
     );
   }
   return (
     <div role="alert" className="flex flex-col items-center gap-3 px-5 py-10 text-center">
-      <p className="text-body-sm text-text-primary">This couldn&apos;t load. Check your connection and try again.</p>
-      <Button variant="secondary" onClick={onRetry}>
+      <p className={tone === "indigo" ? "text-body-sm" : "text-body-sm text-text-primary"}>
+        This couldn&apos;t load. Check your connection and try again.
+      </p>
+      <Button variant={tone === "indigo" ? "tertiary" : "secondary"} onClick={onRetry}>
         Try again
       </Button>
     </div>

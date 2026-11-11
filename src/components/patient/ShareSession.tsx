@@ -38,6 +38,8 @@ export type ShareContextValue = {
   session: ShareSession | null;
   /** False until the first read has finished. */
   loaded: boolean;
+  /** True when the latest read failed (offline, or Supabase did not answer). */
+  failed: boolean;
   /** Re-reads my_share_session() (which applies time-based changes first). */
   refresh: () => Promise<ShareSession | null>;
   /** Replace the session after a function returned a newer one. */
@@ -50,6 +52,7 @@ const noop = async () => null;
 const FALLBACK: ShareContextValue = {
   session: null,
   loaded: false,
+  failed: false,
   refresh: noop,
   setSession: () => {},
   announce: () => {},
@@ -99,6 +102,7 @@ export function ShareSessionProvider({
 }) {
   const [session, setSessionState] = useState<ShareSession | null>(initial ?? null);
   const [loaded, setLoaded] = useState(initial !== undefined);
+  const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState("");
 
   // The gate hands over its first read once it has it (adjusted during
@@ -120,6 +124,7 @@ export function ShareSessionProvider({
 
   const refresh = useCallback(async () => {
     const { data, error } = await createClient().rpc("my_share_session");
+    setFailed(Boolean(error));
     if (error) return null;
     const next = normaliseSession(data);
     // my_share_session is the source of truth: take it as it is.
@@ -161,8 +166,9 @@ export function ShareSessionProvider({
     };
   }, [userId, refresh]);
 
-  // Polling fallback while anything is live, and a re-read when the tab comes back.
-  const live = isLive(session);
+  // Polling fallback while anything is live (or until the first read has
+  // worked: the gate's read may have failed), and a re-read when the tab comes back.
+  const live = isLive(session) || !loaded;
   useEffect(() => {
     if (!userId || !live) return;
     const id = window.setInterval(() => void refresh(), POLL_MS);
@@ -179,8 +185,8 @@ export function ShareSessionProvider({
   }, [userId, refresh]);
 
   const value = useMemo<ShareContextValue>(
-    () => ({ session, loaded, refresh, setSession, announce }),
-    [session, loaded, refresh, setSession, announce],
+    () => ({ session, loaded, failed, refresh, setSession, announce }),
+    [session, loaded, failed, refresh, setSession, announce],
   );
 
   return (

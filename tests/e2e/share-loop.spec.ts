@@ -547,3 +547,15 @@ test("a phone whose clock is 10 minutes slow still counts down from the database
   // By the device clock alone this would read 34 or 35 minutes.
   await expect(page.getByText(/^2[45] min \d+ sec$/)).toBeVisible({ timeout: 8_000 });
 });
+
+test("offline: the session screen says it could not load, then recovers on its own", async ({ page }) => {
+  await page.route("**/rest/v1/rpc/my_share_session", (route) => route.abort("internetdisconnected"));
+  await page.goto("/session");
+  const alert = page.getByRole("alert").filter({ hasText: "This couldn't load. Check your connection and try again." });
+  await expect(alert).toBeVisible({ timeout: 20_000 });
+  await expect(alert.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  // Back online: the next automatic read works, and with no live share the screen goes Home.
+  await page.unroute("**/rest/v1/rpc/my_share_session");
+  await page.waitForURL(/\/home$/, { timeout: 10_000 });
+});

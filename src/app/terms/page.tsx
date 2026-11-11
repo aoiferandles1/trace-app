@@ -46,7 +46,7 @@ export default function TermsPage() {
           </p>
         </Section>
         <Section title="The demo">
-          <p>The demo uses sample data for a made-up patient. Demo records are deleted after 24 hours.</p>
+          <p>The demo uses sample data for a made-up patient. A daily clean-up deletes each demo record once it is a day old.</p>
         </Section>
       </div>
     </PatientShell>

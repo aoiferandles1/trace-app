@@ -60,12 +60,12 @@ function MedicalScreen() {
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
         <StepIntro eyebrow="Medical Basics" tone="red" title="Critical safety information.">
-          This is always shown to any doctor you share with — it can never be hidden. Providing this now protects you
-          in an emergency.
+          This is always shown to any doctor you share with. It can never be hidden. Adding it now means every doctor
+          you share with sees it first.
         </StepIntro>
         <HintStrip tone="danger" icon={<CircleAlert aria-hidden="true" className="size-5 shrink-0" />} >
           This section is pinned to the top of your shared record. Every doctor who views your record will always see
-          it — including in emergencies.
+          it, before anything else.
         </HintStrip>
         <form id="medical-form" onSubmit={submit} noValidate className="flex flex-col gap-5">
           <SelectField

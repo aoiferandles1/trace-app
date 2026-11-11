@@ -44,12 +44,12 @@ function PrivacyScreen() {
           Please read this before continuing. Under GDPR, you have the right to know exactly what we store and why.
         </StepIntro>
         <InfoCard title="What Trace stores" tone="indigo">
-          Your health record, documents you upload, medications you add, and notes you write. Nothing is collected
+          Your health record: the visits, medications and notes you add. Nothing is collected
           automatically.
         </InfoCard>
         <InfoCard title="Who can see your data" tone="teal">
-          Only doctors you explicitly share with, for a session you control. Trace staff cannot access your health
-          record. No data is ever sold or used for advertising.
+          Only doctors you explicitly share with, for a session you control. The database is run by Aoife Randles,
+          who made Trace. No data is ever sold or used for advertising.
         </InfoCard>
         <InfoCard title="Your rights" tone="peach">
           Access your data, correct it, export it, or delete your account at any time. Full GDPR rights apply. Irish
@@ -74,7 +74,7 @@ function PrivacyScreen() {
           />
           <SwitchRow
             title={<span className="font-bold">Receive reminders and health tips by email</span>}
-            description="Optional — you can change this in settings"
+            description="Optional. Trace does not send these yet. You can change this in Edit profile."
             checked={reminders}
             onCheckedChange={setReminders}
           />

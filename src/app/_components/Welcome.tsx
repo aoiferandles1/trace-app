@@ -85,9 +85,9 @@ export function Welcome() {
             Share with any doctor, anywhere. Choose exactly what they can access.
           </Feature>
           <Feature tone="teal" icon={<Activity />} title="Your complete history in one place">
-            Upload documents, log visits, track medications, all in one record.
+            Log visits, track medications and keep notes, all in one record.
           </Feature>
-          <Feature tone="neutral" icon={<ShieldCheck />} title="Private and GDPR compliant">
+          <Feature tone="neutral" icon={<ShieldCheck />} title="Private by design">
             Your data is yours. No advertising. No data sales. Ever.
           </Feature>
         </ul>

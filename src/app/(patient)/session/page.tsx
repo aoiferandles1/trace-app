@@ -28,7 +28,7 @@ import {
 import { useShareSummary } from "@/lib/patient/useShareSummary";
 import { createClient } from "@/lib/supabase/client";
 import { useNow } from "@/lib/useNow";
-import { DemoMarker } from "../_components/Screens";
+import { DemoMarker, LoadStatus } from "../_components/Screens";
 
 /**
  * The live session (p-active) and Time's up (p-paused), on full-bleed indigo.
@@ -40,7 +40,7 @@ import { DemoMarker } from "../_components/Screens";
  */
 function SessionScreen() {
   const router = useRouter();
-  const { session, loaded, setSession, refresh } = useShareSession();
+  const { session, loaded, failed, setSession, refresh } = useShareSession();
   const [busy, setBusy] = useState<"end" | 15 | 30 | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,9 +83,7 @@ function SessionScreen() {
   return (
     <PatientShell tone="indigo" header={<DemoMarker tone="indigo" />}>
       {!open ? (
-        <p role="status" className="px-5 py-10 text-center text-body-sm">
-          Loading&hellip;
-        </p>
+        <LoadStatus tone="indigo" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
       ) : open.status === "active" ? (
         <Active session={open} busy={busy === "end"} error={error} onEnd={end} onExpire={refresh} />
       ) : (

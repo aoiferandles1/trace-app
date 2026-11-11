@@ -94,7 +94,6 @@ function AboutScreen() {
             options={COUNTRIES}
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            hint="Used to verify your identity with healthcare providers"
           />
           {error && (
             <HintStrip tone="danger" live="assertive">

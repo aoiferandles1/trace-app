@@ -24,7 +24,7 @@ import {
 import { useShareSummary } from "@/lib/patient/useShareSummary";
 import { createClient } from "@/lib/supabase/client";
 import { useNow } from "@/lib/useNow";
-import { DemoMarker } from "../../_components/Screens";
+import { DemoMarker, LoadStatus } from "../../_components/Screens";
 
 /** "trace-app.vercel.app/view": the portal's address, from NEXT_PUBLIC_SITE_URL (PLAN.md Phase 9). */
 function portalAddress(): string {
@@ -48,7 +48,7 @@ function portalAddress(): string {
 function CodeScreen() {
   const router = useRouter();
   const { profile } = usePatientSession();
-  const { session, loaded, setSession, refresh, announce } = useShareSession();
+  const { session, loaded, failed, setSession, refresh, announce } = useShareSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,9 +100,7 @@ function CodeScreen() {
       }
     >
       {!showable ? (
-        <p role="status" className="px-5 py-10 text-center text-body-sm">
-          Loading&hellip;
-        </p>
+        <LoadStatus tone="indigo" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
       ) : (
         <CodeBody
           session={session}

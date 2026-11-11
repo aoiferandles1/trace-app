@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { pathForStep, stepIndex, STEPS } from "@/lib/patient/auth";
 import type { Profile } from "@/lib/patient/types";
@@ -105,6 +106,11 @@ export function PatientSessionGate({
           : Promise.resolve(undefined),
       ]);
       if (cancelled) return;
+      // Offline is not signed out: say so instead of sending them to the welcome screen.
+      if (claims.error && isAuthRetryableFetchError(claims.error)) {
+        setState({ status: "error" });
+        return;
+      }
       if (claims.error || !claims.data || claims.data.claims.sub !== user.id) {
         router.replace(gate === "record" ? "/" : "/signup");
         return;
