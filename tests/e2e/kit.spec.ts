@@ -22,7 +22,7 @@ test.describe("UI kit", () => {
 
   test("/kit/portal has no axe violations", async ({ page }) => {
     await page.goto("/kit/portal");
-    await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible();
     await expectNoAxeViolations(page);
   });
 

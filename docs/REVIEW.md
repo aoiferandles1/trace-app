@@ -101,24 +101,27 @@ The app now runs on the redesign's tokens, fonts, icons and base components (doc
 - **S24. Home, Recently added.** Today's 9:30 visit counts as recently added once the time has passed, so it sits under the share card on appointment days.
 - **S24b. Every confirm sheet.** Same look. A sheet left open when you leave a screen now closes itself, and a confirm sheet closes after its action works, so going back to that screen does not reopen it.
 
-### 1.4 Doctor's portal screens
+### 1.4 Doctor's portal (Phase 7)
 
-- **P1 (portal). c-code-expired.** The peach hint "Jane will be notified in her Trace app" is left out: the portal cannot know the patient's name before access, and nothing notifies the patient.
-- **P3 (portal). c-denied, Close.** Goes back to the name step, so the next doctor at the computer starts fresh.
-- **P5. c-opening.** The overview has loaded before this shows; the bar then fills in about 1.3 seconds (at once with reduced motion), because the name comes from the first record read.
-- **P6. c-waiting steps.** "Code accepted" ticked and "Waiting for approval" in progress, instead of three empty circles.
-- **P8. "Need help?"** Moves to the "First time using Trace?" accordion.
-- **P15. c-overview vitals.** "Elevated", "Normal" and "Stable" are left out: they are clinical judgements the app would have to invent.
-- **P16. c-overview "View all".** Only on Medications, Timeline and Upcoming; there is no conditions page or vitals history in the portal.
-- **P17. c-overview timeline.** No chevrons, since there is no entry detail page. On the Timeline page, entries with text (results, letters, session notes) open in place, with a chevron.
-- **P18. c-overview medication tags.** "ongoing" on every current medication, as in Figma. It carries no information; consider the drug class instead.
-- **P19. c-timeline chips.** "All", then one chip per kind actually shared (Visits, Results, Prescriptions...), instead of All, Letters, Results, Imaging, Vitals. Vitals are not timeline entries, and a chip should never show an empty list. Figma tags the blood test "Visit"; the build uses the entry's real kind.
-- **P20. c-meds chips.** "Active 3", "Expired 2", with counts. Medications are newest started first, not the frame's order.
-- **P21. c-end.** "Visit type" always reads "GP" (the share profile is the GP visit profile).
-- **P22. c-end "Edit notes".** Goes back to the record, where the notes panel is.
-- **P23. c-end before the name loads.** "End session" until the name arrives (only after a reload of that page).
-- **P25. c-loading.** The deployment's real address in place of "trace.health/view".
-- **P26. Dates.** "5 JAN 2026" as in Figma, three-letter months in Irish time ("SEP", not "SEPT").
+Rebuilt on PortalEntryB (Enter code), PortalWaitB (Waiting) and PortalRecordE (the live record and its views). Where the build differs from a board, or a board from the brief:
+
+- **P1. "Change details".** The brief puts it top right; the board puts it after "Requesting as Dr Hennessy." beside Continue. Built as the board. The header's right side is the name and practice only.
+- **P2. "Demo: patient approves".** Left out (there is no such button). The waiting footer keeps "The patient keeps their code and can still share later."
+- **P3. Footer, right side.** "Demo with sample data" only in the demo (`/view?demo=1`); otherwise "A portfolio project, not a medical service" (the portfolio line the old footer carried). "Privacy and security" and "For your practice" lead to a new page, About the portal, which also links the case study and Terms.
+- **P4. Wrong, expired and locked codes.** No separate screens: the code step keeps its title, the boxes empty and turn critical, and one line under them says what happened, with focus back in the boxes. Locked: boxes and Continue are disabled until the time given, then come back by themselves.
+- **P5. Approved.** The "Opening Jane's record" step with its loading bar is gone; the record opens as soon as the patient taps Allow.
+- **P6. End session.** The board's button ends at once. The build keeps the old c-end step, inside the record: "End session with Jane Doe", when it started, how long it ran, what happens to the notes, then End session or Back to the record. Ending cannot be undone, so one step before it seemed right; say if you want the board's direct end.
+- **P7. Notes panel.** "Save notes" is 52px (board 48, see B14). The save status ("Saving notes…", "Notes saved", the error) sits under the button. The fields can be made taller by dragging their corner. The panel's own "End session" button is gone (the header has it). Below 1024px the notes sit under the record with no handle.
+- **P8. Medication detail title.** 28px as the board (the brief says 26).
+- **P9. Vitals date.** The date the vitals were taken sits beside "Vitals" (43 days ago in the demo; without it they read as today's). Not on the board.
+- **P10. Recent visits.** When Full timeline is also shared, the older visits follow under "Earlier"; otherwise the board's "Older visits are in the full timeline." with the dashed ring. Upcoming are latest first, as on the board.
+- **P11. Family history.** The tree places grandparents, parents, the patient and siblings; aunts, uncles, children and "other" are in the list beside it only. A filter dims only the other relatives' circles, not their names (the board dims the whole node to 35%, which makes the names unreadable). The patient's "3 conditions" shows only when Conditions was shared. The summary keeps the board's "Tap a condition to see who has it." (on a laptop you click).
+- **P12. Care team "You".** On the person whose name matches the name the doctor typed.
+- **P13. Sections left out of the Overview.** Without Conditions or Recent visits, the Overview keeps the heading with "Not shared" and the dashed ring, so the doctor knows it was left out, not empty. Vitals the same (they travel with Recent visits or Full timeline).
+- **P14. Paused and ended.** In the code step's frame: a small label over the title ("Access paused", "Access ended"), a line or two, one action ("End session now", "Enter a new code").
+- **P15. Declined, timed out, withdrawn.** A label, the title, one line, "Try again".
+- **P16. Two panes at narrower widths.** Recent visits, Medications and Full timeline put list and detail side by side only when the record area is at least 600px wide (at 1280 with the notes open it is 654px). At 1024 with the notes open they stack; collapse the notes to get them side by side.
+- **P17. The countdown reaching zero.** The record leaves the screen at once ("Checking access"), and the database's answer follows within a second (normally Time's up).
 - **Below 1024px, every portal screen.** The layout stacks: the rail becomes a row of section tabs and the notes panel moves under the record.
 
 ---
@@ -145,13 +148,16 @@ Each is built from the UI kit, matching the nearest existing screen. Redesign or
 
 ### Doctor's portal
 
-- **Name step** (before the code): the c-code card with "Who is asking?" and three fields. Pre-filled with Dr Hennessy, GP, Rathmines Medical Centre in the demo. Remembered on that computer, so a returning doctor goes straight to the code.
-- **Request timed out**: the patient did not answer in 5 minutes.
-- **Code withdrawn**: the patient cancelled the share before answering.
-- **Access paused**: the record and sidebar are gone; a card on the page background, with the notes panel still beside it so the doctor can finish writing.
-- **Session ended**: indigo, like c-end, with a "Session ended." heading and a card that says who ended it and whether notes reached the record.
-- **Notes not saved** (on the Session ended screen): if the session ended while the doctor had typed notes that had not been saved yet (the patient ended it, time ran out, or the connection dropped), the screen says so and shows the text in a read-only box to copy. Before this, the text simply vanished. *(New in the hardening pass.)*
-- **Care team**: one white card per person (name, role and practice, a GP / Specialist / Pharmacy tag), in the overview's card style.
+- **Name step** (before the code; not on the boards): the code step's layout, "Who is asking?", three fields, Continue. Pre-filled with Dr Hennessy, GP, Rathmines Medical Centre in the demo. Remembered on that computer, so a returning doctor goes straight to the code; "Change details" comes back here.
+- **Request declined, timed out, code withdrawn**: label, title, one line, "Try again".
+- **Access paused**: the record and rail are gone; the notes panel stays beside it so the doctor can finish writing.
+- **Access ended**: who ended it, whether notes reached the record, "Enter a new code". **Notes not saved** shows here when typed notes had not reached the record.
+- **End session step** (inside the record, see P6).
+- **Not shared**: what an ungranted view's address shows ("Jane did not share this part of the record."); nothing is fetched.
+- **Documents** (no board): rows with a document icon, the title, "PDF" or "Photo" and the date; each opens the file in a new tab, served as the file itself. Empty: "No documents shared."
+- **Insurance** (no board): the provider, then Member number (•••• 4821), Plan and Renews. Empty: "No insurance details included."
+- **Mental health** (no board): the items flagged as mental health, grouped as Conditions, Visits, Timeline and Documents (each only when its own section was shared too). Empty: "Nothing flagged as mental health."
+- **About the portal** (`/view/about`): For your practice and Privacy and security, the old accordion's words, and the portfolio line.
 
 ### Demo
 
@@ -244,27 +250,34 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 - Skip link (keyboard only): "Skip to the record"
 - Header, for screen readers: "trace clinical access portal home" on the wordmark
-- Footer: "Trace · Clinical Access Portal" / "A portfolio project by Aoife Randles, not a medical service. Read the case study · Terms" / "Encrypted in transit · Access logged"
-- Name step: eyebrow "NEW SESSION", "Who is asking?", "Your patient sees these details on their phone before they decide. Trace does not check them.", fields "Your name", "Role (optional)" with hint "For example GP or practice nurse", "Practice (optional)", "Continue", "Remembered on this computer for next time." · error "Enter your name, as your patient knows you."
-- Code card: "Requesting as Dr Hennessy, GP, Rathmines Medical Centre. Change details" (where Figma has "Or scan their QR code instead")
-- c-code-error: "Wrong code. 4 tries left before a 15 minute pause." under the boxes (the count is live). In Figma the boxes alone show it, in colour only.
-- c-code-locked: "Code entry is paused for this browser until 14:05." / "You can try again now." "Enter a new code" stays disabled until then.
-- Waiting, for screen readers: "The patient has about 4 minutes to respond". Steps read "(done)", "(in progress)", "(not yet)".
-- Request timed out: eyebrow "NO ANSWER", "Your patient didn't answer in time.", "Requests close after 5 minutes. Ask your patient for a new code.", "Enter a new code"
-- Code withdrawn: eyebrow "NOT SHARED", "Your patient withdrew the code.", "They cancelled the share before answering. Ask them for a new code if you still need their record."
-- Access paused: eyebrow "ACCESS PAUSED", "Time's up on this share.", "The patient's timer ran out, so their record is hidden. It comes back here if they add more time.", "If nothing changes, the session closes at 10:02.", "You can still finish your notes. They go to the record when the session ends.", "End session now"
-- Session ended: heading "Session ended."; eyebrow "SESSION ENDED"; "Your patient ended the session." / "They stopped sharing from their phone. Access to their record is closed."; "You ended the session." / "Access to the record is closed on both sides."; "The session has closed." / "The patient's time ran out and they did not add more. Access to their record is closed."; "Your session notes were saved to the patient's record." or "No session notes were written, so nothing was added to the record."; "Start a new session"
-- Notes not saved *(new in the hardening pass)*: "Your last changes to the notes were not saved before the session ended, so they are not in the record. Copy them now if you need them: they are gone when you leave this page." · box label "Notes not saved"
-- Notes panel status: "Saving notes…", "Notes saved", "Notes could not be saved. Check your connection and try Save notes again."
-- Care team: "The people Jane sees for their care" · "Jane did not share their care team for this visit." · "No care team recorded." · tags "GP", "Specialist", "Pharmacy"
-- Timeline: "Every entry Jane chose to share" (full timeline) · "Jane did not share their timeline for this visit." · "No past entries shared." · section "Upcoming"
-- Medications: "No current medications.", "No expired medications."; expired cards show "Taken: 2024 · ended 3 Jul 2026"; a "Refill due" row when there is a date
-- Overview: "No conditions recorded.", "No current medications.", "No past entries shared.", "No upcoming visits."
-- c-end: "Nothing written" in an empty field · "These notes will be written to Jane's Trace record when you end the session. Jane can read everything you write." (Figma: "She can read"; the app cannot know pronouns) · without notes allowed: "The patient did not allow notes for this session, so nothing is added to their record." · after a failed save: "Your latest notes could not be saved. Ending the session will try again."
-- Loading: for screen readers "Loading the portal"; under the wordmark the real address, "<address>/view · Clinical Access Portal" · error "The portal could not reach Trace. Check your connection and reload the page."
-- Errors: "Enter all 4 digits of the code." · "The code could not be checked. Check your connection and try again." · "The request could not be cancelled. Check your connection and try again." · "The session could not be ended. Check your connection and try again."
+- Footer: "Privacy and security" · "For your practice" · "Demo with sample data" (demo) or "A portfolio project, not a medical service"
+- Enter code (board): "Enter the patient's code", "Ask your patient to generate a share code in their Trace app.", "Continue", "Requesting as Dr Hennessy. Change details", "What happens next", "The patient generates a code", "You enter it here", "They approve, you read what they chose to share"
+- Code errors (under the boxes): "That code doesn't match. 4 tries left before a 15 minute pause." · "That code has expired. Codes last 5 minutes. Ask your patient for a new one." · "Too many attempts. Code entry is paused on this browser until 14:05. Ask your patient for a new code." · "Enter all 4 digits of the code."
+- Name step: "Who is asking?", "Your patient sees these details before they decide. Trace does not check them.", "Your name", "Role (optional)" with "For example GP or practice nurse", "Practice (optional)", "Continue", "Remembered on this computer for next time." · error "Enter your name, as your patient knows you."
+- Waiting (board): "Request sent", "Waiting for the patient to approve", "Patient has", "Cancel request", "Code accepted", "Waiting for approval", "Open record", "The patient keeps their code and can still share later." · for screen readers "About 4 minutes to respond"
+- Declined: "Request declined" / "Your patient chose not to share their record." / "You can ask them to share again, or continue the consultation without it." / "Try again"
+- Timed out: "No answer" / "Your patient didn't answer in time." / "Requests close after 5 minutes. Ask your patient for a new code."
+- Withdrawn: "Code withdrawn" / "Your patient withdrew the code." / "They cancelled the share before answering. Ask them for a new code if you still need their record."
+- Record header (board): "Allergy" (or "Allergies", "None recorded"), "Blood type" ("Not known"), "Implant" when there is one, "Shared for 30 min" / "Shared for 1 hour" / "Shared until 23:59" / "Shared until ended" ("No timer"), "29:54 left", "End session"
+- Rail (board): Overview, Recent visits, Medications, Full timeline, Care team, Family history, Documents, Insurance, Mental health; "Not shared" under each left out
+- Overview (board): "Conditions", "Recent visits", "View all", "Upcoming", "Medications", "Vitals", "Blood pressure", "Heart rate, bpm", "Weight, kg", "O2 saturation" · new: "Not shared", "None recorded.", "No visits recorded.", "No current medications.", the vitals' date
+- Recent visits (board): "Upcoming", "Last 3", "Older visits are in the full timeline.", "The shaded part of each bar is the normal range." · new: "Earlier", "Past", "No details recorded.", "No results recorded."
+- Medications (board): "Current", "Past", "Now 36mg, since Feb 2025", "Stopped 9 Aug 2026", "History", "Prescribed by Dr Hennessy", 'Jane: "..."' · new: "No strength history recorded.", "No past medications."
+- Full timeline (board): "All", "Infections", "Conditions", "Seen by", "Outcome", "Prescribed", "Doctor's notes"
+- Family history (board): "Contains other people's health information.", "All", "Heart", "Diabetes", "Asthma" (and "Cancer", "Stroke" when present), "Tap a condition to see who has it.", "Heart: Dad's dad, Dad", "None known" · new: "no one", "No relatives recorded."
+- Care team (board): "You" beside the doctor · new: "No one recorded."
+- Not shared view: "Jane did not share this part of the record."
+- Documents, Insurance, Mental health: see section 2
+- Session notes (board): "Session notes", "Added to Jane's record when the session ends.", "Chief complaint", "Assessment", "Plan", "Follow-up", "Save notes" · new: "Jane did not allow notes for this session." · status "Saving notes…", "Notes saved", "Notes could not be saved. Check your connection and try Save notes again." · for screen readers "Collapse session notes", "Open session notes", "Resize session notes. Arrow keys resize, Enter collapses or opens."
+- End session step: "End session with Jane Doe", "Access closes on both sides straight away.", "Started", "Duration", "Your session notes are added to Jane's record when the session ends, and Jane can read them." or "Jane did not allow notes, so nothing is added to the record.", "End session", "Back to the record" · after a failed save: "Your latest notes could not be saved. Ending the session will try again."
+- Access paused: "Access paused", "Time's up on this share.", "The patient's timer ran out, so their record is hidden. It comes back here if they add more time.", "If nothing changes, the session closes at 10:02.", "You can still finish your notes. They go to the record when the session ends.", "End session now"
+- Access ended: "Access ended"; "Your patient ended the session." / "They stopped sharing from their phone. Access to their record is closed."; "You ended the session." / "Access to the record is closed on both sides."; "The session has closed." / "The patient's time ran out and they did not add more. Access to their record is closed."; "Your session notes were saved to the patient's record." or "No session notes were written, so nothing was added to the record."; "Enter a new code"
+- Notes not saved: "Your last changes to the notes were not saved before the session ended, so they are not in the record. Copy them now if you need them: they are gone when you leave this page." · box label "Notes not saved"
+- Loading: for screen readers "Clinical Access Portal"; "Loading the portal…", "Loading the record", "Checking access", "Loading…" · errors "The portal could not reach Trace. Check your connection and reload the page.", "This part of the record could not be loaded. Reload the page to try again."
+- Errors: "The code could not be checked. Check your connection and try again." · "The request could not be cancelled. Check your connection and try again." · "The session could not be ended. Check your connection and try again."
 - Announcements for screen readers: "Session started. You are reading the shared record." · "5 minutes of access left." · "1 minute of access left." · "Access paused. The patient's time ran out and the record is hidden." · "The patient added more time. The record is back." · "Session ended. Access to the record is closed."
-- Browser tab titles: "Clinical Access Portal", "Overview", "Timeline", "Medications", "Care team", "End session", each followed by "· Trace Clinical Access Portal"
+- About the portal: "About the portal", "Trace is a portfolio project by Aoife Randles, not a medical service. Read the case study or the terms.", "For your practice", "Privacy and security" (the old accordion's rows), "Back to the portal"
+- Browser tab titles: "Clinical Access Portal", "Overview", "Recent visits", "Medications", "Full timeline", "Care team", "Family history", "Documents", "Insurance", "Mental health", "End session", "Privacy and security", each followed by "· Trace Clinical Access Portal"
 
 ---
 
@@ -309,7 +322,7 @@ In the design but not in this version. They are hidden, not shown as "coming lat
 - **Confirm preferences:** the Documents and Insurance switches. Documents and Insurance show as locked, "Not shared", in the portal sidebar.
 - **Profiles step (p-profiles):** "Add Emergency and Specialist profiles later".
 - **Every portal code card:** "Or scan their QR code instead".
-- **Portal:** the Documents screen (c-documents-specialist); the vitals judgements ("Elevated", "Normal", "Stable").
+- **Portal:** the vitals judgements ("Elevated", "Normal", "Stable"). (Documents is built now, from the system: section 2.)
 - **Lock-screen states** (p-lock-active, p-lock-ended): a web app cannot draw on the lock screen.
 - **c-code-expired:** "Jane will be notified in her Trace app".
 - **p-verify:** "Code expires in 14:52".
@@ -328,11 +341,13 @@ Each has a default the build uses until you decide.
 - **S11. Recent visits and Full timeline.** Should turning on Full timeline switch off Recent visits? (No; both can be on.)
 - **S17. The request sheet's line for a share started from Profile.** Please rewrite the stand-in.
 - **S23. "Add notes or receipts" on p-ended.** (Kept; suggest "Add notes".)
-- **P3 (portal). c-denied "Close".** Back to the name step. Is that what you meant?
-- **P18. "ongoing" tag on portal medications.** (Kept; consider the drug class.)
 - **Sign-up step 3 cannot be left.** Once signed in, the About you step has no back link and no sign out, so the only way out is to finish sign-up (or close the tab). Should it have a "Sign out" link? (No link.) *(Found in the hardening pass.)*
 - **How long Time's up waits, and how long a Manual share can run.** (30 minutes, and 12 hours.)
 - **Six code boxes** where Figma shows four (a Supabase limit). (Six boxes, same style.)
+- **Portal: End session in one click or two?** (Two: the End session step, P6.)
+- **Portal: Medication notes off by default.** The brief asks you to confirm. (Off; the doctor sees a note only when you share Medication notes and that note.)
+- **Portal: PDFs open in a sandbox.** Shared files are sent with a sandbox policy, as the notes require. Some versions of Chrome refuse to show a PDF under that policy (its viewer needs scripts); photos are unaffected. If that happens, the fallback is to download PDFs instead of opening them. (Opened in the browser; not yet checked in a desktop Chrome.)
+- **Portal: vitals date** beside Vitals (P9). Keep it? (Kept.)
 
 ---
 
