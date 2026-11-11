@@ -83,6 +83,8 @@ test("meds: current and expired", async ({ page }) => {
   await expectNoAxeViolations(page);
 
   await page.getByRole("tab", { name: "Expired" }).click();
+  await expect(page.getByRole("tab", { name: "Expired" })).toHaveAttribute("aria-selected", "true");
+  await page.waitForTimeout(300); // let the tab's colour transition finish before axe measures contrast
   await expect(page.getByRole("button", { name: /Clarithromycin 500mg/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Prednisolone 5mg/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Warfarin/ })).toHaveCount(0);
@@ -329,6 +331,150 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   expect(profile!.date_of_birth).toBe("1991-03-12");
   expect(profile!.allergies).toEqual(["Penicillin"]);
   expect(profile!.terms_accepted_at).not.toBeNull();
+});
+
+/** "YYYY-MM-DD" in Irish time, `days` from today. */
+function dublinDay(days: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() + days * 86_400_000));
+}
+
+/**
+ * The Phase 4 acceptance check (PLAN.md section 12): starting from an empty
+ * record, enter the whole of Jane Doe's record by hand through the screens,
+ * then check each screen shows it. Phone only, to keep the run short.
+ */
+test("Jane Doe's record entered by hand shows on every screen", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "Runs once, at phone width");
+  test.setTimeout(300_000);
+  const db = clientFor(file);
+  await emptyRecord(db);
+  const { data: user } = await db.auth.getUser();
+  await db
+    .from("profiles")
+    .update({ first_name: "Jane", last_name: "Doe", date_of_birth: null, sex: null, address: null, city: null, phone: null })
+    .eq("id", user.user!.id);
+
+  // Profile and critical safety.
+  await gotoScreen(page, "/profile/edit", "Edit profile");
+  await page.getByLabel(/Date of birth/).filter({ visible: true }).fill("1991-03-12");
+  await page.getByRole("textbox", { name: /^Sex/ }).fill("Female");
+  await page.getByRole("textbox", { name: /^Phone/ }).fill("+353 86 123 4567");
+  await page.getByRole("textbox", { name: /^Address/ }).fill("Rathmines, Dublin 6");
+  await page.getByRole("textbox", { name: /Town or city/ }).fill("Dublin");
+  await page.getByRole("combobox", { name: "Blood type" }).selectOption("A+");
+  await page.getByRole("textbox", { name: /Known allergies/ }).fill("Penicillin");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.waitForURL(/\/profile$/);
+
+  // Conditions.
+  const conditions: [string, string, string, string, string, string][] = [
+    ["Atrial fibrillation", "managed", "Dr O'Mahony", "Cardiology", "2019", ""],
+    ["Hypothyroidism", "ongoing", "Dr Walsh", "Endocrinology", "2022", ""],
+    ["Mild asthma", "managed", "Dr Hennessy", "GP", "", "since childhood"],
+  ];
+  for (const [name, status, doctor, specialty, year, note] of conditions) {
+    await gotoScreen(page, "/record/conditions/new", "Add a condition");
+    await page.getByRole("textbox", { name: "Condition" }).fill(name);
+    await page.getByRole("combobox", { name: "Status" }).selectOption(status);
+    await page.getByRole("textbox", { name: /^Doctor/ }).fill(doctor);
+    await page.getByRole("textbox", { name: /^Specialty/ }).fill(specialty);
+    if (year) await page.getByRole("textbox", { name: /Year diagnosed/ }).fill(year);
+    if (note) await page.getByRole("textbox", { name: /Or when it started/ }).fill(note);
+    await page.getByRole("button", { name: "Save condition" }).click();
+    await page.waitForURL(/\/record$/);
+  }
+
+  // Medications: three current, two expired.
+  const meds = [
+    { Name: "Warfarin", Dose: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Drug class": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
+    { Name: "Levothyroxine", Dose: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
+    { Name: "Salbutamol", Dose: "100mcg", Form: "Inhaler", "How often": "as needed", "Drug class": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
+    { Name: "Clarithromycin", Dose: "500mg", Form: "Tablet", "How often": "twice daily", "Drug class": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
+    { Name: "Prednisolone", Dose: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
+  ];
+  for (const med of meds) {
+    await gotoScreen(page, "/add/medication", "Add a medication");
+    for (const [label, value] of Object.entries(med)) {
+      await page.getByLabel(new RegExp(`^${label.replace(/[?']/g, ".")}`)).filter({ visible: true }).fill(value);
+    }
+    await page.getByRole("button", { name: "Save medication" }).click();
+    await page.waitForURL(/\/meds$/);
+  }
+
+  // Timeline entries and appointments.
+  const entries = [
+    { kind: "visit", title: "GP visit", day: 0, time: "09:30", doctor: "Dr Hennessy", where: "Rathmines Medical Centre" },
+    { kind: "result", title: "Blood test, full blood count and INR", day: -9, time: "10:15", doctor: "Dr Hennessy", where: "Mater Hospital" },
+    { kind: "prescription", title: "Warfarin prescription renewed", day: -12, time: "11:00", where: "Boots, Rathmines" },
+    { kind: "visit", title: "Cardiology review", day: -43, time: "14:00", doctor: "Dr O'Mahony", where: "Mater Private" },
+    { kind: "visit", title: "INR blood test", day: 14, time: "09:30", where: "Rathmines Medical Centre" },
+    { kind: "visit", title: "Cardiology follow-up", day: 48, time: "14:00", doctor: "Dr O'Mahony", where: "Mater Private" },
+  ];
+  for (const e of entries) {
+    await gotoScreen(page, "/add/appointment", "Log appointment");
+    await page.getByRole("combobox", { name: "What kind" }).selectOption(e.kind);
+    await page.getByRole("textbox", { name: "Title" }).fill(e.title);
+    await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(e.day));
+    await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
+    if (e.doctor) await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
+    await page.getByRole("textbox", { name: /^Where/ }).fill(e.where);
+    await page.getByRole("button", { name: "Save to my record" }).click();
+    await page.waitForURL(/\/record$/);
+  }
+  await gotoScreen(page, "/add/note", "Write a note");
+  await page.getByRole("textbox", { name: "Title" }).fill("Personal note added");
+  await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(-11));
+  await page.getByLabel("Time").filter({ visible: true }).fill("20:00");
+  await page.getByRole("textbox", { name: "Note" }).fill("Fatigue symptoms");
+  await page.getByRole("button", { name: "Save note" }).click();
+  await page.waitForURL(/\/record$/);
+
+  // Care team.
+  const team = [
+    ["Dr Hennessy", "gp", "GP", "Rathmines Medical Centre"],
+    ["Dr O'Mahony", "specialist", "Cardiology", "Mater Private"],
+    ["Dr Walsh", "specialist", "Endocrinology", ""],
+    ["Boots, Rathmines", "pharmacy", "Pharmacy", "Boots"],
+  ];
+  for (const [name, kind, role, org] of team) {
+    await gotoScreen(page, "/profile/care-team/new", "Add to care team");
+    await page.getByRole("textbox", { name: "Name" }).fill(name);
+    await page.getByRole("combobox", { name: "Type" }).selectOption(kind);
+    await page.getByRole("textbox", { name: /Role or specialty/ }).fill(role);
+    if (org) await page.getByRole("textbox", { name: /Practice, clinic or shop/ }).fill(org);
+    await page.getByRole("button", { name: "Save" }).click();
+    await page.waitForURL(/\/profile$/);
+  }
+
+  // Every screen shows it.
+  await gotoScreen(page, "/home", /^Good .*, Jane$/);
+  await expect(page.getByText("3 medications")).toBeVisible();
+  await expect(page.getByText("8 days until refill")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Refill due soon.*Warfarin 5mg · 8 days left/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Upcoming.*(GP visit · Dr Hennessy|INR blood test)/ })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("by-hand-home.png"), fullPage: true });
+
+  await gotoScreen(page, "/record", "Record");
+  const strip = page.getByRole("region", { name: "Critical safety information" });
+  await expect(strip.getByText("Penicillin allergy")).toBeVisible();
+  await expect(strip.getByText("A+ Blood Type")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Atrial fibrillation.*Dr O'Mahony · Cardiology · Dx 2019/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Mild asthma.*Dr Hennessy · GP · since childhood/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Blood test, full blood count and INR.*Mater Hospital · Ordered by Dr Hennessy/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Personal note added.*Fatigue symptoms/ })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("by-hand-record.png"), fullPage: true });
+
+  await gotoScreen(page, "/meds", "My medication");
+  await expect(page.getByText("3 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
+  await expect(page.getByText("Dr O'Mahony, Mater Private · Cardiology").filter({ visible: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("by-hand-meds.png"), fullPage: true });
+
+  await gotoScreen(page, "/profile", "My profile");
+  await expect(page.getByText("Patient · Dublin, IE")).toBeVisible();
+  await expect(page.getByText("+353 86 123 4567")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Dr Walsh.*Endocrinology.*Specialist/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Boots, Rathmines.*Pharmacy.*Boots/ })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("by-hand-profile.png"), fullPage: true });
 });
 
 test("delete my account signs out and removes the user", async ({ page }) => {
