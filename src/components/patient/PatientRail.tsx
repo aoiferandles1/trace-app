@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { TABS } from "@/components/patient/TabBar";
+import { TABS, type TabKey } from "@/components/patient/TabBar";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
@@ -18,9 +18,9 @@ import { cn } from "@/lib/cn";
  * Add is a plain item here (it opens /add, the rows as a screen), not the
  * phone's filled disc.
  */
-export function PatientRail({ className }: { className?: string }) {
+export function PatientRail({ active, className }: { active?: TabKey; className?: string }) {
   const pathname = usePathname() ?? "";
-  const activeKey = TABS.find((t) => t.match(pathname))?.key;
+  const activeKey = active ?? TABS.find((t) => t.match(pathname))?.key;
   return (
     <nav
       aria-label="Main"

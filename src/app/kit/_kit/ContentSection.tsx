@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/patient/PageHeader";
 import { ProgressHeader } from "@/components/patient/ProgressHeader";
+import { PatientRail } from "@/components/patient/PatientRail";
 import { TabBar, type TabKey } from "@/components/patient/TabBar";
 import { Avatar, Card, SectionHeading, SectionLabel } from "@/components/ui/Card";
 import { CodeDisplay } from "@/components/ui/CodeDisplay";
@@ -189,6 +190,10 @@ export function FramesSection() {
               <TabBar active={k} />
             </div>
           ))}
+        </Specimen>
+        <Specimen title="Patient rail (desktop, from 1024px), Record and Profile active" className="flex flex-wrap gap-3">
+          <PatientRail active="record" className="h-90" />
+          <PatientRail active="profile" className="h-90" />
         </Specimen>
       </div>
     </KitSection>
