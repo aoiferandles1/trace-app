@@ -42,6 +42,14 @@ supabase/                Owned by the database work (migrations, SQL tests, gene
 - A component used by one screen only lives next to it in `_components/`. Move it to `src/components/` once a second screen needs it.
 - The routes and Figma frames are in PLAN.md section 6. Every new screen and every new string goes in `docs/REVIEW.md`.
 
+## Patient app (Phases 3 and 4)
+
+- Signed-in routes live in `src/app/(patient)/`; sign-up steps 3 to 7 in `src/app/signup/(account)/`. Both layouts wrap `PatientSessionGate` (`src/components/patient/PatientSession.tsx`) in `<Suspense>`. The gate checks the session in the browser and redirects (signed out to `/`, unfinished sign-up to its step by `profiles.onboarding_step`). Every page there exports a wrapper that renders its screen inside `<SessionReady>`, and reads the user with `usePatientSession()` (`userId`, `email`, `profile`, `setProfile`, `reloadProfile`).
+- Screens frame themselves with `TabScreen` (the five tabs) or `SubScreen` (details and forms) from `(patient)/_components/Screens.tsx`. Both render `LiveBannerSlot`, the seam for the live share banner.
+- Data: the browser Supabase client, loaded with `useLoad()` (`src/lib/useLoad.ts`). Dates and "today" are Irish time: use `src/lib/dates.ts`.
+- Next.js keeps earlier screens in the page, hidden. Element ids must be unique per screen instance (forms use `useId()`), and tests should prefer `getByRole` (it skips hidden elements) or add `.filter({ visible: true })`.
+- Tests: `tests/e2e/patient.spec.ts` signs in once per project with "Try the demo" and reuses the session (anonymous sign-ins are capped); `helpers/patient.ts` gives a Node Supabase client as that user for `seed_demo_record()` resets. Run with `E2E_PORT=3000` while your dev server is on 3000.
+
 ## Shells
 
 ```tsx
