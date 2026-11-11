@@ -1,26 +1,438 @@
 @import "tailwindcss";
 
+/*
+ * Trace design tokens.
+ *
+ * Every value below mirrors a Figma variable from the Foundations page
+ * (file FIaa9qCUZYAlCpxIs5hC4H, page 2:2). Names follow the Figma names with
+ * "/" and spaces turned into "-" and lower-cased, so `Text/Primary` is
+ * `--text-primary` and `indigo/600` is `--indigo-600`.
+ *
+ * Tokens marked "not a Figma variable" are values the final screens use as
+ * raw hex, or substitutions made for WCAG 2.2 AA. Each substitution is listed
+ * in docs/REVIEW.md.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Palette: neutral */
+  --neutral-50: #f8f7fb;
+  --neutral-100: #efedf5;
+  --neutral-200: #e1e4ea;
+  --neutral-300: #c8ced8;
+  --neutral-400: #b4bcc8;
+  --neutral-500: #8a94a3;
+  --neutral-600: #5c677a;
+  --neutral-700: #2a3651;
+  --neutral-800: #1a2d4f;
+  --neutral-900: #0c1927;
+
+  /* Palette: indigo */
+  --indigo-50: #f2f5fe;
+  --indigo-100: #e3eafd;
+  --indigo-200: #c6d4fa;
+  --indigo-300: #a0b6f5;
+  --indigo-400: #7b9aff;
+  --indigo-500: #5b7ae8;
+  --indigo-600: #4258cb;
+  --indigo-700: #2e40a0;
+  --indigo-800: #1f2a66;
+  --indigo-900: #1e1f3d;
+
+  /* Palette: teal */
+  --teal-50: #e5f5f3;
+  --teal-100: #c9ebe6;
+  --teal-200: #95d7cb;
+  --teal-300: #4fc4b0;
+  --teal-400: #00c9b4;
+  --teal-500: #00a896;
+  --teal-600: #008576;
+  --teal-700: #00665b;
+  --teal-800: #1e3d38;
+  --teal-900: #0e2a2a;
+
+  /* Palette: peach */
+  --peach-50: #fef0e7;
+  --peach-100: #fce2d5;
+  --peach-200: #f9d0b8;
+  --peach-300: #f8c0a0;
+  --peach-400: #f4a882;
+  --peach-500: #e8906b;
+  --peach-600: #c5764f;
+  --peach-700: #8e5439;
+  --peach-800: #5c3b26;
+  --peach-900: #2e1f18;
+
+  /* Palette: red */
+  --red-50: #fbeae7;
+  --red-100: #f9d6cf;
+  --red-200: #f4baaf;
+  --red-300: #ed9888;
+  --red-400: #e87867;
+  --red-500: #d85a4a;
+  --red-600: #b14233;
+  --red-700: #832e22;
+  --red-800: #5c2520;
+  --red-900: #3a1e1a;
+
+  /* Palette: dark and common */
+  --dark-base: #0d1525;
+  --dark-surface: #162032;
+  --dark-raised: #1b2538;
+  --common-white: #ffffff;
+
+  /* Brand */
+  --brand-navy: #1a2d4f;
+  --brand-indigo: #5b7ae8;
+  --brand-peach: #e8906b;
+  --brand-teal: #00a896;
+  --brand-navy-tint: #e1e4ea;
+  --brand-indigo-tint: #f2f5fe;
+  --brand-peach-tint: #fef0e7;
+  --brand-teal-tint: #e5f5f3;
+
+  /* Indigo roles (Figma colour styles, not variables) */
+  --indigo-accessible: #5469cf; /* Indigo/Accessible: fills with white text, 4.9:1 */
+  --indigo-text: #4258cb; /* Indigo/Text: indigo text on light surfaces, 6.0:1 on white */
+  --indigo-surface-dark: #3a4ebf; /* Indigo/Surface-Dark: full-bleed indigo screens, portal sidebar */
+  --indigo-divider-dark: #4a5ec9; /* not a Figma variable: divider on Surface-Dark */
+
+  /* Surfaces */
+  --surface-page: #f8f7fb;
+  --surface-card: #ffffff;
+  --surface-sunken: #efedf5;
+  --surface-elevated: #ffffff;
+
+  /* Text */
+  --text-primary: #0c1927;
+  --text-secondary: #8a94a3; /* 3.1:1 on white. Decorative use only, never meaningful text */
+  --text-tertiary: #5c677a; /* 5.7:1 on white. Use for all secondary text that carries meaning */
+  --text-link: #4258cb; /* Figma: #5b7ae8 (3.9:1). Substituted with Indigo/Text for AA */
+  --text-on-accent: #ffffff;
+
+  /* Borders */
+  --border-default: #e1e4ea;
+  --border-strong: #c8ced8;
+  --border-control: #7a8495; /* not a Figma variable: field and switch outlines, 3:1 on every surface */
+
+  /* Status */
+  --status-success: #00a896;
+  --status-success-tint: #e5f5f3;
+  --status-danger: #d85a4a;
+  --status-danger-tint: #fbeae7;
+  --status-warning: #e8906b;
+  --status-warning-tint: #fef0e7;
+  --status-info: #5b7ae8;
+  --status-info-tint: #f2f5fe;
+  --critical-pill: #b83c2e; /* not a Figma variable: filled pills in the patient critical strip */
+
+  /* Timeline */
+  --timeline-visit: #5b7ae8;
+  --timeline-test: #00a896;
+  --timeline-meds: #e8906b;
+  --timeline-spine: #e1e4ea;
+
+  /* Interactive (from the Button component) */
+  --interactive-primary: #5469cf;
+  --interactive-primary-hover: #4258cb;
+  --interactive-primary-press: #2e40a0;
+  --interactive-disabled-bg: #e1e4ea;
+  --interactive-disabled-text: #b4bcc8;
+
+  /* Focus ring. Figma: 2px white gap, then 2px Indigo/Text. */
+  --focus-ring: #4258cb;
 }
 
+/*
+ * Tailwind theme. Default colours, radii and shadows are cleared so only
+ * Trace tokens exist: `bg-surface-card`, `text-text-tertiary`,
+ * `border-border-default`, `rounded-card`, `shadow-card`.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: var(--common-white);
+
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
+
+  --color-indigo-50: var(--indigo-50);
+  --color-indigo-100: var(--indigo-100);
+  --color-indigo-200: var(--indigo-200);
+  --color-indigo-300: var(--indigo-300);
+  --color-indigo-400: var(--indigo-400);
+  --color-indigo-500: var(--indigo-500);
+  --color-indigo-600: var(--indigo-600);
+  --color-indigo-700: var(--indigo-700);
+  --color-indigo-800: var(--indigo-800);
+  --color-indigo-900: var(--indigo-900);
+
+  --color-teal-50: var(--teal-50);
+  --color-teal-100: var(--teal-100);
+  --color-teal-200: var(--teal-200);
+  --color-teal-300: var(--teal-300);
+  --color-teal-400: var(--teal-400);
+  --color-teal-500: var(--teal-500);
+  --color-teal-600: var(--teal-600);
+  --color-teal-700: var(--teal-700);
+  --color-teal-800: var(--teal-800);
+  --color-teal-900: var(--teal-900);
+
+  --color-peach-50: var(--peach-50);
+  --color-peach-100: var(--peach-100);
+  --color-peach-200: var(--peach-200);
+  --color-peach-300: var(--peach-300);
+  --color-peach-400: var(--peach-400);
+  --color-peach-500: var(--peach-500);
+  --color-peach-600: var(--peach-600);
+  --color-peach-700: var(--peach-700);
+  --color-peach-800: var(--peach-800);
+  --color-peach-900: var(--peach-900);
+
+  --color-red-50: var(--red-50);
+  --color-red-100: var(--red-100);
+  --color-red-200: var(--red-200);
+  --color-red-300: var(--red-300);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-red-600: var(--red-600);
+  --color-red-700: var(--red-700);
+  --color-red-800: var(--red-800);
+  --color-red-900: var(--red-900);
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-peach: var(--brand-peach);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-navy-tint: var(--brand-navy-tint);
+  --color-brand-indigo-tint: var(--brand-indigo-tint);
+  --color-brand-peach-tint: var(--brand-peach-tint);
+  --color-brand-teal-tint: var(--brand-teal-tint);
+
+  --color-indigo-accessible: var(--indigo-accessible);
+  --color-indigo-text: var(--indigo-text);
+  --color-indigo-surface-dark: var(--indigo-surface-dark);
+  --color-indigo-divider-dark: var(--indigo-divider-dark);
+
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-link: var(--text-link);
+  --color-text-on-accent: var(--text-on-accent);
+
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-control: var(--border-control);
+
+  --color-status-success: var(--status-success);
+  --color-status-success-tint: var(--status-success-tint);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-tint: var(--status-danger-tint);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-tint: var(--status-warning-tint);
+  --color-status-info: var(--status-info);
+  --color-status-info-tint: var(--status-info-tint);
+  --color-critical-pill: var(--critical-pill);
+
+  --color-timeline-visit: var(--timeline-visit);
+  --color-timeline-test: var(--timeline-test);
+  --color-timeline-meds: var(--timeline-meds);
+  --color-timeline-spine: var(--timeline-spine);
+
+  --color-interactive-primary: var(--interactive-primary);
+  --color-interactive-primary-hover: var(--interactive-primary-hover);
+  --color-interactive-primary-press: var(--interactive-primary-press);
+  --color-interactive-disabled-bg: var(--interactive-disabled-bg);
+  --color-interactive-disabled-text: var(--interactive-disabled-text);
+
+  /* Fonts (variables set by next/font in src/app/fonts.ts) */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+
+  /* Type scale (Figma text styles). Letter spacing in Figma is a percentage. */
+  --text-display: 64px;
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: 48px;
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.018em;
+  --text-display-sm: 32px;
+  --text-display-sm--line-height: 1.2;
+  --text-display-sm--letter-spacing: -0.01em;
+  --text-h2: 28px;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.012em;
+  --text-heading-lg: 24px;
+  --text-heading-lg--line-height: 1.2;
+  --text-heading-lg--letter-spacing: -0.01em;
+  --text-h3: 20px;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.005em;
+  --text-h4: 16px;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.005em;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.5;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.5;
+  --text-body-tiny: 12px;
+  --text-body-tiny--line-height: 1.4;
+  --text-label: 12px;
+  --text-label--line-height: 1.3;
+  --text-label--letter-spacing: 0.02em;
+  --text-caption: 10px;
+  --text-caption--line-height: 1.3;
+  --text-button-lg: 16px;
+  --text-button-lg--line-height: 1.2;
+  --text-button-md: 14px;
+  --text-button-md--line-height: 1.2;
+  --text-button-sm: 13px;
+  --text-button-sm--line-height: 1.2;
+  --text-meta: 13px; /* not a Figma style: secondary lines on cards (13px Regular) */
+  --text-meta--line-height: 1.3;
+
+  /* Radius */
+  --radius-*: initial;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 12px; /* not a Figma variable: raw 12px used by many components */
+  --radius-card-tight: 14px;
+  --radius-card: 16px;
+  --radius-pill-tight: 22px;
+  --radius-pill: 24px;
+  --radius-pill-loose: 26px;
+  --radius-sheet: 28px; /* not a Figma variable: tab bar and bottom sheet top corners */
+
+  /* Shadows */
+  --shadow-*: initial;
+  --shadow-sm: 0 1px 2px rgba(60, 40, 30, 0.04);
+  --shadow-card: 0 4px 20px rgba(91, 122, 232, 0.06);
+  --shadow-md: 0 4px 20px rgba(60, 40, 30, 0.06);
+  --shadow-lg: 0 12px 40px rgba(60, 40, 30, 0.1);
+  --shadow-tabbar: 0 -2px 12px rgba(0, 0, 0, 0.04);
+  --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.2);
+  --shadow-fab: 0 4px 16px -2px rgba(91, 122, 232, 0.4);
+  --shadow-strip: 0 4px 4px rgba(0, 0, 0, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-variation-settings: "opsz" 14;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * One visible focus style everywhere (WCAG 2.4.7, 2.4.11).
+   * Inside an `.on-dark` surface the ring turns white.
+   */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .on-dark {
+    --focus-ring: #ffffff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * Interaction variants. Use these instead of hover:/active: in components.
+ * `data-force="hover"` (or press / focus) pins the state on, so the /kit page
+ * can show every state side by side. Real hover only applies on devices that
+ * can hover.
+ */
+@custom-variant hovered {
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled="true"]) {
+      @slot;
+    }
+  }
+  &[data-force~="hover"] {
+    @slot;
+  }
+}
+
+@custom-variant pressed {
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    @slot;
+  }
+  &[data-force~="press"] {
+    @slot;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@layer base {
+  [data-force~="focus"] {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Expands the tap target of a small control to at least 44px tall without changing its look. */
+@utility hit-area {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    min-height: 44px;
+    height: 100%;
+    transform: translateY(-50%);
+  }
+}
+
+@utility sr-only-focusable {
+  &:not(:focus) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
 }

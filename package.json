@@ -1,12 +1,14 @@
 {
-  "name": "scaffold",
+  "name": "trace-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "playwright test --trace off"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -14,7 +16,8 @@
     "lucide-react": "^1.72.0",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
