@@ -53,6 +53,18 @@ Recorded as Aoife answers them. If a point you need is not here, pick the option
 
 **Insurance: mock everywhere** (Aoife, 11 Nov 2026). Every account, real or demo, can choose a provider and go through the mocked sign-in, and gets the sample plan details shown on the canvas. Manual entry stays as the fallback. The mock adapter is marked clearly in code as a stand-in for a real provider integration. Trace still never asks for or stores a provider password, mock or not.
 
+**Insurance is personal, not shared** (Aoife, 11 Nov 2026, after seeing the first screens): "Insurance shouldn't need to be shared. It's more for personal use." This overrides the brief and the boards:
+- No Insurance tile on Share confirm, and Insurance does not appear in any "Sharing" or "Not shared" list (code screen, approve sheet, session screen, share history). Ten scopes, not eleven.
+- No "Include in shares" control on the insurance card.
+- No Insurance item in the portal rail, granted or not, and no portal view for it.
+- The app always creates a share with the insurance scope off. The database column and section stay for now and are listed for removal after the redesign ships.
+
+**Medication notes and Full timeline are on by default** (Aoife, same date). On Share confirm both tiles start on. A new note on a strength period is shared with doctors unless the patient turns that note off, so the app saves a new note with sharing on. The other new scopes (Documents, Family history, Mental health) still start off.
+
+**Refills are urgent at 5 days or fewer** (Aoife, same date), not 14. The urgent tint and the "N days" badge on Home, and the urgent supply line on Medications, apply only from 5 days down. The demo's warfarin refill is 8 days away, so in the demo it now shows as an ordinary tile; that difference from the boards is expected.
+
+**The Family tab's short list** keeps the rule already built: parents first, then others with a known condition, three at most (Aoife approved it).
+
 **Mental health** has no page of its own on the canvas. It stays a flag on conditions, visits, timeline events and documents, hidden from the doctor unless the Mental health scope is granted. In the portal it is one rail item: a view collecting the flagged items when granted, "Not shared" otherwise. Do not add mental health sample data that the boards do not show.
 
 **Demo data.** The demo record must match the boards exactly (medications, visits, timeline events, relatives, vitals). The old app's demo seed stays as it is until the redesign ships; the new data goes in a new seed function that the redesigned app calls.
