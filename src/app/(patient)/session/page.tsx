@@ -205,9 +205,9 @@ function Paused({
         <span aria-hidden="true" className="flex size-20 items-center justify-center rounded-full bg-brand-indigo">
           <Clock className="size-8" />
         </span>
-        <h1 className="font-display text-[44px] font-light leading-[1.1]">Time&rsquo;s up.</h1>
+        <h1 className="font-display text-[44px] font-light leading-[1.1]">Time&apos;s up.</h1>
         <p className="text-body-lg">
-          {name}&rsquo;s access has been paused. Your record is no longer visible until you decide.
+          {name}&apos;s access has been paused. Your record is no longer visible until you decide.
         </p>
       </div>
 
@@ -237,7 +237,7 @@ function Paused({
               onClick={() => onExtend(15)}
               loading={busy === 15}
               disabled={busy !== null && busy !== 15}
-              aria-label="Add 15 minutes"
+              aria-label="+15m, add 15 minutes"
             >
               +15m
             </Button>
@@ -247,7 +247,7 @@ function Paused({
               onClick={() => onExtend(30)}
               loading={busy === 30}
               disabled={busy !== null && busy !== 30}
-              aria-label="Add 30 minutes"
+              aria-label="+30m, add 30 minutes"
             >
               +30m
             </Button>
@@ -274,7 +274,7 @@ function Paused({
 
       {session.closes_at && (
         <p className="text-center text-body-tiny">
-          If you don&rsquo;t decide, the session closes at {formatTime(session.closes_at)}.
+          If you don&apos;t decide, the session closes at {formatTime(session.closes_at)}.
         </p>
       )}
       {error && (

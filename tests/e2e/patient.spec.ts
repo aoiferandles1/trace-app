@@ -37,7 +37,10 @@ test("home shows Jane's record", async ({ page }) => {
   await gotoScreen(page, "/home", /^Good (morning|afternoon|evening), Jane$/);
   await expect(page.getByText("3 medications")).toBeAttached();
   await expect(page.getByText("8 days until refill")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Upcoming.*INR blood test/ })).toBeVisible();
+  // The seed puts a GP visit on today, so Home is in its appointment-day state
+  // (p-apptday): the share card instead of the Upcoming card.
+  await expect(page.getByRole("link", { name: "Share your record now" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Upcoming.*INR blood test/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Refill due soon.*Warfarin 5mg · 8 days left/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recently added" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Blood test, full blood count and INR/ })).toBeVisible();
@@ -134,6 +137,15 @@ test("add: only the working tiles, then a note from start to delete", async ({ p
 });
 
 test("add: an upcoming appointment becomes Home's Upcoming card", async ({ page }) => {
+  // On a day with no appointment (the Upcoming card gives way to the share card on one).
+  const db = clientFor(file);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
+  const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
+  for (const v of visits ?? []) {
+    if (new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(v.occurs_at)) === today) {
+      expect((await db.from("entries").delete().eq("id", v.id)).error).toBeNull();
+    }
+  }
   await gotoScreen(page, "/add/appointment", "Log appointment");
   await expectNoAxeViolations(page);
   const inTwoDays = new Date(Date.now() + 2 * 86_400_000);
@@ -451,7 +463,9 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await expect(page.getByText("3 medications")).toBeVisible();
   await expect(page.getByText("8 days until refill")).toBeVisible();
   await expect(page.getByRole("link", { name: /Refill due soon.*Warfarin 5mg · 8 days left/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Upcoming.*(GP visit · Dr Hennessy|INR blood test)/ })).toBeVisible();
+  // Today's hand-entered GP visit puts Home in its appointment-day state.
+  await expect(page.getByRole("heading", { name: "GP visit · Dr Hennessy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Share your record now" })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-home.png"), fullPage: true });
 
   await gotoScreen(page, "/record", "Record");

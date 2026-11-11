@@ -43,7 +43,7 @@ export function LiveShareBanner({
         {paused ? `${clinicianName}'s access is paused` : `${clinicianName} can see your record`}
       </span>
       {paused ? (
-        <span className="shrink-0 text-label font-medium">Time&rsquo;s up</span>
+        <span className="shrink-0 text-label font-medium">Time&apos;s up</span>
       ) : (
         timeLeft && <span className="shrink-0 text-label font-medium">{timeLeft} left</span>
       )}

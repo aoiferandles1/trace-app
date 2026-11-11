@@ -287,8 +287,15 @@ test("a second demo visitor gets a separate record", async ({ page, browser }, i
   const { error } = await db.from("entries").insert({ kind: "note", title: "Only in sandbox one", occurs_at: new Date().toISOString() });
   expect(error).toBeNull();
 
+  // A brand-new visitor: an empty browser (contexts made in a test inherit test.use's storageState).
   const other = statePath(`share-second-${info.project.name}`);
-  await signInDemo(browser, other, info.project.use.baseURL!);
+  const fresh = await browser.newContext({ viewport: PHONE, storageState: { cookies: [], origins: [] } });
+  const welcome = await fresh.newPage();
+  await welcome.goto("/");
+  await welcome.getByRole("button", { name: "Try the demo" }).click();
+  await welcome.waitForURL("**/home", { timeout: 60_000 });
+  await fresh.storageState({ path: other });
+  await fresh.close();
   try {
     const ctx = await browser.newContext({ viewport: PHONE, storageState: other });
     const second = await ctx.newPage();
@@ -453,11 +460,11 @@ test("Time's up (stand-in data): extend brings the session back", async ({ page 
   await expect(page.getByText("Dr Hennessy's access has been paused. Your record is no longer visible until you decide.")).toBeVisible();
   await expect(page.getByText("29 of 29 min")).toBeVisible();
   await expect(page.getByRole("button", { name: /Save and end.*Session notes saved · access closed/ })).toBeVisible();
-  await expect(page.getByText(/^If you don’t decide, the session closes at /)).toBeVisible();
+  await expect(page.getByText(/^If you don't decide, the session closes at /)).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
-  await page.getByRole("button", { name: "Add 15 minutes" }).click();
+  await page.getByRole("button", { name: /add 15 minutes/i }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Dr Hennessy can see your record again." })).toBeAttached();
 });
