@@ -26,7 +26,7 @@ function ConditionDetailScreen() {
   const c = data.status === "ready" ? data.data : null;
 
   return (
-    <SubScreen title="Condition" backHref="/record?tab=conditions" backLabel="Back to Record">
+    <SubScreen title="Condition" backHref="/record?tab=conditions" backLabel="Back to Record" tabBar>
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !c ? (
