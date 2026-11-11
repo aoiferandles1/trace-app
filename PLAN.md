@@ -10,7 +10,7 @@ Decided when the build began, after setting up the accounts.
 - The Supabase project exists: name `trace`, ref `tpqzmwtcgfgjhursxpsf`, region eu-west-1, URL `https://tpqzmwtcgfgjhursxpsf.supabase.co`. Do not create another.
 - `.env.local` at the repo root holds the URL, the publishable key and three generated secrets (`PORTAL_SERVER_SECRET`, `CRON_SECRET`, `IP_HASH_SALT`). It is git-ignored. Never print, log or commit its values.
 - The Vercel project does not exist yet. Vercel's GitHub app needs access to this repo first, which is Aoife's step. Builders do not touch Vercel; the supervising session does.
-- Anonymous sign-ins are switched off in Supabase Auth and can only be switched on in the dashboard, which is also Aoife's step. Build the demo anyway and handle the "anonymous sign-ins are disabled" error with a plain message.
+- Anonymous sign-ins are switched on in Supabase Auth (Aoife enabled them on 11 Nov 2026), so the demo and the end-to-end tests can sign in. Still handle the "anonymous sign-ins are disabled" error with a plain message, in case the setting is ever turned off.
 
 **Branch and commits**
 - All work stays on `claude/charming-goodall-sivzpd`. Do not create `main` (this replaces the instruction in section 3 and Phase 0).
@@ -31,7 +31,7 @@ A `before insert` trigger on `auth.users` raises an exception unless the new use
 Supabase's default email carries a link, not a code, until Aoife edits the template in the dashboard. Support both: a `/auth/confirm` route that accepts the emailed link (`token_hash` and `type`), and the six-box code screen. The verify screen should say to use the link in the email or type the code.
 
 **Testing**
-There is no local Supabase (Docker is not running here), so development and tests use the hosted project. The container can reach it. End-to-end tests drive the patient side as demo (anonymous) users, so they need no inbox; until anonymous sign-ins are switched on they will fail at sign-in, and that is expected. SQL tests live in `supabase/tests/` and run inside a transaction that rolls back. Tests must clean up anything they create.
+There is no local Supabase (Docker is not running here), so development and tests use the hosted project. The container can reach it. End-to-end tests drive the patient side as demo (anonymous) users, so they need no inbox. SQL tests live in `supabase/tests/` and run inside a transaction that rolls back. Tests must clean up anything they create.
 
 ## 1. What Trace is, and what this MVP is for
 
