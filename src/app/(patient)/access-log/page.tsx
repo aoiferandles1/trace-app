@@ -104,7 +104,7 @@ function describe(e: AccessEvent, s: ShareSession): string {
 function AccessLogScreen() {
   const data = useLoad(loadLog);
   return (
-    <SubScreen title="Access log" backHref="/profile" backLabel="Back to My profile">
+    <SubScreen title="Share history" backHref="/profile" backLabel="Back to Profile">
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : data.data.length === 0 ? (

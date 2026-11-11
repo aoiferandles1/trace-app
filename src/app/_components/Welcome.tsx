@@ -59,7 +59,7 @@ export function Welcome() {
       setDemoBusy(false);
       return;
     }
-    const seeded = await supabase.rpc("seed_demo_record");
+    const seeded = await supabase.rpc("seed_demo_record_v2");
     if (seeded.error) {
       await supabase.auth.signOut({ scope: "local" });
       setDemoError("The demo couldn't start. Try again in a moment.");

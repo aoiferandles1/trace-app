@@ -16,7 +16,7 @@ import { ShareSessionProvider } from "./ShareSession";
  * - `gate="record"` (the (patient) layout: /home, /record, /meds, /add,
  *   /profile): signed-out visitors go to `/`, and anyone who has not finished
  *   sign-up goes back to their step. Demo users arrive with
- *   onboarding_step "done" (seed_demo_record sets it), so they skip sign-up.
+ *   onboarding_step "done" (seed_demo_record_v2 sets it), so they skip sign-up.
  * - `gate="onboarding"` (sign-up steps 3 to 7): signed-out visitors go to
  *   `/signup`, finished accounts go to /home, and nobody can jump ahead of
  *   the step they have reached (going back is fine).

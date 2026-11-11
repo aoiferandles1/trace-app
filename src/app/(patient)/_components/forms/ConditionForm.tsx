@@ -61,7 +61,7 @@ export function ConditionForm({
       setSaveError(SAVE_FAILED);
       return;
     }
-    router.push(condition ? `/record/conditions/${condition.id}` : "/record");
+    router.push(condition ? `/record/conditions/${condition.id}` : "/record?tab=conditions");
   }
 
   return (

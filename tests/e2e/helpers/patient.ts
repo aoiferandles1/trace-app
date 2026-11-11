@@ -10,7 +10,7 @@ import type { Database } from "../../../src/lib/supabase/database.types";
  * Anonymous sign-ins are capped (30 an hour from this machine, shared with
  * the portal build), so each Playwright project signs in ONCE, through the
  * real "Try the demo" button, saves the browser session to a file, and every
- * test reuses it. Between tests the record is reset with seed_demo_record(),
+ * test reuses it. Between tests the record is reset with seed_demo_record_v2(),
  * called from Node with that same session's access token. The user deletes
  * itself at the end (delete_my_account()).
  *
@@ -67,7 +67,7 @@ export function clientFor(file: string): SupabaseClient<Database> {
 
 /** Resets the test user's record to Jane Doe. */
 export async function reseed(db: SupabaseClient<Database>) {
-  const { error } = await db.rpc("seed_demo_record");
+  const { error } = await db.rpc("seed_demo_record_v2");
   expect(error, error?.message).toBeNull();
 }
 

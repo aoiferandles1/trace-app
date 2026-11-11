@@ -15,12 +15,15 @@ export function CriticalSafetyStrip({
   items,
   variant = "patient",
   emptyText = "No allergies or blood type recorded",
+  allergyIcon = true,
   className,
 }: {
   /** e.g. ["Penicillin allergy", "A+ Blood Type"]. Items that say "allergy" are shown as critical. */
   items: string[];
   variant?: "patient" | "portal";
   emptyText?: string;
+  /** The warning icon before an allergy. RecordA2 draws none (the words and colour carry it). */
+  allergyIcon?: boolean;
   className?: string;
 }) {
   return (
@@ -44,7 +47,7 @@ export function CriticalSafetyStrip({
                   allergy ? "text-label font-semibold text-critical" : "text-caption text-ink-2",
                 )}
               >
-                {allergy && <Icon name="warning" size={18} />}
+                {allergy && allergyIcon && <Icon name="warning" size={18} />}
                 {item}
               </li>
             );

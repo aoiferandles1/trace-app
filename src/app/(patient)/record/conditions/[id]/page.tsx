@@ -26,7 +26,7 @@ function ConditionDetailScreen() {
   const c = data.status === "ready" ? data.data : null;
 
   return (
-    <SubScreen title="Condition" backHref="/record" backLabel="Back to Record">
+    <SubScreen title="Condition" backHref="/record?tab=conditions" backLabel="Back to Record">
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !c ? (
@@ -60,7 +60,7 @@ function ConditionDetailScreen() {
               onConfirm={async () => {
                 const { error } = await createClient().from("conditions").delete().eq("id", c.id);
                 if (error) return false;
-                router.replace("/record");
+                router.replace("/record?tab=conditions");
                 return true;
               }}
             />

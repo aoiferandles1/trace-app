@@ -7,7 +7,7 @@ import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { MedicationCard } from "@/components/patient/MedicationCard";
 import { QuickActionTile } from "@/components/patient/QuickActionTile";
 import { SessionStatusRow, SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
-import { ShareTodayCard } from "@/components/patient/ShareTodayCard";
+import { TodayCard } from "@/components/patient/TodayCard";
 import { StatTile } from "@/components/patient/StatTile";
 import { TimelineItem, TimelineList, TimelineYear } from "@/components/patient/TimelineItem";
 import { AccessCard, StepList } from "@/components/portal/AccessCard";
@@ -96,13 +96,13 @@ export function PatientPiecesSection() {
     >
       <div className="grid gap-10 xl:grid-cols-2">
         <Specimen title="Today card (MainA2)" width="phone">
-          <ShareTodayCard
-            time="9:30am"
-            title="GP visit today"
-            place="Dr Hennessy, Rathmines Medical Centre"
-            avatar={<Avatar initials="DH" size={48} tone="onAccent" />}
-            href="#patient"
-            actionLabel="Share record"
+          <TodayCard
+            eyebrow="GP visit today"
+            figure="9:30am"
+            name="Dr Hennessy"
+            place="Rathmines Medical Centre"
+            initials="DH"
+            action={{ href: "#patient", label: "Share record" }}
           />
         </Specimen>
         <Specimen title="Banner cards, stat and shortcut tiles" width="phone">

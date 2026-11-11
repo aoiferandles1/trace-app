@@ -81,14 +81,14 @@ function EditProfileScreen() {
       return;
     }
     setProfile(data);
-    router.push("/profile");
+    router.push("/profile/details");
   }
 
   return (
     <SubScreen
       title="Edit profile"
-      backHref="/profile"
-      backLabel="Back to My profile"
+      backHref="/profile/details"
+      backLabel="Back to Your details"
       footer={<SaveButton form="profile-form" busy={busy}>Save changes</SaveButton>}
     >
       <FormFrame id="profile-form" onSubmit={submit} error={saveError}>

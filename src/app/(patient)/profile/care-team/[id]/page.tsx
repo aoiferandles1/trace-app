@@ -29,8 +29,8 @@ function EditCareMemberScreen() {
   return (
     <SubScreen
       title="Care team"
-      backHref="/profile"
-      backLabel="Back to My profile"
+      backHref="/profile/care-team"
+      backLabel="Back to Care team"
       footer={m ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
@@ -48,7 +48,7 @@ function EditCareMemberScreen() {
               onConfirm={async () => {
                 const { error } = await createClient().from("care_team").delete().eq("id", m.id);
                 if (error) return false;
-                router.replace("/profile");
+                router.replace("/profile/care-team");
                 return true;
               }}
             />

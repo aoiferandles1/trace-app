@@ -45,7 +45,7 @@ export function CareMemberForm({
       setSaveError(SAVE_FAILED);
       return;
     }
-    router.push("/profile");
+    router.push("/profile/care-team");
   }
 
   return (

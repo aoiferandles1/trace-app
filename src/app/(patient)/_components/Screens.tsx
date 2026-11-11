@@ -51,9 +51,23 @@ export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" })
   return <DemoStrip tone={tone === "session" ? "session" : "default"} />;
 }
 
-export function TabScreen({ header, children }: { header: ReactNode; children: ReactNode }) {
+export function TabScreen({
+  header,
+  banner,
+  children,
+}: {
+  header: ReactNode;
+  /** Replaces the live banner; `null` hides it (Home shows the share in its own card). */
+  banner?: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <PatientShell demo={<DemoMarker />} banner={<LiveBannerSlot />} header={header} tabBar={<TabBar />}>
+    <PatientShell
+      demo={<DemoMarker />}
+      banner={banner === undefined ? <LiveBannerSlot /> : banner}
+      header={header}
+      tabBar={<TabBar />}
+    >
       {children}
     </PatientShell>
   );

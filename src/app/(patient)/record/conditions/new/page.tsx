@@ -14,7 +14,7 @@ function NewConditionScreen() {
   return (
     <SubScreen
       title="Add a condition"
-      backHref="/record"
+      backHref="/record?tab=conditions"
       backLabel="Back to Record"
       footer={<SaveButton form={formId} busy={busy}>Save condition</SaveButton>}
     >

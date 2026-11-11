@@ -39,8 +39,15 @@ export type ListRowProps = {
   srSuffix?: string;
   /** Element for the title when the row is static (no href or onClick). */
   titleAs?: "span" | "h3" | "p";
+  /**
+   * Vertical padding when the board gives one: 10, 11 or 12px (MainA2's rows
+   * are 12, RecordA2's timeline 11, its relatives 10). Default: 64px tall.
+   */
+  padY?: 10 | 11 | 12;
   className?: string;
 };
+
+const padYClasses = { 10: "py-2.5", 11: "py-2.75", 12: "py-3" } as const;
 
 const valueClasses = {
   numeral: "font-display text-numeral font-light text-ink",
@@ -67,6 +74,7 @@ export function ListRow({
   onClick,
   srSuffix,
   titleAs = "span",
+  padY,
   className,
 }: ListRowProps) {
   const Title = href || onClick ? "span" : titleAs;
@@ -88,7 +96,8 @@ export function ListRow({
     </>
   );
   const classes = cn(
-    "flex min-h-16 w-full items-center gap-3.5 py-2 text-left text-ink",
+    "flex w-full items-center gap-3.5 text-left text-ink",
+    padY ? padYClasses[padY] : "min-h-16 py-2",
     (href || onClick) && "transition-colors duration-150 ease-out hovered:text-accent-alt",
     className,
   );
