@@ -129,6 +129,8 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
   const screens: [string, string | RegExp][] = [
     ["/home", /^Good (morning|afternoon|evening), Jane$/],
     ["/record", "Record"],
+    ["/record?tab=conditions", "Record"],
+    ["/record?tab=family", "Record"],
     [`/record/${entry}`, "Result"],
     [`/record/${entry}/edit`, /^Edit/],
     [`/record/conditions/${condition}`, "Condition"],
@@ -140,12 +142,15 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/add/note", "Write a note"],
     ["/add/appointment", "Log appointment"],
     ["/add/medication", /medication/i],
-    ["/profile", "My profile"],
+    ["/profile", "Profile"],
+    ["/profile/details", "Your details"],
     ["/profile/edit", /^Edit/],
+    ["/profile/care-team", "Care team"],
     ["/profile/care-team/new", /care team/i],
     [`/profile/care-team/${person}`, /./],
-    ["/access-log", "Access log"],
-    ["/share", "Share Record"],
+    ["/profile/privacy", "Privacy and security"],
+    ["/access-log", "Share history"],
+    ["/share", "Share your record"],
     ["/terms", "Terms"],
   ];
   for (const [path, heading] of screens) await checkScreen(page, path, heading);
@@ -154,10 +159,10 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
 test("patient app: the share loop screens at 320px, and the request sheet with the keyboard alone", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize(NARROW);
-  await checkScreen(page, "/share", "Share Record");
-  await page.getByRole("button", { name: "Generate share code" }).click();
+  await checkScreen(page, "/share", "Share your record");
+  await page.getByRole("button", { name: "Create share code" }).click();
   await page.waitForURL(/\/share\/code$/);
-  await expect(page.getByRole("heading", { name: "Your code is ready." })).toBeVisible();
+  await expect(page.getByText(/^Your code: \d \d \d \d$/)).toBeAttached();
   await expectNoSideScroll(page);
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);
@@ -198,11 +203,17 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
 
   await page.getByRole("button", { name: "End sharing now" }).focus();
   await page.keyboard.press("Enter");
-  await page.waitForURL(/\/session\/ended\?id=/);
-  await expect(page.getByRole("heading", { level: 1, name: "Session ended" })).toBeVisible();
+  // Back to the bright app, with one line and the summary a link away.
+  await page.waitForURL(/\/home\?ended=/);
+  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
   await expect(page.locator('[role="status"][aria-live="polite"]').last()).toHaveText(
     "Sharing ended. Dr Hennessy no longer has access to your record.",
   );
+  await expectNoSideScroll(page);
+  await expectNoAxeViolations(page);
+  expect((await walkKeyboard(page)).problems).toEqual([]);
+  await page.getByRole("link", { name: "View summary" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Session ended" })).toBeVisible();
   await expectNoSideScroll(page);
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);
@@ -246,7 +257,7 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
   await page.setViewportSize(NARROW);
   await page.goto("/home");
   await expect(page.getByRole("heading", { level: 1, name: /, Jane$/ })).toBeVisible({ timeout: 20_000 });
-  await page.goto("/profile");
+  await page.goto("/profile/privacy");
   await page.getByRole("button", { name: "Delete my account" }).click();
   await expect(page.getByRole("dialog", { name: "Delete your account?" })).toBeVisible();
   const running = await page.evaluate(() =>

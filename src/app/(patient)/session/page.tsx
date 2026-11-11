@@ -210,7 +210,7 @@ function Paused({
       <BackToHome />
       <div className="flex flex-col items-center gap-3 pt-2 text-center">
         <Icon name="clock" size={40} strokeWidth={1.5} />
-        <h1 className="font-display text-display font-light">Time&apos;s up.</h1>
+        <h1 className="font-display text-title font-light">Time&apos;s up</h1>
         <p className="text-body-lg text-on-session-2">
           {name}&apos;s access has been paused. Your record is no longer visible until you decide.
         </p>
@@ -237,9 +237,8 @@ function Paused({
             onClick={() => onExtend(15)}
             loading={busy === 15}
             disabled={busy !== null && busy !== 15}
-            aria-label="+15m, add 15 minutes"
           >
-            +15m
+            Add 15 min
           </Button>
           <Button
             variant="primary"
@@ -249,9 +248,8 @@ function Paused({
             onClick={() => onExtend(30)}
             loading={busy === 30}
             disabled={busy !== null && busy !== 30}
-            aria-label="+30m, add 30 minutes"
           >
-            +30m
+            Add 30 min
           </Button>
         </div>
       </section>
