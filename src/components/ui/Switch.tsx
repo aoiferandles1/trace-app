@@ -141,8 +141,6 @@ export function LockedRow({
 }: {
   title: ReactNode;
   description?: ReactNode;
-  /** Kept for old call sites; the row is the same either way. */
-  tone?: "default" | "critical";
   className?: string;
 }) {
   return (
