@@ -28,7 +28,7 @@ function EditCareMemberScreen() {
 
   return (
     <SubScreen
-      title="Care team"
+      title={m ? `Edit ${m.name}` : "Care team"}
       backHref="/profile/care-team"
       backLabel="Back to Care team"
       footer={m ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}

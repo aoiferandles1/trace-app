@@ -34,8 +34,8 @@ export function DemoStage() {
     <div className="min-h-dvh bg-ground text-ink">
       <main id="main" className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-6 min-[1100px]:px-8">
         <header className="flex flex-col gap-1.5">
-          <p className="font-display text-title font-light">trace</p>
-          <h1 className="font-display text-heading font-light">Try both sides of a GP visit</h1>
+          <p className="font-display text-wordmark font-light">trace</p>
+          <h1 className="font-display text-title font-light">Try both sides of a GP visit</h1>
           <p className="text-caption text-ink-2">
             {wide === false
               ? "Start on the phone: tap Try the demo and share Jane's record. Then open the doctor's portal and type the code."
@@ -78,7 +78,7 @@ export function DemoStage() {
 function Phone() {
   return (
     <figure className="flex w-full max-w-[414px] shrink-0 flex-col items-center gap-2">
-      <div className="w-full rounded-feature border border-border-control bg-surface p-2">
+      <div className="w-full rounded-feature border border-border-card bg-surface p-2">
         <iframe
           src={PATIENT_SRC}
           title="Patient app, on a phone"
@@ -102,7 +102,7 @@ function Laptop() {
   }, []);
   return (
     <figure className="flex min-w-0 flex-1 flex-col items-center gap-2">
-      <div className="w-full rounded-tile border border-border-control bg-surface p-2">
+      <div className="w-full rounded-tile border border-border-card bg-surface p-2">
         <div ref={box} className="w-full overflow-hidden rounded-rail" style={{ height: LAPTOP.height * scale }}>
           <iframe
             src={PORTAL_SRC}
