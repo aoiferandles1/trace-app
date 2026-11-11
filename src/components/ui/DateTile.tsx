@@ -70,7 +70,7 @@ export function DateTileRow({ children, label }: { children: React.ReactNode; la
   return (
     <ul
       aria-label={label}
-      className="-mx-5 -my-1 flex gap-3 overflow-x-auto px-5 py-1 [scrollbar-width:none]"
+      className="-mx-5 -my-1 flex scroll-px-5 gap-3 overflow-x-auto px-5 py-1 [scrollbar-width:none]"
     >
       {children}
     </ul>

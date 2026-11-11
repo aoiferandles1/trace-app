@@ -17,6 +17,7 @@ import {
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
+import { StateMessage } from "@/components/ui/StateMessage";
 import { LoadStatus, SubScreen } from "../_components/Screens";
 
 type AccessEvent = Tables<"access_events">;
@@ -116,9 +117,11 @@ function AccessLogScreen() {
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : data.data.length === 0 ? (
-        <p className="px-5 py-10 text-center text-body text-ink-2">
-          You haven&apos;t shared your record yet. Every share shows up here.
-        </p>
+        <StateMessage
+          className="px-5 py-6"
+          message="You haven't shared your record yet. Every share shows up here."
+          action={{ label: "Share my record", href: "/share" }}
+        />
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-8 pt-2">
           <p className="text-caption text-ink-2">Every share, newest first. Only you can see this.</p>
