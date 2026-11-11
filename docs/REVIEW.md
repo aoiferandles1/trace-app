@@ -155,6 +155,75 @@ Built from the final screens where a frame exists (`p-splash`, `p-login`, `p-cre
 | Care team form | "Name" · "Type": GP, Specialist, Pharmacy · "Role or specialty" · "Practice, clinic or shop" · "Enter a name, like Dr Hennessy." · "Remove from care team" / "Remove Dr Hennessy?" / "They will be removed from your care team. Nothing else in your record changes." |
 | Export file | `trace-export-YYYY-MM-DD.json` |
 
+### 5.5 The share loop (Phase 5)
+
+Built from `p-apptday`, `p-home-live`, `p-prefs`, `p-code`, `p-request`, `p-active`, `p-paused` and `p-ended`, plus the access log, which has no frame. Copy is the frames' except where listed.
+
+**Accessibility substitutions**
+
+| # | Where | Figma | Build | Why |
+|---|---|---|---|---|
+| S1 | p-request, where focus starts | Not designed | Focus moves into the sheet onto the request itself, not onto "Allow access" | A stray Enter must not grant access. Tab reaches Allow, then Deny. Escape and the backdrop do nothing. |
+| S2 | p-paused "+15m" / "+30m" | Visible text only | Names "+15m, add 15 minutes" and "+30m, add 30 minutes" | 2.5.3: the name keeps the visible words and says what they do. |
+| S3 | Every countdown (banner, Home card, p-code, p-active) | Ticking text | Ticking text that is never in a live region; one polite region says "Sharing started. Dr Hennessy can see your record.", "5 minutes of sharing left.", "1 minute of sharing left.", "Time's up. Dr Hennessy's access is paused until you decide.", "Sharing ended. Dr Hennessy no longer has access to your record." | PLAN.md section 10. |
+| S4 | p-code digits | Four boxes | Four boxes hidden from screen readers, plus one line "Your code: 4 8 3 7" | Read as one code, digit by digit. |
+| S5 | p-code "Regenerate", p-paused buttons | Plain text and white pills | Same look, 44px tall tap targets | 2.5.8. |
+| S6 | p-active, p-paused, p-ended status row ("Session active", "Session paused", "Session ended") | Coloured dot | Dot plus the words (as in Figma); the clock time has a spoken form ("24 minutes 31 seconds left") | 1.4.1. |
+
+**Differences from the frames**
+
+| # | Screen | What I did | Why, or what to check |
+|---|---|---|---|
+| S7 | p-apptday | The card shows the visit's place only ("Rathmines Medical Centre"), not "· **Dublin**" | An entry has one "Where" field. No bell, no "Upload doc" (as p-home). |
+| S8 | p-apptday | The card shows on the day of a visit until a share started from that visit has ended; then Home goes back to its normal state for the rest of the day | PLAN.md section 7. |
+| S9 | p-home-live | The Upcoming card is hidden while the live card shows (as in the frame). New variants: at Time's up the card reads "Time's up" / "Dr Hennessy · GP visit" / "Access paused · Decide now" with no time; a Manual share reads "No timer · View session" | Not designed. |
+| S10 | Live banner | While paused: "Dr Hennessy's access is paused" and "Time's up" with a peach dot, in place of "can see your record" and the time | Not designed; "can see your record" would be untrue while paused. |
+| S11 | p-prefs | No Documents or Insurance switches. Back goes to Home (from the card) or My profile (from Profile). "Recent visits (last 3)" and "Full timeline" are independent switches; with both on the doctor sees the full timeline | PLAN.md section 11. Check whether turning on Full timeline should switch off Recent visits. |
+| S12 | p-prefs | If a doctor already has access: "A doctor can already see your record. View session" | Not designed. |
+| S13 | p-code | "trace.health/view" is the real address (from NEXT_PUBLIC_SITE_URL). Heading set at 36px so it fits one line at 390 wide | PLAN.md Phase 9. |
+| S14 | p-code | The list ends with "Not included: ..." (the p-active line). Rows follow the choices: "Full timeline" / "Every entry" replaces Recent visits when on; "Mental health history" / "Included" appears when on | The frame only shows the defaults. |
+| S15 | p-code, other states | Once the doctor types the code the timer card reads "Code entered" / "Dr Hennessy is asking". An expired code: "This code has expired." / "Make a new code when your doctor is ready." / "No longer works" / "Make a new code" / "Back to home". Cancelled: "This code was cancelled."; denied: "You denied this request." | Not designed. |
+| S16 | p-request | Added under the list: "The name and practice are as they typed them. Trace does not check them." | PLAN.md section 11: the sheet must not imply the doctor is verified. |
+| S17 | p-request, share from Profile | "Sharing your GP visit profile for this appointment." becomes "Sharing your GP visit profile. This share is not linked to an appointment." | PLAN.md section 7 asks for a stand-in. Please rewrite. |
+| S18 | p-request, what they'll see | Built from this share's switches. "Full timeline" replaces "Recent visits (last 3)" when on; "Mental health history" appears when on; "Can add session notes to your record" only when notes are allowed. The grey line lists what is off, for example "Conditions, full timeline, documents, insurance and mental health not included" | The frame shows the defaults. |
+| S19 | p-active | "Rathmines Medical Centre · GP visit" is the practice the doctor typed plus the profile. "3 diagnoses" counts every condition the doctor sees, resolved ones included (the portal shows them). Manual shares: "Until you end it" and no clock; "Access ends automatically at" shows the 12-hour limit | |
+| S20 | p-active | The chevron at the top left is "Minimise", back to Home; the session carries on | The frame has no destination. |
+| S21 | p-paused | "Session notes saved · access closed" only when notes are allowed and the doctor wrote some; otherwise "Access closed". Added "If you don't decide, the session closes at 10:35am." "Time used" shows minutes from Allow to the pause, "30 of 30 min" | The first would be untrue with no notes. The session closes itself 30 minutes after Time's up (PLAN.md section 15). |
+| S22 | p-ended | The line under "Session ended" depends on who ended it: "Dr Hennessy no longer has access to your record." (you), "Dr Hennessy ended the session and no longer has access to your record." (the doctor), "The session closed after Time's up. Dr Hennessy no longer has access to your record." (the timer). Session notes: "View", "None written" or "Not allowed". Duration under a minute: "Less than a minute" | Not designed. |
+| S23 | p-ended | Kept "Add notes or receipts"; it opens Add, which has no receipts tile | Receipts are not in the MVP. Suggest "Add notes". |
+| S24 | Home, Recently added | Today's 9:30 visit counts as recently added once the time has passed (as before) | Unchanged from Phase 4; flagging because it sits under the share card on appointment days. |
+
+**New screens**
+
+| Route | Screen | Built from |
+|---|---|---|
+| `/access-log` | Access log: every share newest first, a card each with who (as typed), the practice, a status tag, When, How long, Shared, a link to the session notes, and "What happened (6)" opening the events with their times. The newest is open | Card, Pill, DetailList rows |
+| Profile, Your data | "Share my record" (first; hidden while a doctor has access) and "Access log" rows | p-profile rows |
+
+**New strings**
+
+| Where | String |
+|---|---|
+| Profile | "Share my record" · "Access log" |
+| Access log | "Access log" · "Every share, newest first. Only you can see this." · "You haven't shared your record yet. Every share shows up here." · "No one used this code" · tags "Code ready", "Waiting for you", "Live now", "Time's up", "Ended", "Denied", "Expired", "Cancelled" · rows "When", "How long", "Shared", "Notes" / "Session notes" · "What happened (n)" |
+| Access log events | "You made a share code" · "Dr Hennessy typed the code and asked for access" · "Dr Hennessy cancelled their request" · "You allowed access" · "You denied access" · "The code expired unused" · "The request closed with no answer" · "Replaced by a new code" · "You cancelled the code" · "Viewed the overview / conditions / the timeline / medications / the care team" · "Time ran out, access paused" · "You added 15 minutes" · "Session notes added to your record" · "You ended the session" · "Dr Hennessy ended the session" · "The session closed after Time's up" |
+| Share errors | "A doctor can already see your record. End that session before you start a new share." · "That appointment isn't in your record any more. Share from your profile instead." · "This share has reached its 12 hour limit. Save and end it." · "This session has already closed." · "That request has already closed." · "That didn't work. Check your connection and try again." |
+| Announcements | as S3, plus "Dr Hennessy can see your record again." (after extending), "The request from Dr Hennessy timed out.", "Your share code expired.", "The doctor cancelled their request. Your code still works.", "You denied access. Dr Hennessy cannot see your record.", "New code ready: 4 8 3 7." |
+| Durations (request chip) | "30 min", "1 hour", "All day", "Until you stop it" |
+| Session ended, nothing to show | "No ended session to show" / "Your access log has every share you have made." / "View access log" |
+
+## Demo
+
+PLAN.md section 9. Everything here is new; none of it has a frame.
+
+| Where | What | Strings |
+|---|---|---|
+| Every signed-in screen of a demo account | A slim strip at the very top: peach on the light screens, indigo on the indigo ones. Real accounts never see it | "Demo · sample data" |
+| Profile, Your data (demo accounts only) | "Reset demo" row, then a confirm sheet; it re-runs the seed and goes to Home | "Reset demo" · "Reset the demo?" · "Jane's record goes back to how it started. Anything you added, and any share, is cleared." · "Cancel" · "The demo couldn't be reset. Check your connection and try again." · announced: "The demo is reset. Jane's record is back to how it started." |
+| `/demo`, 1100px and wider | The patient app in a dark phone frame (390 wide) beside the portal in a laptop frame (drawn at 1100 x 760 and scaled to fit), on Surface/Sunken. The phone starts at the welcome screen, the laptop at the portal's name step, pre-filled with Dr Hennessy, GP, Rathmines Medical Centre | "trace" · "Try both sides of a GP visit" · "Start on the phone: tap Try the demo and share Jane's record. Then type the code into the laptop. Sample data only. Trace is a portfolio project by Aoife Randles, not a medical service. Terms" · captions "Jane's phone", "Dr Hennessy's laptop" · frame names "Patient app, on a phone", "Doctor's portal, on a laptop" |
+| `/demo`, narrower | The phone alone, with a button that opens the portal in a new tab | "Start on the phone: tap Try the demo and share Jane's record. Then open the doctor's portal and type the code." · "Open the doctor's portal" (screen readers add "(opens in a new tab)") |
+| Check | The portal is scaled to about 80% inside the laptop at 1440 wide, so its small text is small. Opening it in a real second window is always possible | |
+
 ## Clinician portal
 
 Phase 6: `/view` (before the record opens) and `/view/session` (the record). Built from the c-* frames; everything below either has no frame or differs from its frame on purpose.
