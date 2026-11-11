@@ -7,8 +7,12 @@ import { IconButton } from "./IconButton";
 /**
  * Bottom sheet (BRIEF.md section 3.9, boards TimelineA2 and ApproveA2): a
  * white panel with 28px top corners, a 40 x 4 grab handle in border-control,
- * a 36px close button at the top right, over the rgba(20,22,58,.45) scrim.
- * It is at most 75% of the viewport tall and its content scrolls. No shadow.
+ * a 36px close button at the top right, over the rgba(20,22,58,.45) scrim
+ * (over session indigo that scrim is ApproveA2's #2A3787 backdrop). 12px
+ * between its parts, 12px above the handle and 24px below, as both boards.
+ * It is at most 75% of the viewport tall: its content scrolls, and the
+ * `actions` stay pinned under it, so a long access request still shows Allow
+ * and Deny together without scrolling. No shadow.
  *
  * It is a modal <dialog> opened with showModal(), so the browser moves focus
  * in, makes the page behind inert, and returns focus to whatever opened it
@@ -19,7 +23,8 @@ import { IconButton } from "./IconButton";
  * - Escape, the close button and a backdrop tap call `onClose`. Set
  *   `dismissible={false}` when the user must answer with a button (the
  *   access request: Allow or Deny); the close button is then not drawn.
- * - Put the primary actions in `actions`; they sit at the bottom.
+ * - Put the primary actions in `actions`; they sit at the bottom, outside
+ *   the part that scrolls.
  */
 
 export type BottomSheetProps = {
@@ -104,12 +109,13 @@ export function BottomSheet({
         if (dismissible && e.target === ref.current) onClose();
       }}
       className={cn(
-        "m-0 mx-auto mt-auto max-h-[75dvh] w-full max-w-[430px] overflow-y-auto rounded-t-sheet bg-surface p-0 text-ink",
-        "backdrop:bg-scrim open:animate-sheet-up",
+        "m-0 mx-auto mt-auto max-h-[75dvh] w-full max-w-[430px] overflow-hidden rounded-t-sheet bg-surface p-0 text-ink",
+        // display: only while open, so a closed dialog stays hidden.
+        "backdrop:bg-scrim open:flex open:animate-sheet-up open:flex-col",
         className,
       )}
     >
-      <div className="flex min-h-full flex-col gap-4 px-5 pb-6 pt-3">
+      <div className={cn("flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pt-3", actions ? "pb-1" : "pb-6")}>
         <span aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-border-control" />
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -122,8 +128,9 @@ export function BottomSheet({
           {dismissible && <IconButton label="Close" icon="close" iconSize={22} size={36} tone="muted" onClick={onClose} />}
         </div>
         {children}
-        {actions && <div className="flex flex-col items-center gap-1 pt-1">{actions}</div>}
       </div>
+      {/* 16px above the actions (the boards' 12px gap and 4px padding), 24px below. */}
+      {actions && <div className="flex shrink-0 flex-col items-center gap-1 px-5 pb-6 pt-3">{actions}</div>}
     </dialog>
   );
 }

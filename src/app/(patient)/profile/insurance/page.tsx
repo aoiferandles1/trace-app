@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { BottomSheet } from "@/components/ui/BottomSheet";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
@@ -93,9 +94,13 @@ function Choose({ onConnected }: { onConnected: () => void }) {
           <ListRow title="Other provider" chevron href="/profile/insurance/manual?other=1" height={60} />
         </li>
       </Card>
-      <ButtonLink href="/profile/insurance/manual" variant="text" className="w-fit">
+      {/* InsuranceA2 sets this link as a 22px line of text; hit-area keeps the 44px tap target. */}
+      <Link
+        href="/profile/insurance/manual"
+        className="hit-area w-fit text-label leading-5.5 font-semibold text-accent transition-colors duration-150 ease-out hovered:text-accent-alt"
+      >
         Enter policy details manually
-      </ButtonLink>
+      </Link>
       <p className="flex items-center gap-2 text-caption text-ink-2">
         <Icon name="lock" size={18} />
         Read only. You can disconnect any time.

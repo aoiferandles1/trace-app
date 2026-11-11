@@ -114,7 +114,8 @@ export function ListRow({
   const classes = cn(
     "flex w-full items-center text-left text-ink",
     gap === 12 ? "gap-3" : "gap-3.5",
-    padY ? padYClasses[padY] : height === 60 ? "min-h-15" : "min-h-16 py-2",
+    // InsuranceA2's 60 includes the row's divider, which a divided card draws on the <li>.
+    padY ? padYClasses[padY] : height === 60 ? "min-h-14.75" : "min-h-16 py-2",
     (href || onClick) && "transition-colors duration-150 ease-out hovered:text-accent-alt",
     current && CURRENT_BAR,
     className,
@@ -188,7 +189,8 @@ export function YearRow({
     </>
   );
   const classes = cn(
-    "grid min-h-15 w-full grid-cols-[52px_1fr_20px] items-center gap-x-2 py-2 text-left text-ink",
+    // 60px with the divider on the board; in a divided card the divider sits on the <li>, so 59 here.
+    "grid min-h-14.75 w-full grid-cols-[52px_1fr_20px] items-center gap-x-2 py-2 text-left text-ink",
     selected && CURRENT_BAR,
     className,
   );

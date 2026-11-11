@@ -155,7 +155,8 @@ function CodeBody({
           : null;
 
   return (
-    <div className="flex flex-col gap-4.5 px-5 pb-8">
+    // CodeA2: 18px between the header and the code, as between every group below it.
+    <div className="flex flex-col gap-4.5 px-5 pb-8 pt-4.5">
       <div className="flex flex-col gap-3.5">
         {finished ? (
           <div className="flex flex-col gap-1">

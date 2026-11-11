@@ -45,7 +45,8 @@ export function AccessRequestDetails({
         <h3 className="mb-0.5 text-caption font-semibold text-ink-2">They will see</h3>
         <ul className="divide-y divide-border-row">
           {shared.map((item) => (
-            <li key={item} className="flex h-9 items-center gap-3 text-body">
+            // ApproveA2: 36px rows plus their 1px divider.
+            <li key={item} className="flex h-9.25 items-center gap-3 text-body">
               <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-white">
                 <Icon name="tick" size={12} strokeWidth={3.5} />
               </span>

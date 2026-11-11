@@ -41,10 +41,14 @@ export function SharedSummaryCard({
         ) : (
           <ul className="divide-y divide-on-session-border">
             {rows.map((r) => (
-              <li key={r.label} className="flex min-h-11 items-center justify-between gap-3 py-1.5">
+              <li
+                key={r.label}
+                // CodeA2's rows with a line under the name are 52px, the line 14/18; SessionA2's are 44px.
+                className={cn("flex items-center justify-between gap-3", r.detail ? "min-h-13 py-1" : "min-h-11 py-1.5")}
+              >
                 <span className="flex min-w-0 flex-col">
                   <span className="text-row font-medium">{r.label}</span>
-                  {r.detail && <span className="text-caption text-on-session-2">{r.detail}</span>}
+                  {r.detail && <span className="text-caption leading-4.5 text-on-session-2">{r.detail}</span>}
                 </span>
                 <SharedMark />
               </li>

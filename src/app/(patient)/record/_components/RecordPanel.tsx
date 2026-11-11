@@ -158,7 +158,8 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
     );
   }
   return (
-    <>
+    // RecordA2: the card and "View full timeline" are 14px apart (the board's column gap).
+    <div className="flex flex-col gap-3.5">
       <Card as="ul">
         {entries.map((e) => (
           <li key={e.id}>
@@ -186,7 +187,7 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
       >
         View full timeline
       </ButtonLink>
-    </>
+    </div>
   );
 }
 
@@ -258,7 +259,8 @@ function FamilyTab({ relatives }: { relatives: Relative[] }) {
             </li>
           ))}
           <li>
-            <AddLink href="/record/family?add=relative" className="w-full py-2.5">
+            {/* RecordA2 draws this row 40px tall (10px padding); 44 keeps the phone's touch target. */}
+            <AddLink href="/record/family?add=relative" height={44} className="w-full">
               Add a relative
             </AddLink>
           </li>
