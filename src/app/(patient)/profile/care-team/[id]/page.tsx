@@ -2,7 +2,7 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { isUuid, type CareMember } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -13,6 +13,8 @@ import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /** Edit or remove someone on the care team (no Figma frame). */
 function EditCareMemberScreen() {
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,7 @@ function EditCareMemberScreen() {
       title="Care team"
       backHref="/profile"
       backLabel="Back to My profile"
-      footer={m ? <SaveButton form="care-form" busy={busy}>Save changes</SaveButton> : undefined}
+      footer={m ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
@@ -37,7 +39,7 @@ function EditCareMemberScreen() {
         <NotFound what="person" />
       ) : (
         <>
-          <CareMemberForm formId="care-form" member={m} onSaving={setBusy} />
+          <CareMemberForm formId={formId} member={m} onSaving={setBusy} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Remove from care team"

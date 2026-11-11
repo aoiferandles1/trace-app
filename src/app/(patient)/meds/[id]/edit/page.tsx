@@ -2,7 +2,7 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { isUuid, medicationName, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -16,6 +16,8 @@ import { LoadStatus, SubScreen } from "../../../_components/Screens";
  * then moves to the Expired tab. Delete is for mistakes.
  */
 function EditMedicationScreen() {
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -32,7 +34,7 @@ function EditMedicationScreen() {
       title="Edit medication"
       backHref="/meds"
       backLabel="Back to My medication"
-      footer={m ? <SaveButton form="medication-form" busy={busy}>Save changes</SaveButton> : undefined}
+      footer={m ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
@@ -40,7 +42,7 @@ function EditMedicationScreen() {
         <NotFound what="medication" />
       ) : (
         <>
-          <MedicationForm formId="medication-form" medication={m} onSaving={setBusy} />
+          <MedicationForm formId={formId} medication={m} onSaving={setBusy} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Delete medication"

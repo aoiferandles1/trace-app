@@ -2,7 +2,7 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { isUuid, type Condition } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -13,6 +13,8 @@ import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 
 /** Edit a condition (no Figma frame). */
 function EditConditionScreen() {
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const [busy, setBusy] = useState(false);
   const data = useLoad(async () => {
@@ -27,14 +29,14 @@ function EditConditionScreen() {
     <SubScreen
       title="Edit condition"
       backHref={`/record/conditions/${id}`}
-      footer={c ? <SaveButton form="condition-form" busy={busy}>Save changes</SaveButton> : undefined}
+      footer={c ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !c ? (
         <NotFound what="condition" />
       ) : (
-        <ConditionForm formId="condition-form" condition={c} onSaving={setBusy} />
+        <ConditionForm formId={formId} condition={c} onSaving={setBusy} />
       )}
     </SubScreen>
   );

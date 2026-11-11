@@ -1,21 +1,23 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { MedicationForm } from "../../_components/forms/MedicationForm";
 import { SaveButton } from "../../_components/forms/FormBits";
 import { SubScreen } from "../../_components/Screens";
 
 /** Add a medication (no Figma frame). */
 function AddMedicationScreen() {
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const formId = useId();
   const [busy, setBusy] = useState(false);
   return (
     <SubScreen
       title="Add a medication"
       backHref="/add"
-      footer={<SaveButton form="medication-form" busy={busy}>Save medication</SaveButton>}
+      footer={<SaveButton form={formId} busy={busy}>Save medication</SaveButton>}
     >
-      <MedicationForm formId="medication-form" onSaving={setBusy} />
+      <MedicationForm formId={formId} onSaving={setBusy} />
     </SubScreen>
   );
 }

@@ -21,7 +21,7 @@ const CLASS_TONES: Tone[] = ["indigo", "teal", "peach"];
 
 async function loadMeds() {
   const supabase = createClient();
-  return must(await supabase.from("medications").select("*").order("started_on", { ascending: false, nullsFirst: false }));
+  return must(await supabase.from("medications").select("*").order("created_at", { ascending: true }));
 }
 
 function plural(n: number, one: string, many: string) {

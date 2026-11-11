@@ -2,7 +2,7 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { isUuid, type Entry } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -13,6 +13,8 @@ import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /** Edit an entry (no Figma frame). Session notes cannot be edited here. */
 function EditEntryScreen() {
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const [busy, setBusy] = useState(false);
   const data = useLoad(async () => {
@@ -28,14 +30,14 @@ function EditEntryScreen() {
     <SubScreen
       title={entry?.kind === "note" ? "Edit note" : "Edit entry"}
       backHref={`/record/${id}`}
-      footer={editable ? <SaveButton form="entry-form" busy={busy}>Save changes</SaveButton> : undefined}
+      footer={editable ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !editable ? (
         <NotFound what="entry" />
       ) : (
-        <EntryForm formId="entry-form" variant={entry.kind === "note" ? "note" : "appointment"} entry={entry} onSaving={setBusy} />
+        <EntryForm formId={formId} variant={entry.kind === "note" ? "note" : "appointment"} entry={entry} onSaving={setBusy} />
       )}
     </SubScreen>
   );

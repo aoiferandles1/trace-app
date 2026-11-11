@@ -118,10 +118,10 @@ export function PatientSessionGate({
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-    // Only on mount and when the gate changes: later navigations inside the
-    // area keep the session already checked.
+    // The record area checks once, on mount. Sign-up checks again on every
+    // step, since a redirect between steps stays inside this layout.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gate]);
+  }, [gate, gate === "onboarding" ? pathname : null]);
 
   const value = useMemo<PatientSessionValue | null>(() => {
     if (state.status !== "ready") return null;

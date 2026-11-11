@@ -91,7 +91,7 @@ function ProfileScreen() {
                 <InfoRow label="Full name" value={name} />
                 <InfoRow label="Date of birth" value={profile.date_of_birth && formatDay(profile.date_of_birth)} />
                 <InfoRow label="Sex" value={profile.sex} />
-                <InfoRow label="Address" value={[profile.address, profile.city].filter(Boolean).join(", ")} />
+                <InfoRow label="Address" value={profile.address || profile.city} />
                 <InfoRow label="Phone" value={profile.phone} />
                 {email && <InfoRow label="Email" value={email} />}
               </dl>
