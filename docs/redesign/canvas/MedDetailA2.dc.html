@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Medication detail A2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #14163A;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F7F7FB; color: #14163A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<p style="margin: 0; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; color: #5B6085; border-bottom: 1px solid #E4E6F2">Demo with sample data</p>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 20px 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto">
+<header style="flex: none; height: 56px; display: flex; align-items: center; gap: 12px">
+<a href="MedsA2.dc.html" aria-label="Back to Medications" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: -6px; color: #14163A"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Concerta</h1>
+</header>
+<p style="flex: none; margin: -6px 0 0; font-size: 15px; line-height: 22px; color: #5B6085">Now 36mg, since Feb 2025</p>
+
+<div style="flex: none; background: #FFFFFF; border: 1px solid #E1E4F2; border-radius: 24px; padding: 16px 16px 6px">
+<div style="position: relative; width: 318px; height: 130px">
+<svg aria-hidden="true" width="318" height="130" viewBox="0 0 318 130" fill="none" style="position: absolute; left: 0; top: 0"><path d="{{d}}" stroke="{{accent}}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>
+<sc-for list="{{pts}}" as="p" hint-placeholder-count="5">
+<span style="position: absolute; left: {{p.left}}px; top: {{p.top}}px; width: 10px; height: 10px; border-radius: 5px; background: {{accent}}"></span>
+<span style="position: absolute; left: {{p.left}}px; top: {{p.labelTop}}px; font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap">{{p.label}}</span>
+</sc-for>
+</div>
+</div>
+
+<h2 style="flex: none; margin: 6px 0 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px; line-height: 26px">History</h2>
+<div style="flex: none; background: #FFFFFF; border: 1px solid #E1E4F2; border-radius: 24px; padding: 4px 18px">
+<sc-for list="{{periods}}" as="p" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 76px 1fr; column-gap: 12px; padding: 14px 0; border-bottom: 1px solid {{p.divider}}">
+<span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 30px">{{p.strength}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 20px; font-weight: 500">{{p.range}}</span><span style="font-size: 13px; line-height: 18px; color: #5B6085">{{p.by}}</span><span style="margin-top: 4px; font-size: 15px; line-height: 22px">{{p.note}}</span></span>
+</div>
+</sc-for>
+</div>
+<a href="#top" style="flex: none; display: flex; align-items: center; gap: 8px; height: 44px; color: {{accent}}; font-size: 15px; font-weight: 600; text-decoration: none"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Log a strength change</a>
+</main>
+<nav aria-label="Main" style="flex: none; height: 68px; display: flex; align-items: center; border-top: 1px solid #E4E6F2; background: #FFFFFF">
+<a href="MainA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+Home
+</a>
+<a href="RecordA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+Record
+</a>
+<a href="#top" aria-label="Add" style="flex: 1; display: flex; align-items: center; justify-content: center; text-decoration: none">
+<span style="width: 48px; height: 48px; border-radius: 24px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+</a>
+<a href="MedsA2.dc.html" aria-current="page" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: {{accent}}; font-size: 12px; line-height: 16px; font-weight: 600; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7Z"/><path d="M8.5 8.5l7 7"/></svg>
+Medications
+</a>
+<a href="InsuranceA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.8-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
+Profile
+</a>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5468D4","options":["#5468D4","#4353C4","#6B5BD6"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#5468D4';
+    const ps = [
+      { mg: 18, from: 'Jan 2024', to: 'Mar 2024', note: 'Barely noticed it. A little more focus in the morning, gone by lunch.' },
+      { mg: 27, from: 'Mar 2024', to: 'Jun 2024', note: 'Better focus through the morning. Appetite dropped.' },
+      { mg: 36, from: 'Jun 2024', to: 'Oct 2024', note: 'Steady all day. Good for work.' },
+      { mg: 45, from: 'Oct 2024', to: 'Feb 2025', note: 'Too much. Racing heart and trouble sleeping.' },
+      { mg: 36, from: 'Feb 2025', to: 'now', note: 'Back on 36. Smoother and sleeping better.' }
+    ];
+    const W = 318, H = 130, L = 14, R = 14, T = 34, B = 24, n = ps.length;
+    const vals = ps.map((p) => p.mg);
+    const mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    const yOf = (v) => T + ((mx - v) / (mx - mn)) * (H - T - B);
+    const seg = (W - L - R) / n;
+    let d = '';
+    const pts = ps.map((p, i) => {
+      const x = L + i * seg, y = yOf(p.mg);
+      d += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' L' + (x + seg) + ' ' + y + ' ';
+      return { left: Math.round(x - 5), top: Math.round(y - 5), labelTop: Math.round(y - 26), label: p.mg + 'mg' };
+    });
+    const periods = ps.slice().reverse().map((p, i, a) => ({
+      strength: p.mg + 'mg', range: p.from + ' to ' + p.to, by: 'Prescribed by Dr Hennessy',
+      note: p.note, divider: i === a.length - 1 ? 'transparent' : '#ECEEF8'
+    }));
+    return { accent: accent, d: d.trim(), pts: pts, periods: periods };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Portal entry B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #14163A;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 1280px; height: 800px; box-sizing: border-box; background: #F7F7FB; color: #14163A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="flex: none; height: 88px; box-sizing: border-box; padding: 0 56px; display: flex; align-items: center; justify-content: space-between">
+<a href="PortalEntryB.dc.html" style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px; color: #14163A; text-decoration: none">trace</a>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">Dr Hennessy, Rathmines Medical Centre</span>
+</header>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 56px 0 160px; display: flex; align-items: center; gap: 140px">
+
+<section style="flex: none; width: 520px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px; line-height: 52px; letter-spacing: -0.015em">Enter the patient's code</h1>
+<p style="margin: 0; font-size: 16px; line-height: 24px; color: #5B6085">Ask your patient to generate a share code in their Trace app.</p>
+</div>
+<div role="group" aria-label="Patient's share code" style="display: flex; gap: 12px">
+<input aria-label="Digit 1" inputmode="numeric" maxlength="1" style="width: 112px; height: 112px; box-sizing: border-box; border: 2px solid {{accent}}; border-radius: 12px; background: #FFFFFF; text-align: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 48px; color: #14163A">
+<input aria-label="Digit 2" inputmode="numeric" maxlength="1" style="width: 112px; height: 112px; box-sizing: border-box; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; text-align: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 48px; color: #14163A">
+<input aria-label="Digit 3" inputmode="numeric" maxlength="1" style="width: 112px; height: 112px; box-sizing: border-box; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; text-align: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 48px; color: #14163A">
+<input aria-label="Digit 4" inputmode="numeric" maxlength="1" style="width: 112px; height: 112px; box-sizing: border-box; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; text-align: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 48px; color: #14163A">
+</div>
+<div style="display: flex; align-items: center; gap: 24px">
+<a href="PortalWaitB.dc.html" style="display: flex; align-items: center; justify-content: center; width: 220px; height: 52px; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none">Continue</a>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">Requesting as Dr Hennessy. <a href="#top" style="color: {{accent}}; font-weight: 600; text-decoration: none">Change details</a></span>
+</div>
+</section>
+
+<section aria-label="What happens next" style="flex: none; width: 340px; display: flex; flex-direction: column">
+<h2 style="margin: 0 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; color: #5B6085">What happens next</h2>
+<ol style="list-style: none; margin: 0; padding: 0">
+<li style="display: flex; align-items: center; gap: 20px; height: 76px; border-top: 1px solid #E1E4F2"><span aria-hidden="true" style="width: 28px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 32px; color: {{accent}}">1</span><span style="font-size: 16px; line-height: 22px">The patient generates a code</span></li>
+<li style="display: flex; align-items: center; gap: 20px; height: 76px; border-top: 1px solid #E1E4F2"><span aria-hidden="true" style="width: 28px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 32px; color: {{accent}}">2</span><span style="font-size: 16px; line-height: 22px">You enter it here</span></li>
+<li style="display: flex; align-items: center; gap: 20px; height: 76px; border-top: 1px solid #E1E4F2; border-bottom: 1px solid #E1E4F2"><span aria-hidden="true" style="width: 28px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 32px; color: {{accent}}">3</span><span style="font-size: 16px; line-height: 22px">They approve, you read what they chose to share</span></li>
+</ol>
+</section>
+
+</main>
+
+<footer style="flex: none; height: 64px; box-sizing: border-box; padding: 0 56px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 16px; color: #5B6085">
+<span style="display: flex; gap: 24px"><a href="#top" style="color: {{accent}}; font-weight: 500; font-size: 14px; text-decoration: none">Privacy and security</a><a href="#top" style="color: {{accent}}; font-weight: 500; font-size: 14px; text-decoration: none">For your practice</a></span>
+<span>Demo with sample data</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5468D4","options":["#5468D4","#4353C4","#6B5BD6"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#5468D4' };
+  }
+}
+</script>
+</body>
+</html>

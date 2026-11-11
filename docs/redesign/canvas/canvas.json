@@ -1,0 +1,145 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "ApproveA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Approve access",
+      "w": 390,
+      "x": 470,
+      "y": 964
+    },
+    "CodeA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Share code",
+      "w": 390,
+      "x": 0,
+      "y": 964
+    },
+    "FamilyA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Family tree",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "InsuranceA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Insurance",
+      "w": 390,
+      "x": 1880,
+      "y": 0
+    },
+    "MainA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Home",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "MedDetailA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Concerta strength history",
+      "w": 390,
+      "x": 2820,
+      "y": 0
+    },
+    "MedsA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Medications",
+      "w": 390,
+      "x": 2350,
+      "y": 0
+    },
+    "PortalEntryB.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Portal: Enter code",
+      "w": 1280,
+      "x": 0,
+      "y": 1928
+    },
+    "PortalRecordE.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Portal: Live record (Overview, Visits, Medications, Timeline)",
+      "w": 1280,
+      "x": 2720,
+      "y": 1928
+    },
+    "PortalWaitB.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Portal: Waiting",
+      "w": 1280,
+      "x": 1360,
+      "y": 1928
+    },
+    "RecordA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Record",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "SessionA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Session active",
+      "w": 390,
+      "x": 940,
+      "y": 964
+    },
+    "ShareA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Share confirm",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "TimelineA2.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Phone: Full timeline",
+      "w": 390,
+      "x": 3290,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-11T14:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "MainA2.dc.html",
+    "ShareA2.dc.html",
+    "RecordA2.dc.html",
+    "FamilyA2.dc.html",
+    "InsuranceA2.dc.html",
+    "MedsA2.dc.html",
+    "MedDetailA2.dc.html",
+    "TimelineA2.dc.html",
+    "CodeA2.dc.html",
+    "ApproveA2.dc.html",
+    "SessionA2.dc.html",
+    "PortalEntryB.dc.html",
+    "PortalWaitB.dc.html",
+    "PortalRecordE.dc.html"
+  ],
+  "pages": [],
+  "title": "Trace redesign: approved screens for handoff"
+}

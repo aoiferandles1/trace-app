@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Portal record E</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible,textarea:focus-visible,[role=separator]:focus-visible{outline:2px solid #14163A;outline-offset:2px}
+.onink a:focus-visible,.onink button:focus-visible{outline-color:#FFFFFF}
+</style>
+</helmet>
+<div id="top" style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; color: #14163A; font-family: Inter, system-ui, sans-serif; display: flex; overflow: hidden">
+
+<nav class="onink" aria-label="Patient record" style="flex: none; width: 232px; box-sizing: border-box; background: #3D4EB8; color: #FFFFFF; padding: 28px 14px 24px; display: flex; flex-direction: column; gap: 4px">
+<a href="PortalEntryB.dc.html" style="padding: 0 14px 28px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px; color: #FFFFFF; text-decoration: none">trace</a>
+
+<button type="button" aria-current="{{ovCurrent}}" onClick="{{goOverview}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{ovBg}}; color: {{ovFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Overview</button>
+<button type="button" aria-current="{{visCurrent}}" onClick="{{goVis}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{visBg}}; color: {{visFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Recent visits</button>
+<button type="button" aria-current="{{medCurrent}}" onClick="{{goMed}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{medBg}}; color: {{medFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7Z"/><path d="M8.5 8.5l7 7"/></svg>Medications</button>
+<button type="button" aria-current="{{timCurrent}}" onClick="{{goTim}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{timBg}}; color: {{timFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>Full timeline</button>
+<button type="button" aria-current="{{careCurrent}}" onClick="{{goCare}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{careBg}}; color: {{careFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.8-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>Care team</button>
+<button type="button" aria-current="{{famCurrent}}" onClick="{{goFamily}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border: 0; border-radius: 12px; font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; background: {{famBg}}; color: {{famFg}}"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M12 7.5V12M6 16.5V12h12v4.5"/></svg>Family history</button>
+
+<div style="height: 1px; background: rgba(255,255,255,0.28); margin: 12px 0 8px"></div>
+
+<div aria-disabled="true" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px; color: rgba(255,255,255,0.78)">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="opacity: .7"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 500">Documents</span><span style="font-size: 12px; line-height: 16px">Not shared</span></span>
+<span aria-hidden="true" style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 8px; border: 2px dashed rgba(255,255,255,0.6)"></span>
+</div>
+<div aria-disabled="true" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px; color: rgba(255,255,255,0.78)">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="opacity: .7"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 500">Insurance</span><span style="font-size: 12px; line-height: 16px">Not shared</span></span>
+<span aria-hidden="true" style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 8px; border: 2px dashed rgba(255,255,255,0.6)"></span>
+</div>
+<div aria-disabled="true" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px; color: rgba(255,255,255,0.78)">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="opacity: .7"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.2 2 1.8 3.5 1.8s2.6-.6 3.5-1.8"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 500">Mental health</span><span style="font-size: 12px; line-height: 16px">Not shared</span></span>
+<span aria-hidden="true" style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 8px; border: 2px dashed rgba(255,255,255,0.6)"></span>
+</div>
+
+<div style="flex: 1"></div>
+<div style="padding: 16px 14px 0; border-top: 1px solid rgba(255,255,255,0.28); display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; line-height: 20px; font-weight: 600">Dr Hennessy</span>
+<span style="font-size: 13px; line-height: 18px; color: rgba(255,255,255,0.78)">Rathmines Medical Centre</span>
+</div>
+</nav>
+
+<main style="flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="flex: none; box-sizing: border-box; position: relative; padding: 28px 40px 0; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<div style="display: flex; align-items: center; gap: 16px">
+<span aria-hidden="true" style="flex: none; width: 56px; height: 56px; border-radius: 28px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px">JD</span>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 30px; line-height: 36px; letter-spacing: -0.01em">Jane Doe</h1>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">35, female, born 12 Mar 1991, Dublin</span>
+</div>
+</div>
+<span style="flex: none; display: flex; align-items: center; gap: 8px">
+<a href="PortalEntryB.dc.html" style="display: flex; align-items: center; height: 36px; padding: 0 16px; box-sizing: border-box; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; color: {{accent}}; font-size: 14px; font-weight: 600; text-decoration: none">End session</a>
+</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; gap: 64px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Allergy</span><span style="display: flex; align-items: center; gap: 8px; font-size: 17px; line-height: 24px; font-weight: 600; color: #A12A1E"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Penicillin</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Blood type</span><span style="font-size: 17px; line-height: 24px; font-weight: 600">A+</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Shared for 30 min</span><span style="font-size: 17px; line-height: 24px; font-weight: 600">29:54 left</span></div>
+</div>
+<div role="progressbar" aria-label="Time left" aria-valuemin="0" aria-valuemax="30" aria-valuenow="29.9" style="height: 3px; border-radius: 2px; background: #ECEEF8"><div style="width: 99.7%; height: 3px; border-radius: 2px; background: {{accent}}"></div></div>
+</div>
+
+</header>
+
+<div style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 40px; display: flex; flex-direction: column; overflow: hidden">
+
+
+<sc-if value="{{showOverview}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; display: flex; gap: 56px; padding-top: 34px">
+
+<div style="flex: 2; min-width: 0; display: flex; flex-direction: column; gap: 44px">
+
+<section>
+<h2 style="margin: 0 0 12px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 22px; line-height: 28px">Conditions</h2>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{conditions}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column"><span style="font-size: 17px; line-height: 24px; font-weight: 500">{{c.name}}</span><span style="font-size: 14px; line-height: 20px; color: #5B6085">{{c.sub}}</span></div>
+</sc-for>
+</div>
+</section>
+
+<section>
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 22px; line-height: 28px">Recent visits</h2>
+<a href="#top" style="color: {{accent}}; font-size: 14px; font-weight: 600; text-decoration: none">View all</a>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{timeline}}" as="t" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 64px 1fr auto; align-items: baseline; column-gap: 12px">
+<span style="display: flex; align-items: baseline; gap: 5px"><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 28px; color: {{t.dateColor}}">{{t.day}}</span><span style="font-size: 12px; line-height: 16px; color: {{t.dateColor}}">{{t.mon}}</span></span>
+<span style="font-size: 16px; line-height: 22px; font-weight: 500">{{t.title}}</span>
+<span style="font-size: 14px; line-height: 20px; color: {{t.typeColor}}">{{t.type}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+</div>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 44px">
+
+<section>
+<h2 style="margin: 0 0 12px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 22px; line-height: 28px">Medications</h2>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{meds}}" as="m" hint-placeholder-count="4">
+<button type="button" onClick="{{m.open}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; font: inherit; color: #14163A; text-align: left; cursor: pointer">
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 17px; line-height: 24px; font-weight: 500">{{m.name}} <span style="font-size: 14px; font-weight: 400; color: #5B6085">{{m.dose}}</span></span>
+<span style="display: flex; align-items: center; gap: 6px; font-size: 14px; line-height: 20px; color: #5B6085"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.icon}}"/></svg>{{m.when}}</span>
+</span>
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none"><path d="M9 5l7 7-7 7"/></svg>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section>
+<h2 style="margin: 0 0 14px; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 22px; line-height: 28px">Vitals</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 22px 16px">
+<sc-for list="{{vitals}}" as="v" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column"><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 32px; line-height: 38px; color: {{accent}}">{{v.value}}</span><span style="font-size: 13px; line-height: 16px; color: #5B6085">{{v.label}}</span></div>
+</sc-for>
+</div>
+</section>
+
+</div>
+
+</div>
+</sc-if>
+
+<sc-if value="{{showVisits}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; display: flex; gap: 28px; padding-top: 34px">
+
+<div style="flex: none; width: 272px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">Recent visits</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; line-height: 16px; color: #5B6085">Upcoming</span>
+<sc-for list="{{upcomingRows}}" as="r" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: 64px 1fr; align-items: center; padding: 6px 0 6px 15px"><span style="display: flex; align-items: baseline; gap: 4px"><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 28px; color: {{accent}}">{{r.day}}</span><span style="font-size: 12px; line-height: 16px; color: {{accent}}">{{r.mon}}</span></span><span style="font-size: 15px; line-height: 20px; font-weight: 500">{{r.title}}</span></div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; line-height: 16px; color: #5B6085; margin-bottom: 4px">Last 3</span>
+<sc-for list="{{visRows}}" as="r" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="display: grid; grid-template-columns: 64px 1fr; align-items: center; width: 100%; box-sizing: border-box; padding: 8px 0 8px 12px; border: 0; border-left: 3px solid {{r.bar}}; background: transparent; font: inherit; color: #14163A; text-align: left; cursor: pointer"><span style="display: flex; align-items: baseline; gap: 4px"><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 28px">{{r.day}}</span><span style="font-size: 12px; line-height: 16px; color: #5B6085">{{r.mon}}</span></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 500">{{r.title}}</span><span style="font-size: 13px; line-height: 16px; color: #5B6085">{{r.type}}</span></span></button>
+</sc-for>
+</div>
+<p style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 18px; color: #5B6085"><span aria-hidden="true" style="flex: none; width: 16px; height: 16px; box-sizing: border-box; border-radius: 8px; border: 2px dashed #9096BE"></span>Older visits are in the full timeline.</p>
+</div>
+
+<section aria-live="polite" style="flex: 1; min-width: 0; overflow-y: auto; box-sizing: border-box; border-left: 1px solid #ECEEF8; padding-left: 28px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h3 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">{{visTitle}}</h3>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">{{visMeta}}</span>
+</div>
+<sc-if value="{{showTextKind}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{visFields}}" as="f" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">{{f.label}}</span><span style="font-size: 16px; line-height: 24px">{{f.text}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{showResultKind}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{resultRows}}" as="r" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 1fr 120px; align-items: center; column-gap: 20px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 22px; font-weight: 500">{{r.name}}</span><span style="font-size: 14px; line-height: 20px; color: {{r.flagColor}}; font-weight: {{r.flagWeight}}">{{r.value}}</span></span>
+<span aria-label="{{r.aria}}" role="img" style="position: relative; display: block; height: 6px; border-radius: 3px; background: #ECEEF8"><span style="position: absolute; top: 0; height: 6px; border-radius: 3px; background: #C9D0F3; left: {{r.bandL}}%; width: {{r.bandW}}%"></span><span style="position: absolute; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 6px; background: {{r.dotColor}}; left: {{r.dotL}}%"></span></span>
+</div>
+</sc-for>
+<span style="font-size: 13px; line-height: 18px; color: #5B6085">The shaded part of each bar is the normal range.</span>
+</div>
+</sc-if>
+</section>
+
+</div>
+</sc-if>
+
+<sc-if value="{{showTimeline}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; display: flex; gap: 28px; padding-top: 34px">
+
+<div style="flex: none; width: 292px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">Full timeline</h2>
+<div role="radiogroup" aria-label="Show" style="flex: none; display: flex; gap: 4px; padding: 4px; background: #FFFFFF; border: 1px solid #DCDFF0; border-radius: 12px">
+<sc-for list="{{tlFilters}}" as="f" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{f.checked}}" onClick="{{f.pick}}" style="flex: 1; height: 34px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{tlRows}}" as="r" hint-placeholder-count="9">
+<button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="display: grid; grid-template-columns: 56px 1fr; align-items: center; width: 100%; box-sizing: border-box; padding: 8px 0 8px 12px; border: 0; border-left: 3px solid {{r.bar}}; background: transparent; font: inherit; color: #14163A; text-align: left; cursor: pointer"><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px; line-height: 26px; color: {{r.yearColor}}">{{r.year}}</span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 500">{{r.title}}</span><span style="font-size: 13px; line-height: 16px; color: #5B6085">{{r.sub}}</span></span></button>
+</sc-for>
+</div>
+</div>
+
+<section aria-live="polite" style="flex: 1; min-width: 0; overflow-y: auto; box-sizing: border-box; border-left: 1px solid #ECEEF8; padding-left: 28px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h3 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">{{tlTitle}}</h3>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">{{tlMeta}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Seen by</span><span style="font-size: 16px; line-height: 24px">{{tlBy}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Outcome</span><span style="font-size: 16px; line-height: 24px">{{tlOutcome}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Prescribed</span>
+<sc-for list="{{tlRx}}" as="r" hint-placeholder-count="2">
+<span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 22px; font-weight: 500">{{r.name}}</span><span style="font-size: 14px; line-height: 20px; color: #5B6085">{{r.detail}}</span></span>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; line-height: 16px; color: #5B6085">Doctor's notes</span><span style="font-size: 16px; line-height: 24px">{{tlNotes}}</span></div>
+</section>
+
+</div>
+</sc-if>
+
+
+
+<sc-if value="{{showMeds}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; display: flex; gap: 28px; padding-top: 34px">
+
+<div style="flex: none; width: 272px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">Medications</h2>
+<div role="radiogroup" aria-label="Medication list" style="flex: none; display: flex; gap: 4px; padding: 4px; background: #FFFFFF; border: 1px solid #DCDFF0; border-radius: 12px">
+<sc-for list="{{medTabs}}" as="f" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{f.checked}}" onClick="{{f.pick}}" style="flex: 1; height: 34px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{medRows}}" as="r" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; box-sizing: border-box; padding: 9px 0 9px 12px; border: 0; border-left: 3px solid {{r.bar}}; background: transparent; font: inherit; color: #14163A; text-align: left; cursor: pointer"><span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 22px; font-weight: 500">{{r.name}}</span><span style="font-size: 13px; line-height: 18px; color: #5B6085">{{r.sub}}</span></span><span style="flex: none; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px; line-height: 26px">{{r.strength}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<section aria-live="polite" style="flex: 1; min-width: 0; overflow-y: auto; box-sizing: border-box; border-left: 1px solid #ECEEF8; padding-left: 28px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h3 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px">{{medName}}</h3>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">{{medLine}}</span>
+</div>
+<div style="position: relative; flex: none; width: 270px; height: 130px">
+<svg aria-hidden="true" width="270" height="130" viewBox="0 0 270 130" fill="none" style="position: absolute; left: 0; top: 0"><path d="{{medD}}" stroke="{{accent}}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>
+<sc-for list="{{medPts}}" as="p" hint-placeholder-count="5">
+<span style="position: absolute; left: {{p.left}}px; top: {{p.top}}px; width: 10px; height: 10px; border-radius: 5px; background: {{accent}}"></span>
+<span style="position: absolute; left: {{p.left}}px; top: {{p.labelTop}}px; font-size: 12px; line-height: 16px; font-weight: 600; color: #14163A; white-space: nowrap">{{p.label}}</span>
+</sc-for>
+</div>
+<h4 style="margin: 4px 0 0; font-size: 13px; line-height: 16px; font-weight: 500; color: #5B6085">History</h4>
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{medPeriods}}" as="p" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 76px 1fr; column-gap: 12px">
+<span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 30px">{{p.strength}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 500">{{p.range}}</span><span style="font-size: 13px; line-height: 18px; color: #5B6085">{{p.by}}</span><span style="display: {{p.noteDisplay}}; margin-top: 4px; font-size: 14px; line-height: 20px">{{p.note}}</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+
+</div>
+</sc-if>
+
+<sc-if value="{{showCare}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 28px; padding-top: 34px">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">Care team</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px 48px">
+<sc-for list="{{care}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 16px">
+<span aria-hidden="true" style="flex: none; width: 52px; height: 52px; border-radius: 26px; background: #E8EBFA; color: #3D4EB8; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600">{{p.initials}}</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 17px; line-height: 24px; font-weight: 500">{{p.name}} <span style="font-size: 14px; font-weight: 400; color: #5B6085">{{p.tag}}</span></span><span style="font-size: 14px; line-height: 20px; color: #5B6085">{{p.role}}</span></span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showFamily}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 16px">
+
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px">Family history</h2>
+<span style="font-size: 14px; line-height: 20px; color: #5B6085">Contains other people's health information.</span>
+</div>
+
+<div role="radiogroup" aria-label="Show relatives with" style="flex: none; align-self: flex-start; width: 350px; display: flex; gap: 4px; padding: 4px; background: #FFFFFF; border: 1px solid #DCDFF0; border-radius: 12px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{f.checked}}" onClick="{{f.pick}}" style="flex: 1; height: 34px; border: 0; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button>
+</sc-for>
+</div>
+
+<div style="flex: none; display: flex; gap: 36px; align-items: flex-start">
+
+<div style="flex: none; position: relative; width: 350px; height: 392px">
+<svg aria-hidden="true" width="350" height="392" viewBox="0 0 350 392" fill="none" style="position: absolute; left: 0; top: 0">
+<g stroke="#C4C8E2" stroke-width="2" stroke-linecap="round">
+<path d="M70 26H106"/><path d="M244 26H280"/>
+<path d="M88 26V150"/><path d="M262 26V150"/>
+<path d="M114 176H236"/>
+<path d="M175 176V270"/><path d="M130 270H220"/><path d="M130 270V290"/><path d="M220 270V290"/>
+</g>
+</svg>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="8">
+<div style="position: absolute; left: {{n.left}}px; top: {{n.top}}px; width: 84px; display: flex; flex-direction: column; align-items: center; text-align: center; opacity: {{n.opacity}}">
+<span style="width: 52px; height: 52px; box-sizing: border-box; border-radius: 26px; display: flex; align-items: center; justify-content: center; background: {{n.bg}}; border: 2px solid {{n.border}}; color: {{n.fg}}">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.8-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
+</span>
+<span style="margin-top: 4px; font-size: 13px; line-height: 16px; font-weight: 600">{{n.label}}</span>
+<span style="font-size: 12px; line-height: 16px; color: {{n.condColor}}; font-weight: {{n.condWeight}}">{{n.cond}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<p style="margin: 0; min-height: 20px; font-size: 14px; line-height: 20px; color: #5B6085" aria-live="polite">{{summary}}</p>
+<div>
+<sc-for list="{{relatives}}" as="r" hint-placeholder-count="7">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 44px; box-sizing: border-box; border-bottom: 1px solid {{r.divider}}"><span style="font-size: 15px; line-height: 20px; font-weight: 500">{{r.label}}</span><span style="font-size: 14px; line-height: 20px; color: {{r.condColor}}; font-weight: {{r.condWeight}}">{{r.cond}}</span></div>
+</sc-for>
+</div>
+</div>
+
+</div>
+</div>
+</sc-if>
+
+</div>
+</main>
+
+<div role="separator" aria-orientation="vertical" aria-label="Resize session notes. Arrow keys resize, Enter collapses or opens." aria-valuenow="{{notesW}}" aria-valuemin="0" aria-valuemax="560" tabindex="0" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onKeyDown="{{handleKey}}" style="flex: none; width: 14px; display: flex; align-items: center; justify-content: center; background: #F7F7FB; border-left: 1px solid #E1E4F2; cursor: col-resize; touch-action: none; user-select: none">
+<span aria-hidden="true" style="width: 4px; height: 44px; border-radius: 2px; background: #C4C8E2"></span>
+</div>
+
+<sc-if value="{{notesOpen}}" hint-placeholder-val="{{ true }}">
+<aside aria-label="Session notes" style="flex: none; width: {{notesW}}px; box-sizing: border-box; overflow: hidden; background: #F7F7FB; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px; line-height: 26px">Session notes</h2>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #5B6085">Added to Jane's record when the session ends.</p>
+</div>
+<button type="button" aria-label="Collapse session notes" onClick="{{collapseNotes}}" style="flex: none; width: 36px; height: 36px; border: 0; border-radius: 12px; background: transparent; color: #5B6085; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 500">Chief complaint<textarea style="box-sizing: border-box; width: 100%; height: 72px; resize: none; padding: 10px 12px; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14163A"></textarea></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 500">Assessment<textarea style="box-sizing: border-box; width: 100%; height: 72px; resize: none; padding: 10px 12px; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14163A"></textarea></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 500">Plan<textarea style="box-sizing: border-box; width: 100%; height: 72px; resize: none; padding: 10px 12px; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14163A"></textarea></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 500">Follow-up<textarea style="box-sizing: border-box; width: 100%; height: 72px; resize: none; padding: 10px 12px; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; font: inherit; font-size: 14px; color: #14163A"></textarea></label>
+<button type="button" style="margin-top: 4px; height: 48px; border: 0; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer">Save notes</button>
+</aside>
+</sc-if>
+
+<sc-if value="{{notesClosed}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Session notes, collapsed" style="flex: none; width: 56px; background: #F7F7FB; padding: 22px 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+<button type="button" aria-label="Open session notes" onClick="{{openNotes}}" style="width: 40px; height: 40px; border: 1px solid #DCDFF0; border-radius: 12px; background: #FFFFFF; color: {{accent}}; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
+<span style="font-size: 12px; line-height: 16px; color: #5B6085">Notes</span>
+</aside>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5468D4","options":["#5468D4","#4353C4","#6B5BD6"]},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'overview', filter: 'all', notesW: 300, shareOpen: false, visSel: 0, medTab: 'current', medSel: '', tlFilter: 'all', tlSel: '' };
+    this._drag = null;
+  }
+  extra(accent, view) {
+    const st = this.state;
+    const nv = (v) => ({ bg: view === v ? '#FFFFFF' : 'transparent', fg: view === v ? '#3D4EB8' : '#FFFFFF', cur: view === v ? 'page' : 'false' });
+    const seg = (defs, cur, set) => defs.map((d) => {
+      const on = cur === d[0];
+      return { label: d[1], checked: on, bg: on ? accent : 'transparent', fg: on ? '#FFFFFF' : '#4A4F7A', pick: () => set(d[0]) };
+    });
+    const bar = (on) => (on ? accent : 'transparent');
+    const tim = nv('timeline');
+
+    // ---- Recent visits
+    const visits = [
+      { day: '11', mon: 'Nov', title: 'GP visit', type: 'Visit', kind: 'text', meta: '11 Nov 2026, Dr Hennessy, Rathmines Medical Centre',
+        fields: [['Reason', 'Tired for three weeks'], ['Assessment', 'Possibly low iron. Thyroid dose to be reviewed.'], ['Plan', 'Blood tests. Repeat INR on 25 Nov.']] },
+      { day: '2', mon: 'Nov', title: 'Blood count and INR', type: 'Result', kind: 'result', meta: '2 Nov 2026, ordered by Dr Hennessy, Mater Hospital',
+        results: [['Haemoglobin', 128, 'g/L', 115, 160], ['White cells', 6.2, 'x10⁹/L', 4, 11], ['Platelets', 245, 'x10⁹/L', 150, 400], ['INR', 2.4, '', 2, 3], ['Ferritin', 18, 'µg/L', 30, 300]] },
+      { day: '30', mon: 'Oct', title: 'Warfarin renewed', type: 'Prescription', kind: 'text', meta: "30 Oct 2026, Dr O'Mahony, Boots Rathmines",
+        fields: [['Medication', 'Warfarin 5mg, daily'], ['Quantity', '28 tablets'], ['Pharmacy', 'Boots, Rathmines']] }
+    ];
+    const vSel = Math.min(st.visSel, visits.length - 1);
+    const v = visits[vSel];
+    const resultRows = (v.results || []).map((r) => {
+      const lo = r[3], hi = r[4], span = hi - lo;
+      const mn = Math.max(0, lo - span * 0.3), mx = hi + span * 0.3;
+      const pct = (x) => Math.max(3, Math.min(97, ((x - mn) / (mx - mn)) * 100));
+      const flag = r[1] < lo ? 'low' : r[1] > hi ? 'high' : '';
+      const out = flag !== '';
+      return {
+        name: r[0], value: (r[1] + ' ' + r[2]).trim() + (out ? ', ' + flag : ''),
+        flagColor: out ? '#9A4A0A' : '#5B6085', flagWeight: out ? 600 : 400,
+        bandL: pct(lo), bandW: pct(hi) - pct(lo), dotL: pct(r[1]), dotColor: out ? '#9A4A0A' : accent,
+        aria: r[0] + ' ' + r[1] + ' ' + r[2] + (out ? ', ' + flag : ', in range')
+      };
+    });
+
+    // ---- Medications
+    const meds = [
+      { id: 'con', name: 'Concerta', unit: 'mg', status: 'current', when: 'Morning', periods: [
+        { mg: 18, from: 'Jan 2024', to: 'Mar 2024', by: 'Dr Hennessy', note: 'Barely noticed it. A little more focus in the morning, gone by lunch.' },
+        { mg: 27, from: 'Mar 2024', to: 'Jun 2024', by: 'Dr Hennessy', note: 'Better focus through the morning. Appetite dropped.' },
+        { mg: 36, from: 'Jun 2024', to: 'Oct 2024', by: 'Dr Hennessy', note: 'Steady all day. Good for work.' },
+        { mg: 45, from: 'Oct 2024', to: 'Feb 2025', by: 'Dr Hennessy', note: 'Too much. Racing heart and trouble sleeping.' },
+        { mg: 36, from: 'Feb 2025', to: 'now', by: 'Dr Hennessy', note: 'Back on 36. Smoother and sleeping better.' } ] },
+      { id: 'lev', name: 'Levothyroxine', unit: 'mcg', status: 'current', when: 'Morning', periods: [
+        { mg: 25, from: 'Mar 2022', to: 'Sep 2022', by: 'Dr Walsh', note: '' },
+        { mg: 50, from: 'Sep 2022', to: 'now', by: 'Dr Walsh', note: 'Energy back to normal.' } ] },
+      { id: 'war', name: 'Warfarin', unit: 'mg', status: 'current', when: 'Evening', periods: [
+        { mg: 5, from: 'Jun 2019', to: 'now', by: "Dr O'Mahony", note: '' } ] },
+      { id: 'sal', name: 'Salbutamol', unit: 'mcg', status: 'current', when: 'As needed', periods: [
+        { mg: 100, from: '2015', to: 'now', by: 'Dr Hennessy', note: '' } ] },
+      { id: 'dox', name: 'Doxycycline', unit: 'mg', status: 'past', when: '', periods: [
+        { mg: 100, from: '2 Aug 2026', to: '9 Aug 2026', by: 'Dr Hennessy', note: '' } ] },
+      { id: 'pre', name: 'Prednisolone', unit: 'mg', status: 'past', when: '', periods: [
+        { mg: 20, from: '9 Feb 2026', to: '14 Feb 2026', by: 'Dr Hennessy', note: '' } ] },
+      { id: 'nit', name: 'Nitrofurantoin', unit: 'mg', status: 'past', when: '', periods: [
+        { mg: 100, from: '12 Sep 2025', to: '17 Sep 2025', by: 'Dr Hennessy', note: '' } ] },
+      { id: 'cet', name: 'Cetirizine', unit: 'mg', status: 'past', when: '', periods: [
+        { mg: 10, from: '1 Apr 2024', to: '30 Sep 2024', by: 'Dr Hennessy', note: '' } ] }
+    ];
+    const shown = meds.filter((m) => m.status === st.medTab);
+    const mSel = shown.find((m) => m.id === st.medSel) || shown[0];
+    const mRows = shown.map((m) => {
+      const lastP = m.periods[m.periods.length - 1];
+      return {
+        name: m.name, strength: lastP.mg + m.unit, on: m.id === mSel.id, bar: bar(m.id === mSel.id),
+        sub: m.status === 'current' ? m.when : lastP.from + ' to ' + lastP.to,
+        pick: () => this.setState({ medSel: m.id })
+      };
+    });
+    const ps = mSel.periods, n = ps.length;
+    const W = 270, H = 130, L = 14, R = 14, T = 34, B = 24;
+    const vals = ps.map((p) => p.mg);
+    const mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    const yOf = (val) => (mx === mn ? T + (H - T - B) / 2 : T + ((mx - val) / (mx - mn)) * (H - T - B));
+    const segW = (W - L - R) / n;
+    let d = '';
+    const pts = ps.map((p, i) => {
+      const x = L + i * segW, y = yOf(p.mg);
+      d += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' L' + (x + segW) + ' ' + y + ' ';
+      return { left: Math.round(x - 5), top: Math.round(y - 5), labelTop: Math.round(y - 26), label: p.mg + mSel.unit };
+    });
+    const nowP = ps[n - 1];
+    const medLine = mSel.status === 'current'
+      ? 'Now ' + nowP.mg + mSel.unit + ', since ' + nowP.from
+      : 'Stopped ' + nowP.to;
+    const medPeriods = ps.slice().reverse().map((p) => ({
+      strength: p.mg + mSel.unit, range: p.from + (p.to === p.from ? '' : ' to ' + p.to), by: 'Prescribed by ' + p.by,
+      note: p.note ? 'Jane: "' + p.note + '"' : '', noteDisplay: p.note ? 'block' : 'none'
+    }));
+
+    // ---- Full timeline
+    const entries = [
+      { id: 'e1', year: '2026', mon: 'Aug', title: 'Chest infection', type: 'Infection', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Resolved', rx: [['Doxycycline 100mg', '7 days, from 2 Aug']], notes: 'Cough and fever for five days. Chest clear at follow-up.' },
+      { id: 'e2', year: '2026', mon: 'Feb', title: 'Asthma flare', type: 'Condition', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Settled', rx: [['Prednisolone 20mg', '5 days'], ['Salbutamol 100mcg', 'As needed']], notes: 'Wheeze after a cold. Peak flow improved on treatment.' },
+      { id: 'e3', year: '2025', mon: 'Sep', title: 'Urinary tract infection', type: 'Infection', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Resolved', rx: [['Nitrofurantoin 100mg', '5 days']], notes: 'Penicillin allergy noted, so a non-penicillin antibiotic was used.' },
+      { id: 'e4', year: '2024', mon: 'Apr', title: 'Hay fever', type: 'Condition', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Seasonal', rx: [['Cetirizine 10mg', 'April to September']], notes: 'Itchy eyes and sneezing each spring.' },
+      { id: 'e5', year: '2023', mon: 'Nov', title: 'Tonsillitis', type: 'Infection', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Resolved', rx: [['Clarithromycin 250mg', '7 days']], notes: 'Sore throat and fever. Non-penicillin antibiotic because of the allergy.' },
+      { id: 'e6', year: '2022', mon: 'Mar', title: 'Hypothyroidism diagnosed', type: 'Condition', by: 'Dr Walsh, Endocrinology', outcome: 'Ongoing', rx: [['Levothyroxine 25mcg', 'Raised to 50mcg in Sep 2022']], notes: 'Found on blood tests after months of tiredness.' },
+      { id: 'e7', year: '2020', mon: 'Dec', title: 'Covid-19', type: 'Infection', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Resolved', rx: [['Nothing prescribed', 'Rest and fluids']], notes: 'Managed at home. No hospital stay.' },
+      { id: 'e8', year: '2019', mon: 'Jun', title: 'Atrial fibrillation diagnosed', type: 'Condition', by: "Dr O'Mahony, Cardiology, Mater Private", outcome: 'Ongoing', rx: [['Warfarin 5mg', 'Daily, ongoing']], notes: 'Irregular heartbeat picked up on an ECG.' },
+      { id: 'e9', year: '2018', mon: 'Feb', title: 'Glandular fever', type: 'Infection', by: 'Dr Hennessy, Rathmines Medical Centre', outcome: 'Resolved', rx: [['Nothing prescribed', 'Rest and fluids']], notes: 'Sore throat and exhaustion for several weeks.' }
+    ];
+    const tf = st.tlFilter;
+    const list = entries.filter((e) => tf === 'all' || e.type.toLowerCase() === tf);
+    const tSel = list.find((e) => e.id === st.tlSel) || list[0];
+    const tlRows = list.map((e, i) => {
+      const firstOfYear = i === 0 || list[i - 1].year !== e.year;
+      return {
+        year: firstOfYear ? e.year : '', yearColor: e.year === '2026' ? accent : '#14163A',
+        title: e.title, sub: e.mon + ', ' + e.type, on: e.id === tSel.id, bar: bar(e.id === tSel.id),
+        pick: () => this.setState({ tlSel: e.id })
+      };
+    });
+
+    return {
+      showTimeline: view === 'timeline',
+      timBg: tim.bg, timFg: tim.fg, timCurrent: tim.cur,
+      goTim: () => this.setState({ view: 'timeline' }),
+      upcomingRows: [{ day: '29', mon: 'Dec', title: 'Cardiology follow-up' }, { day: '25', mon: 'Nov', title: 'INR blood test' }],
+      visRows: visits.map((x, i) => ({ day: x.day, mon: x.mon, title: x.title, type: x.type, on: i === vSel, bar: bar(i === vSel), pick: () => this.setState({ visSel: i }) })),
+      visTitle: v.title, visMeta: v.meta,
+      showTextKind: v.kind === 'text', showResultKind: v.kind === 'result',
+      visFields: (v.fields || []).map((f) => ({ label: f[0], text: f[1] })),
+      resultRows: resultRows,
+      medTabs: seg([['current', 'Current'], ['past', 'Past']], st.medTab, (k) => this.setState({ medTab: k, medSel: '' })),
+      medRows: mRows, medName: mSel.name, medLine: medLine, medD: d.trim(), medPts: pts, medPeriods: medPeriods,
+      tlFilters: seg([['all', 'All'], ['infection', 'Infections'], ['condition', 'Conditions']], tf, (k) => this.setState({ tlFilter: k, tlSel: '' })),
+      tlRows: tlRows, tlTitle: tSel.title, tlMeta: tSel.mon + ' ' + tSel.year + ', ' + tSel.type,
+      tlBy: tSel.by, tlOutcome: tSel.outcome, tlRx: tSel.rx.map((r) => ({ name: r[0], detail: r[1] })), tlNotes: tSel.notes
+    };
+  }
+  clamp(w) { return Math.max(0, Math.min(560, w)); }
+  snap(w) { return w < 120 ? 0 : Math.max(240, w); }
+  renderVals() {
+    const accent = this.props.accent ?? '#5468D4';
+    const view = this.state.view;
+    const cur = this.state.filter;
+    const w = this.state.notesW;
+    const last = (arr, i) => (i === arr.length - 1 ? 'transparent' : '#ECEEF8');
+
+    const conds = [
+      ['Atrial fibrillation', 'Managed, since 2019'],
+      ['Hypothyroidism', 'Ongoing, since 2022'],
+      ['Mild asthma', 'Managed, since childhood']
+    ];
+    const meds = [
+      ['Concerta', '36mg', 'Morning', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4', 'con'],
+      ['Levothyroxine', '50mcg', 'Morning', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4', 'lev'],
+      ['Warfarin', '5mg', 'Evening', 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z', 'war'],
+      ['Salbutamol', '100mcg', 'As needed', 'M3 9h11a3 3 0 1 0-3-3 M3 15h15a3 3 0 1 1-3 3 M3 12h8', 'sal']
+    ];
+    const tl = [
+      ['29', 'Dec', 'Cardiology follow-up', '', 'Upcoming', true],
+      ['25', 'Nov', 'INR blood test', '', 'Upcoming', true],
+      ['11', 'Nov', 'GP visit', '', 'Visit', false],
+      ['2', 'Nov', 'Blood count and INR', '', 'Result', false],
+      ['30', 'Oct', 'Warfarin renewed', '', 'Prescription', false]
+    ];
+    const vit = [['128/82', 'Blood pressure'], ['74', 'Heart rate, bpm'], ['58', 'Weight, kg'], ['98%', 'O2 saturation']];
+
+    const fdefs = [['all', 'All'], ['heart', 'Heart'], ['diabetes', 'Diabetes'], ['asthma', 'Asthma']];
+    const filters = fdefs.map((d) => {
+      const on = cur === d[0];
+      return { label: d[1], checked: on, bg: on ? accent : 'transparent', fg: on ? '#FFFFFF' : '#4A4F7A', pick: () => this.setState({ filter: d[0] }) };
+    });
+    const data = [
+      { label: "Mum's mum", cond: 'Type 2 diabetes', tags: ['diabetes'], cx: 44, cy: 26 },
+      { label: "Mum's dad", cond: 'None known', tags: [], cx: 132, cy: 26 },
+      { label: "Dad's mum", cond: 'Asthma', tags: ['asthma'], cx: 218, cy: 26 },
+      { label: "Dad's dad", cond: 'Heart attack at 61', tags: ['heart'], cx: 306, cy: 26 },
+      { label: 'Mum', cond: 'Type 2 diabetes', tags: ['diabetes'], cx: 88, cy: 176 },
+      { label: 'Dad', cond: 'Atrial fibrillation', tags: ['heart'], cx: 262, cy: 176 },
+      { label: 'Jane', cond: '3 conditions', tags: ['heart', 'asthma'], cx: 130, cy: 316, me: true },
+      { label: 'Brother', cond: 'Asthma', tags: ['asthma'], cx: 220, cy: 316 }
+    ];
+    const filtering = cur !== 'all';
+    const hits = [];
+    const marked = data.map((p) => {
+      const match = filtering && p.tags.indexOf(cur) >= 0;
+      if (match) hits.push(p.label);
+      return { p: p, match: match, dim: filtering && !match };
+    });
+    const nodes = marked.map((m) => {
+      let bg = '#FFFFFF', border = '#B1B6D6', fg = '#5B6085';
+      if (m.p.me) { bg = accent; border = accent; fg = '#FFFFFF'; }
+      else if (m.match) { bg = '#E8EBFA'; border = accent; fg = accent; }
+      return {
+        left: m.p.cx - 42, top: m.p.cy - 26, opacity: m.dim ? 0.35 : 1,
+        bg: bg, border: border, fg: fg, label: m.p.label, cond: m.p.cond,
+        condColor: m.match ? accent : '#5B6085', condWeight: m.match ? 600 : 400
+      };
+    });
+    const rel = marked.filter((m) => !m.p.me);
+    const relatives = rel.map((m, i) => ({
+      label: m.p.label, cond: m.p.cond, divider: last(rel, i),
+      condColor: m.match ? accent : '#5B6085', condWeight: m.match ? 600 : 400
+    }));
+    const names = { heart: 'Heart', diabetes: 'Diabetes', asthma: 'Asthma' };
+    const summary = filtering ? names[cur] + ': ' + hits.join(', ') : 'Tap a condition to see who has it.';
+
+    return {
+      accent: accent,
+      ...this.extra(accent, view),
+      showOverview: view === 'overview',
+      showFamily: view === 'family',
+      showVisits: view === 'visits',
+      showMeds: view === 'meds',
+      showCare: view === 'care',
+      visBg: view === 'visits' ? '#FFFFFF' : 'transparent', visFg: view === 'visits' ? '#3D4EB8' : '#FFFFFF', visCurrent: view === 'visits' ? 'page' : 'false',
+      medBg: view === 'meds' ? '#FFFFFF' : 'transparent', medFg: view === 'meds' ? '#3D4EB8' : '#FFFFFF', medCurrent: view === 'meds' ? 'page' : 'false',
+      careBg: view === 'care' ? '#FFFFFF' : 'transparent', careFg: view === 'care' ? '#3D4EB8' : '#FFFFFF', careCurrent: view === 'care' ? 'page' : 'false',
+      goVis: () => this.setState({ view: 'visits' }),
+      goMed: () => this.setState({ view: 'meds' }),
+      goCare: () => this.setState({ view: 'care' }),
+      upcoming: [
+        { day: '29', mon: 'Dec', title: 'Cardiology follow-up', sub: "Dr O'Mahony, Mater Private", type: 'Visit' },
+        { day: '25', mon: 'Nov', title: 'INR blood test', sub: 'Rathmines Medical Centre', type: 'Visit' }
+      ],
+      recent: [
+        { day: '11', mon: 'Nov', title: 'GP visit', sub: 'Dr Hennessy, Rathmines Medical Centre', type: 'Visit' },
+        { day: '2', mon: 'Nov', title: 'Blood count and INR', sub: 'Mater Hospital', type: 'Result' },
+        { day: '30', mon: 'Oct', title: 'Warfarin renewed', sub: 'Boots, Rathmines', type: 'Prescription' }
+      ],
+      medsFull: [
+        { name: 'Levothyroxine', dose: '50mcg, daily', when: 'Morning', icon: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4', by: 'Dr Walsh', supply: '', supplyColor: '#5B6085', supplyWeight: 400 },
+        { name: 'Warfarin', dose: '5mg, daily', when: 'Evening', icon: 'M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z', by: "Dr O'Mahony", supply: '8 days left', supplyColor: '#9A4A0A', supplyWeight: 600 },
+        { name: 'Salbutamol', dose: '100mcg', when: 'As needed', icon: 'M3 9h11a3 3 0 1 0-3-3 M3 15h15a3 3 0 1 1-3 3 M3 12h8', by: 'Dr Hennessy', supply: '', supplyColor: '#5B6085', supplyWeight: 400 }
+      ],
+      care: [
+        { initials: 'DH', name: 'Dr Hennessy', tag: 'You', role: 'GP, Rathmines Medical Centre' },
+        { initials: 'DO', name: "Dr O'Mahony", tag: '', role: 'Cardiology, Mater Private' },
+        { initials: 'DW', name: 'Dr Walsh', tag: '', role: 'Endocrinology' },
+        { initials: 'B', name: 'Boots', tag: '', role: 'Pharmacy, Rathmines' }
+      ],
+      ovBg: view === 'overview' ? '#FFFFFF' : 'transparent',
+      ovFg: view === 'overview' ? '#3D4EB8' : '#FFFFFF',
+      ovCurrent: view === 'overview' ? 'page' : 'false',
+      famBg: view === 'family' ? '#FFFFFF' : 'transparent',
+      famFg: view === 'family' ? '#3D4EB8' : '#FFFFFF',
+      famCurrent: view === 'family' ? 'page' : 'false',
+      goOverview: () => this.setState({ view: 'overview' }),
+      goFamily: () => this.setState({ view: 'family' }),
+      shareOpen: this.state.shareOpen,
+      toggleShare: () => this.setState({ shareOpen: !this.state.shareOpen }),
+      sharedList: ['Safety info', 'Conditions', 'Medications', 'Recent visits', 'Care team', 'Family history'],
+      notList: ['Full timeline', 'Documents', 'Insurance', 'Mental health'],
+      notesW: Math.round(w),
+      notesOpen: w >= 120,
+      notesClosed: w < 120,
+      collapseNotes: () => this.setState({ notesW: 0 }),
+      openNotes: () => this.setState({ notesW: 320 }),
+      dragStart: (e) => {
+        if (e && e.currentTarget && e.currentTarget.setPointerCapture && e.pointerId !== undefined) {
+          try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        this._drag = { x: e.clientX, w: this.state.notesW < 120 ? 56 : this.state.notesW };
+      },
+      dragMove: (e) => {
+        if (!this._drag) return;
+        this.setState({ notesW: this.clamp(this._drag.w + (this._drag.x - e.clientX)) });
+      },
+      dragEnd: () => {
+        if (!this._drag) return;
+        this._drag = null;
+        this.setState({ notesW: this.snap(this.state.notesW) });
+      },
+      handleKey: (e) => {
+        const k = e.key;
+        if (k === 'ArrowLeft') { e.preventDefault(); this.setState({ notesW: this.snap(this.clamp(this.state.notesW + 24)) }); }
+        else if (k === 'ArrowRight') { e.preventDefault(); this.setState({ notesW: this.snap(this.clamp(this.state.notesW - 24)) }); }
+        else if (k === 'Enter') { e.preventDefault(); this.setState({ notesW: this.state.notesW < 120 ? 320 : 0 }); }
+      },
+      conditions: conds.map((c) => ({ name: c[0], sub: c[1] })),
+      meds: meds.map((m) => ({ name: m[0], dose: m[1], when: m[2], icon: m[3], open: () => this.setState({ view: 'meds', medTab: 'current', medSel: m[4] }) })),
+      timeline: tl.map((t, i) => ({
+        day: t[0], mon: t[1], title: t[2], sub: t[3], type: t[4], divider: last(tl, i),
+        dateColor: t[5] ? accent : '#14163A', typeColor: t[5] ? accent : '#5B6085'
+      })),
+      vitals: vit.map((v) => ({ value: v[0], label: v[1] })),
+      filters: filters, nodes: nodes, relatives: relatives, summary: summary
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Approve access A2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #14163A;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 390px; height: 844px; box-sizing: border-box; background: #2A3787; color: #14163A; font-family: Inter, system-ui, sans-serif; position: relative; overflow: hidden">
+
+<p style="margin: 0; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; color: rgba(255,255,255,0.78); border-bottom: 1px solid rgba(255,255,255,0.28)">Demo with sample data</p>
+<div aria-hidden="true" style="padding: 14px 20px; color: rgba(255,255,255,0.5); font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 30px">Share your record</div>
+
+<section role="dialog" aria-labelledby="ttl" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 12px 20px 24px; display: flex; flex-direction: column; gap: 12px">
+<span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #DCDFF0"></span>
+
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; line-height: 16px; font-weight: 600; color: {{accent}}">Access request</span>
+<h1 id="ttl" style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 26px; line-height: 32px; letter-spacing: -0.01em">Dr Hennessy wants access</h1>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 4px 0">
+<span aria-hidden="true" style="flex: none; width: 44px; height: 44px; border-radius: 22px; background: #E8EBFA; color: #3D4EB8; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600">DH</span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 22px; font-weight: 500">Dr Hennessy</span><span style="font-size: 14px; line-height: 20px; color: #5B6085">GP, Rathmines Medical Centre</span></span>
+<span style="flex: none; font-size: 14px; line-height: 20px; color: #5B6085">30 min</span>
+</div>
+
+<div>
+<h2 style="margin: 0 0 2px; font-size: 14px; line-height: 20px; font-weight: 600; color: #5B6085">They will see</h2>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{items}}" as="r" hint-placeholder-count="6">
+<li style="display: flex; align-items: center; gap: 12px; height: 36px; border-bottom: 1px solid {{r.divider}}; font-size: 15px; line-height: 20px">
+<span aria-hidden="true" style="flex: none; width: 20px; height: 20px; border-radius: 10px; background: {{accent}}; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>{{r.name}}
+</li>
+</sc-for>
+</ul>
+</div>
+
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #5B6085">Not shared: Full timeline, Documents, Family history, Insurance, Mental health.</p>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: #5B6085">Name and practice are as typed. Trace does not check them.</p>
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 4px">
+<a href="SessionA2.dc.html" style="align-self: stretch; display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 26px; background: {{accent}}; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none">Allow access</a>
+<a href="MainA2.dc.html" style="display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 16px; color: {{accent}}; font-size: 15px; font-weight: 600; text-decoration: none">Deny</a>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5468D4","options":["#5468D4","#4353C4","#6B5BD6"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['Safety info', 'Medications', 'Conditions', 'Recent visits', 'Care team', 'Can add session notes'];
+    return {
+      accent: this.props.accent ?? '#5468D4',
+      items: names.map((n, i) => ({ name: n, divider: i === names.length - 1 ? 'transparent' : '#ECEEF8' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

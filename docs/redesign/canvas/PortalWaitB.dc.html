@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Portal waiting B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 1280px; height: 800px; box-sizing: border-box; background: #3D4EB8; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="flex: none; height: 88px; box-sizing: border-box; padding: 0 56px; display: flex; align-items: center; justify-content: space-between">
+<a href="PortalEntryB.dc.html" style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px; color: #FFFFFF; text-decoration: none">trace</a>
+<span style="font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Dr Hennessy, Rathmines Medical Centre</span>
+</header>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 56px 0 160px; display: flex; align-items: center; gap: 140px">
+
+<section style="flex: none; width: 520px; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; font-weight: 500">Request sent</span>
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px; line-height: 52px; letter-spacing: -0.015em">Waiting for the patient to approve</h1>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Patient has</span>
+<span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 72px; line-height: 80px">4:59</span>
+</div>
+<a href="PortalEntryB.dc.html" style="align-self: flex-start; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: underline">Cancel request</a>
+</section>
+
+<section aria-label="Progress" style="flex: none; width: 340px; display: flex; flex-direction: column">
+<ol style="list-style: none; margin: 0; padding: 0">
+<li style="display: flex; align-items: center; gap: 16px; height: 76px; border-top: 1px solid rgba(255,255,255,0.28); font-size: 16px; line-height: 22px"><span aria-hidden="true" style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D4EB8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Code accepted</li>
+<li aria-current="step" style="display: flex; align-items: center; gap: 16px; height: 76px; border-top: 1px solid rgba(255,255,255,0.28); font-size: 16px; line-height: 22px; font-weight: 600"><span aria-hidden="true" style="flex: none; width: 24px; height: 24px; box-sizing: border-box; border-radius: 12px; border: 2px solid #FFFFFF"></span>Waiting for approval</li>
+<li style="display: flex; align-items: center; gap: 16px; height: 76px; border-top: 1px solid rgba(255,255,255,0.28); border-bottom: 1px solid rgba(255,255,255,0.28); font-size: 16px; line-height: 22px; color: rgba(255,255,255,0.78)"><span aria-hidden="true" style="flex: none; width: 24px; height: 24px; box-sizing: border-box; border-radius: 12px; border: 2px solid rgba(255,255,255,0.5)"></span>Open record</li>
+</ol>
+</section>
+
+</main>
+
+<footer style="flex: none; height: 64px; box-sizing: border-box; padding: 0 56px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; line-height: 16px; color: rgba(255,255,255,0.78)">
+<span style="font-size: 14px">The patient keeps their code and can still share later. <a href="PortalRecordE.dc.html" style="color: #FFFFFF; font-weight: 600; text-decoration: underline">Demo: patient approves</a></span>
+<span>Demo with sample data</span>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

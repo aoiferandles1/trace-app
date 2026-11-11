@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Family tree A2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #14163A;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 390px; height: 844px; box-sizing: border-box; background: #F7F7FB; color: #14163A; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<p style="margin: 0; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; color: #5B6085; border-bottom: 1px solid #E4E6F2">Demo with sample data</p>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 20px; display: flex; flex-direction: column; gap: 14px">
+
+<header style="flex: none; height: 56px; display: flex; align-items: center; gap: 12px">
+<a href="RecordA2.dc.html" aria-label="Back to Record" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: -6px; color: #14163A">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+</a>
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 30px; letter-spacing: -0.01em">Family history</h1>
+</header>
+
+<div role="radiogroup" aria-label="Show relatives with" style="flex: none; display: flex; gap: 4px; padding: 4px; background: #FFFFFF; border: 1px solid #DCDFF0; border-radius: 18px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{f.checked}}" onClick="{{f.pick}}" style="flex: 1; height: 40px; border: 0; border-radius: 14px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button>
+</sc-for>
+</div>
+
+<div style="flex: none; position: relative; width: 350px; height: 392px">
+<svg aria-hidden="true" width="350" height="392" viewBox="0 0 350 392" fill="none" style="position: absolute; left: 0; top: 0">
+<g stroke="#C4C8E2" stroke-width="2" stroke-linecap="round">
+<path d="M70 26H106"/><path d="M244 26H280"/>
+<path d="M88 26V150"/><path d="M262 26V150"/>
+<path d="M114 176H236"/>
+<path d="M175 176V270"/><path d="M130 270H220"/><path d="M130 270V290"/><path d="M220 270V290"/>
+</g>
+</svg>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="8">
+<div style="position: absolute; left: {{n.left}}px; top: {{n.top}}px; width: 84px; display: flex; flex-direction: column; align-items: center; text-align: center; opacity: {{n.opacity}}">
+<span style="width: 52px; height: 52px; box-sizing: border-box; border-radius: 26px; display: flex; align-items: center; justify-content: center; background: {{n.bg}}; border: 2px solid {{n.border}}; color: {{n.fg}}">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.8-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
+</span>
+<span style="margin-top: 4px; font-size: 13px; line-height: 16px; font-weight: 600">{{n.label}}</span>
+<span style="font-size: 12px; line-height: 16px; color: {{n.condColor}}; font-weight: {{n.condWeight}}">{{n.cond}}</span>
+</div>
+</sc-for>
+</div>
+
+<p style="flex: none; margin: 0; min-height: 20px; font-size: 14px; line-height: 20px; color: #5B6085" aria-live="polite">{{summary}}</p>
+
+<a href="#top" style="flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; border-radius: 26px; background: {{accent}}; color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+Add a relative
+</a>
+
+</main>
+
+<nav aria-label="Main" style="flex: none; height: 68px; display: flex; align-items: center; border-top: 1px solid #E4E6F2; background: #FFFFFF">
+<a href="MainA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/></svg>
+Home
+</a>
+<a href="RecordA2.dc.html" aria-current="page" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: {{accent}}; font-size: 12px; line-height: 16px; font-weight: 600; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+Record
+</a>
+<a href="#top" aria-label="Add" style="flex: 1; display: flex; align-items: center; justify-content: center; text-decoration: none">
+<span style="width: 48px; height: 48px; border-radius: 24px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
+</a>
+<a href="MedsA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7Z"/><path d="M8.5 8.5l7 7"/></svg>
+Medications
+</a>
+<a href="InsuranceA2.dc.html" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #5B6085; font-size: 12px; line-height: 16px; font-weight: 500; text-decoration: none">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.8-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>
+Profile
+</a>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#5468D4","options":["#5468D4","#4353C4","#6B5BD6"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'all' };
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#5468D4';
+    const cur = this.state.filter;
+    const fdefs = [['all', 'All'], ['heart', 'Heart'], ['diabetes', 'Diabetes'], ['asthma', 'Asthma']];
+    const filters = fdefs.map((d) => {
+      const on = cur === d[0];
+      return {
+        label: d[1], checked: on,
+        bg: on ? accent : 'transparent',
+        fg: on ? '#FFFFFF' : '#4A4F7A',
+        pick: () => this.setState({ filter: d[0] })
+      };
+    });
+    const data = [
+      { label: "Mum's mum", cond: 'Type 2 diabetes', tags: ['diabetes'], cx: 44, cy: 26 },
+      { label: "Mum's dad", cond: 'None known', tags: [], cx: 132, cy: 26 },
+      { label: "Dad's mum", cond: 'Asthma', tags: ['asthma'], cx: 218, cy: 26 },
+      { label: "Dad's dad", cond: 'Heart attack at 61', tags: ['heart'], cx: 306, cy: 26 },
+      { label: 'Mum', cond: 'Type 2 diabetes', tags: ['diabetes'], cx: 88, cy: 176 },
+      { label: 'Dad', cond: 'Atrial fibrillation', tags: ['heart'], cx: 262, cy: 176 },
+      { label: 'You', cond: '3 conditions', tags: ['heart', 'asthma'], cx: 130, cy: 316, me: true },
+      { label: 'Brother', cond: 'Asthma', tags: ['asthma'], cx: 220, cy: 316 }
+    ];
+    const filtering = cur !== 'all';
+    const hits = [];
+    const nodes = data.map((p) => {
+      const match = filtering && p.tags.indexOf(cur) >= 0;
+      if (match) hits.push(p.label);
+      const dim = filtering && !match;
+      let bg = '#FFFFFF', border = '#B1B6D6', fg = '#5B6085';
+      if (p.me) { bg = accent; border = accent; fg = '#FFFFFF'; }
+      else if (match) { bg = '#E8EBFA'; border = accent; fg = accent; }
+      return {
+        left: p.cx - 42,
+        top: p.cy - 26,
+        opacity: dim ? 0.35 : 1,
+        bg: bg, border: border, fg: fg,
+        label: p.label,
+        cond: p.cond,
+        condColor: match ? accent : '#5B6085',
+        condWeight: match ? 600 : 400
+      };
+    });
+    const names = { heart: 'Heart', diabetes: 'Diabetes', asthma: 'Asthma' };
+    const summary = filtering
+      ? names[cur] + ': ' + (hits.length ? hits.join(', ') : 'nobody yet')
+      : 'Tap a condition to see who has it.';
+    return { accent: accent, filters: filters, nodes: nodes, summary: summary };
+  }
+}
+</script>
+</body>
+</html>

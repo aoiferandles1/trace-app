@@ -1,0 +1,2 @@
+While this file exists, Vercel skips every build, so the live site stays on the last reviewed version.
+It was added at the start of the redesign (see docs/redesign/). The supervising session removes it when the redesign is ready to ship.

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Session active A2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 390px; height: 844px; box-sizing: border-box; background: #3D4EB8; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<p style="margin: 0; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 16px; color: rgba(255,255,255,0.78); border-bottom: 1px solid rgba(255,255,255,0.28)">Demo with sample data</p>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="flex: none; height: 24px"></div>
+
+<div style="flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+<span aria-hidden="true" style="width: 88px; height: 88px; border-radius: 44px; background: #FFFFFF; color: #3D4EB8; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 32px">DH</span>
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 28px; line-height: 34px; letter-spacing: -0.01em">Dr Hennessy<br>has access</h1>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Rathmines Medical Centre, GP visit</p>
+</div>
+
+<div style="flex: none; display: flex; flex-direction: column; gap: 10px">
+<span style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Time left</span><span style="font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 40px; line-height: 44px">29:58</span></span>
+<div role="progressbar" aria-label="Time left" aria-valuemin="0" aria-valuemax="30" aria-valuenow="30" style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.28)"><div style="width: 100%; height: 6px; border-radius: 3px; background: #FFFFFF"></div></div>
+</div>
+
+<section style="flex: none; display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: rgba(255,255,255,0.78)">Dr Hennessy can see</h2>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; justify-content: space-between; height: 44px; box-sizing: border-box; border-bottom: 1px solid {{r.divider}}; font-size: 16px; line-height: 22px; font-weight: 500">
+{{r.name}}
+<span aria-label="Shared" role="img" style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D4EB8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<div style="flex: 1"></div>
+
+<div style="flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px">
+<a href="MainA2.dc.html" style="align-self: stretch; display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 26px; background: #FFFFFF; color: #14163A; font-size: 16px; font-weight: 600; text-decoration: none">End sharing now</a>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Access ends at 3:37pm</p>
+</div>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['Safety info', 'Medications', 'Conditions', 'Recent visits', 'Care team'];
+    return { rows: names.map((n, i) => ({ name: n, divider: i === names.length - 1 ? 'transparent' : 'rgba(255,255,255,0.28)' })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trace Share code A2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a:focus-visible,button:focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
+</style>
+</helmet>
+<div id="top" style="width: 390px; height: 844px; box-sizing: border-box; background: #3D4EB8; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+<p style="margin: 0; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; line-height: 16px; color: rgba(255,255,255,0.78); border-bottom: 1px solid rgba(255,255,255,0.28)">Demo with sample data <span aria-hidden="true">·</span> <a href="ApproveA2.dc.html" style="color: #FFFFFF; font-weight: 600; text-decoration: underline">Next: doctor requests access</a></p>
+
+<main style="flex: 1; min-height: 0; box-sizing: border-box; padding: 0 20px; display: flex; flex-direction: column; gap: 18px">
+
+<header style="flex: none; height: 56px; display: flex; align-items: center; gap: 12px">
+<a href="ShareA2.dc.html" aria-label="Back" style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin-left: -6px; color: #FFFFFF">
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+</a>
+<h1 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 24px; line-height: 30px; letter-spacing: -0.01em">Share your record</h1>
+</header>
+
+<div style="flex: none; display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)">Enter this at trace-app-liard-eta.vercel.app/view</p>
+<div role="img" aria-label="Your code is 9 0 7 0" style="display: flex; gap: 10px">
+<span aria-hidden="true" style="flex: 1; height: 88px; border-radius: 18px; background: #FFFFFF; color: #14163A; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px">9</span>
+<span aria-hidden="true" style="flex: 1; height: 88px; border-radius: 18px; background: #FFFFFF; color: #14163A; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px">0</span>
+<span aria-hidden="true" style="flex: 1; height: 88px; border-radius: 18px; background: #FFFFFF; color: #14163A; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px">7</span>
+<span aria-hidden="true" style="flex: 1; height: 88px; border-radius: 18px; background: #FFFFFF; color: #14163A; display: flex; align-items: center; justify-content: center; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 44px">0</span>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 44px; border-top: 1px solid rgba(255,255,255,0.28); border-bottom: 1px solid rgba(255,255,255,0.28)">
+<span style="font-size: 15px; line-height: 20px">Expires in <b style="font-weight: 600">4:59</b></span>
+<a href="#top" style="color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: underline">Regenerate</a>
+</div>
+</div>
+
+<section style="flex: none; display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-family: Sora, Inter, sans-serif; font-weight: 300; font-size: 20px; line-height: 26px">Sharing</h2>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{shared}}" as="r" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; justify-content: space-between; height: 52px; box-sizing: border-box; border-bottom: 1px solid {{r.divider}}">
+<span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 22px; font-weight: 500">{{r.name}}</span><span style="font-size: 14px; line-height: 18px; color: rgba(255,255,255,0.78)">{{r.sub}}</span></span>
+<span aria-label="Shared" role="img" style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D4EB8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section style="flex: none; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: rgba(255,255,255,0.78)">Not shared</h2>
+<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px">
+<sc-for list="{{notShared}}" as="n" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; gap: 10px; font-size: 14px; line-height: 20px; color: rgba(255,255,255,0.78)"><span aria-hidden="true" style="flex: none; width: 18px; height: 18px; box-sizing: border-box; border-radius: 9px; border: 2px solid rgba(255,255,255,0.5)"></span>{{n}}</li>
+</sc-for>
+</ul>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      ['Safety info', 'Allergies, blood type'],
+      ['Medications', '3 active'],
+      ['Conditions', '3 items'],
+      ['Recent visits', 'Last 3'],
+      ['Care team', 'GP, 2 specialists']
+    ];
+    const shared = rows.map((r, i) => ({
+      name: r[0], sub: r[1],
+      divider: i === rows.length - 1 ? 'transparent' : 'rgba(255,255,255,0.28)'
+    }));
+    return {
+      shared: shared,
+      notShared: ['Full timeline', 'Documents', 'Family history', 'Insurance', 'Mental health']
+    };
+  }
+}
+</script>
+</body>
+</html>
