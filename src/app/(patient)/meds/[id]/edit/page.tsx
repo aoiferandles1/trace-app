@@ -3,7 +3,7 @@
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams, useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { isUuid, medicationName, type Medication } from "@/lib/patient/types";
+import { isUuid, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
@@ -12,8 +12,9 @@ import { MedicationForm } from "../../../_components/forms/MedicationForm";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /**
- * Edit a medication (no Figma frame). To stop one, set "Ends or ended"; it
- * then moves to the Expired tab. Delete is for mistakes.
+ * Edit a medication (no board; BRIEF.md section 7). To stop one, set "Ends
+ * or ended"; it then moves to Past. Delete, a critical text button with a
+ * confirm sheet, is for mistakes.
  */
 function EditMedicationScreen() {
   // Unique per screen: Next.js keeps earlier screens in the page, hidden.
@@ -23,17 +24,23 @@ function EditMedicationScreen() {
   const [busy, setBusy] = useState(false);
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
-    const { data, error } = await createClient().from("medications").select("*").eq("id", id).maybeSingle();
-    if (error) throw error;
-    return data as Medication | null;
+    const supabase = createClient();
+    const [med, periods] = await Promise.all([
+      supabase.from("medications").select("*").eq("id", id).maybeSingle(),
+      supabase.from("medication_periods").select("id", { count: "exact", head: true }).eq("medication_id", id),
+    ]);
+    if (med.error) throw med.error;
+    if (periods.error) throw periods.error;
+    return med.data ? { medication: med.data as Medication, hasPeriods: (periods.count ?? 0) > 0 } : null;
   }, [id]);
-  const m = data.status === "ready" ? data.data : null;
+  const found = data.status === "ready" ? data.data : null;
+  const m = found?.medication ?? null;
 
   return (
     <SubScreen
       title="Edit medication"
-      backHref="/meds"
-      backLabel="Back to My medication"
+      backHref={`/meds/${id}`}
+      backLabel={m ? `Back to ${m.name}` : "Back"}
       footer={m ? <SaveButton form={formId} busy={busy}>Save changes</SaveButton> : undefined}
     >
       {data.status !== "ready" ? (
@@ -42,11 +49,11 @@ function EditMedicationScreen() {
         <NotFound what="medication" />
       ) : (
         <>
-          <MedicationForm formId={formId} medication={m} onSaving={setBusy} />
+          <MedicationForm formId={formId} medication={m} hasPeriods={found?.hasPeriods} onSaving={setBusy} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Delete medication"
-              title={`Delete ${medicationName(m)}?`}
+              title={`Delete ${m.name}?`}
               body="It will be removed from your record. To show you stopped taking it, set an end date instead."
               onConfirm={async () => {
                 const { error } = await createClient().from("medications").delete().eq("id", m.id);

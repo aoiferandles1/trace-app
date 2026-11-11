@@ -28,6 +28,8 @@ export type BottomSheetProps = {
   title: ReactNode;
   /** Small accent line above the title ("Access request"). */
   eyebrow?: ReactNode;
+  /** A caption under the title ("Aug 2026, Infection" on TimelineA2's sheet). */
+  meta?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
   dismissible?: boolean;
@@ -41,6 +43,7 @@ export function BottomSheet({
   onClose,
   title,
   eyebrow,
+  meta,
   children,
   actions,
   dismissible = true,
@@ -114,6 +117,7 @@ export function BottomSheet({
             <h2 id={titleId} className="font-display text-title-md font-light">
               {title}
             </h2>
+            {meta && <p className="text-caption text-ink-2">{meta}</p>}
           </div>
           {dismissible && <IconButton label="Close" icon="close" iconSize={22} size={36} tone="muted" onClick={onClose} />}
         </div>

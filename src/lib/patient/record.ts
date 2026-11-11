@@ -445,3 +445,16 @@ export function errorCode(error: unknown): string | null {
   if (error && typeof error === "object" && "message" in error) return String((error as { message: unknown }).message);
   return null;
 }
+
+/** The units a medication's strength can be in (supabase/README.md, `medications.unit`). */
+export const UNITS = ["mg", "mcg", "g", "mL", "units", "IU"] as const;
+export const UNIT_OPTIONS = UNITS.map((u) => ({ value: u, label: u }));
+
+/** Reads "36mg", "2.5 mcg", "1000IU" as a strength and a unit, as the database does; null if it doesn't read. */
+export function parseStrength(text: string): { strength: number; unit: (typeof UNITS)[number] } | null {
+  const m = /^\s*(\d+(?:[.,]\d+)?)\s*(mg|mcg|g|ml|units?|iu)\s*$/i.exec(text);
+  if (!m) return null;
+  const raw = m[2].toLowerCase();
+  const unit = raw === "ml" ? "mL" : raw === "iu" ? "IU" : raw.startsWith("unit") ? "units" : (raw as "mg" | "mcg" | "g");
+  return { strength: Number(m[1].replace(",", ".")), unit };
+}

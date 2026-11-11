@@ -2,23 +2,35 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
+import { parseStrength } from "@/lib/patient/record";
 import { orNull, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { checkErrors, FormFrame, SAVE_FAILED, type FieldErrors } from "./FormBits";
 
 /**
- * Add or edit a medication (no Figma frame; PLAN.md section 8, item 2).
- * No mental health switch, on purpose: medications are always shared.
+ * Add or edit a medication (no board; BRIEF.md section 7: a full-screen form
+ * with the save button pinned at the bottom). No mental health switch, on
+ * purpose: medications are always shared.
+ *
+ * Adding writes the strength as `dose` ("36mg") with its `unit`, plus
+ * `started_on` and `prescriber`; the database makes the first strength
+ * period from them. Editing never changes the strength of a medication that
+ * has a history: that is "Log a strength change" (a new period, never an
+ * overwrite). To stop a medication, set "Ends or ended".
  */
 export function MedicationForm({
   formId,
   medication,
+  hasPeriods = false,
   onSaving,
 }: {
   formId: string;
   medication?: Medication;
+  /** The medication already has strength periods: its strength is not edited here. */
+  hasPeriods?: boolean;
   onSaving: (busy: boolean) => void;
 }) {
   const router = useRouter();
@@ -55,9 +67,11 @@ export function MedicationForm({
     if (!checkErrors(next, ids)) return;
     onSaving(true);
     setSaveError(null);
+    const lockedStrength = Boolean(m && hasPeriods);
+    const parsed = parseStrength(v.dose);
     const row = {
       name: v.name.trim(),
-      dose: orNull(v.dose),
+      ...(lockedStrength ? {} : { dose: orNull(v.dose), unit: parsed?.unit ?? null }),
       form: orNull(v.form),
       frequency: orNull(v.frequency),
       timing: orNull(v.timing),
@@ -80,14 +94,31 @@ export function MedicationForm({
       setSaveError(SAVE_FAILED);
       return;
     }
-    router.push("/meds");
+    router.push(m ? `/meds/${m.id}` : "/meds");
   }
 
   return (
     <FormFrame id={formId} onSubmit={submit} error={saveError}>
       <TextField id={ids.name} label="Name" value={v.name} onChange={set("name")} placeholder="e.g. Warfarin" error={errors.name} />
+      {m && hasPeriods ? (
+        <p className="text-body text-ink-2">
+          To change the strength,{" "}
+          <Link href={`/meds/${m.id}/change`} className="font-semibold text-accent underline underline-offset-2 hovered:text-accent-alt">
+            log a strength change
+          </Link>
+          . Your history keeps every strength.
+        </p>
+      ) : (
+        <TextField
+          label="Strength"
+          optional
+          value={v.dose}
+          onChange={set("dose")}
+          placeholder="e.g. 5mg"
+          hint="A number and a unit: mg, mcg, g, mL, units or IU."
+        />
+      )}
       <div className="grid grid-cols-2 gap-3">
-        <TextField label="Dose" optional value={v.dose} onChange={set("dose")} placeholder="e.g. 5mg" />
         <TextField label="Form" optional value={v.form} onChange={set("form")} placeholder="e.g. Tablet" />
         <TextField label="How often" optional value={v.frequency} onChange={set("frequency")} placeholder="e.g. once daily" />
         <TextField label="When" optional value={v.timing} onChange={set("timing")} placeholder="e.g. evening" />

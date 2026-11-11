@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
 import { CriticalSafetyStrip } from "@/components/patient/CriticalSafetyStrip";
+import { AddLink } from "@/components/patient/AddLink";
 import { PageHeader } from "@/components/patient/PageHeader";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { ButtonLink } from "@/components/ui/Button";
@@ -25,7 +26,6 @@ import {
 } from "@/lib/patient/record";
 import type { Profile } from "@/lib/patient/types";
 import { useLoad } from "@/lib/useLoad";
-import { cn } from "@/lib/cn";
 import { LoadStatus, TabScreen } from "../_components/Screens";
 
 type Tab = "timeline" | "conditions" | "family";
@@ -189,22 +189,6 @@ function ConditionsTab({ conditions }: { conditions: RecordCondition[] }) {
       )}
       <AddLink href="/record/conditions/new">Add a condition</AddLink>
     </div>
-  );
-}
-
-/** "Add a condition", "Add a relative": accent 600 text with a plus, 48px tall (RecordA2). */
-function AddLink({ href, children, className }: { href: string; children: string; className?: string }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex min-h-12 w-fit items-center gap-2 text-label font-semibold text-accent transition-colors duration-150 ease-out hovered:text-accent-alt",
-        className,
-      )}
-    >
-      <Icon name="plus" size={20} strokeWidth={2.25} />
-      {children}
-    </Link>
   );
 }
 

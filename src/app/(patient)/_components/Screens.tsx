@@ -18,7 +18,9 @@ import { useNow } from "@/lib/useNow";
  *
  * - TabScreen: the five main screens (Home, Record, Add, Medications,
  *   Profile), with the tab bar.
- * - SubScreen: details and forms, with a back link and no tab bar.
+ * - SubScreen: details and forms, with a back link. Forms and focused flows
+ *   have no tab bar; detail screens the boards draw with one (MedDetailA2,
+ *   TimelineA2, FamilyA2, InsuranceA2) pass `tabBar`.
  *
  * Both render <DemoMarker /> (demo accounts only, at the very top) and
  * <LiveBannerSlot /> (the strip while a doctor has access).
@@ -77,21 +79,34 @@ export function SubScreen({
   title,
   backHref,
   backLabel = "Back",
+  titleSize = "lg",
+  subtitle,
+  action,
   footer,
+  tabBar = false,
   children,
 }: {
   title: string;
   backHref: string;
   backLabel?: string;
+  /** "md" (24/30) for FamilyA2's and InsuranceA2's titles. */
+  titleSize?: "lg" | "md";
+  subtitle?: ReactNode;
+  action?: ReactNode;
   footer?: ReactNode;
+  /** The tab bar, for detail screens the boards draw with it. Never on forms. */
+  tabBar?: boolean;
   children: ReactNode;
 }) {
   return (
     <PatientShell
       demo={<DemoMarker />}
       banner={<LiveBannerSlot />}
-      header={<PageHeader title={title} backHref={backHref} backLabel={backLabel} />}
+      header={
+        <PageHeader title={title} size={titleSize} subtitle={subtitle} action={action} backHref={backHref} backLabel={backLabel} />
+      }
       footer={footer}
+      tabBar={tabBar ? <TabBar /> : undefined}
     >
       {children}
     </PatientShell>

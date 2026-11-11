@@ -44,6 +44,8 @@ export type ListRowProps = {
    * are 12, RecordA2's timeline 11, its relatives 10). Default: 64px tall.
    */
   padY?: 10 | 11 | 12;
+  /** Space between the text and the value: 14 (default) or 12 (MedsA2's rows). */
+  gap?: 12 | 14;
   className?: string;
 };
 
@@ -75,6 +77,7 @@ export function ListRow({
   srSuffix,
   titleAs = "span",
   padY,
+  gap = 14,
   className,
 }: ListRowProps) {
   const Title = href || onClick ? "span" : titleAs;
@@ -96,7 +99,8 @@ export function ListRow({
     </>
   );
   const classes = cn(
-    "flex w-full items-center gap-3.5 text-left text-ink",
+    "flex w-full items-center text-left text-ink",
+    gap === 12 ? "gap-3" : "gap-3.5",
     padY ? padYClasses[padY] : "min-h-16 py-2",
     (href || onClick) && "transition-colors duration-150 ease-out hovered:text-accent-alt",
     className,
