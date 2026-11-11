@@ -55,7 +55,7 @@ export function PortalSection() {
         <CriticalSafetyStrip variant="portal" items={["Penicillin allergy", "A+"]} />
       </Specimen>
 
-      <div className="grid gap-10 lg:grid-cols-[256px_1fr]">
+      <div className="grid gap-10 lg:grid-cols-[256px_256px]">
         <Specimen title="Sidebar" className="overflow-hidden p-0 sm:p-0">
           <PortalSidebar patient={PATIENT} items={portalNavItems()} active="overview" />
         </Specimen>

@@ -12,7 +12,8 @@ import { cn } from "@/lib/cn";
  * corners.
  *
  * The active tab comes from the URL (or `active` to override, for /kit).
- * Active tab: Indigo/Text icon and label plus aria-current="page".
+ * Active tab: Indigo/Text icon and a bold label (so it is not colour alone)
+ * plus aria-current="page".
  * Every tab is at least 56 x 48. Render it through PatientShell's `tabBar` slot.
  */
 
@@ -71,8 +72,8 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
                   </span>
                   <span
                     className={cn(
-                      "text-label font-medium tracking-normal",
-                      isActive ? "text-indigo-text" : "text-text-tertiary",
+                      "text-label tracking-normal",
+                      isActive ? "font-bold text-indigo-text" : "font-medium text-text-tertiary",
                     )}
                   >
                     {tab.label}
@@ -91,10 +92,10 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
                   isActive ? "text-indigo-text" : "text-text-tertiary hovered:text-text-primary",
                 )}
               >
-                <span aria-hidden="true" className={cn(!isActive && "text-text-primary")}>
-                  {tab.icon}
+                <span aria-hidden="true">{tab.icon}</span>
+                <span className={cn("text-label tracking-normal", isActive ? "font-bold" : "font-medium")}>
+                  {tab.label}
                 </span>
-                <span className="text-label font-medium tracking-normal">{tab.label}</span>
               </Link>
             </li>
           );

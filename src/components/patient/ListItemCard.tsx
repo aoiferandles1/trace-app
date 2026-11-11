@@ -75,7 +75,8 @@ export function ListItemCard({
         <span
           aria-hidden="true"
           className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-sm text-text-primary",
+            "flex size-8 shrink-0 items-center justify-center rounded-sm",
+            chevronTone === "none" ? "text-text-tertiary" : "text-text-primary",
             chevronTint[chevronTone],
           )}
         >
