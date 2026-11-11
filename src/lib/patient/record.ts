@@ -1,4 +1,5 @@
 import type { IconName } from "@/components/ui/Icon";
+import { formatTimelineDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -457,4 +458,10 @@ export function parseStrength(text: string): { strength: number; unit: (typeof U
   const raw = m[2].toLowerCase();
   const unit = raw === "ml" ? "mL" : raw === "iu" ? "IU" : raw.startsWith("unit") ? "units" : (raw as "mg" | "mcg" | "g");
   return { strength: Number(m[1].replace(",", ".")), unit };
+}
+
+/** "2 Nov 2026, PDF": the date on the document, else when it was added. */
+export function documentCaption(d: RecordDocument): string {
+  const when = d.document_date ? formatAtPrecision(d.document_date, "day") : formatTimelineDate(d.created_at);
+  return `${when}, ${documentTypeLabel(d.content_type)}`;
 }

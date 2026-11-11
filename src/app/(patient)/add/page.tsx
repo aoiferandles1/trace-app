@@ -8,9 +8,10 @@ import { PageHeader } from "@/components/patient/PageHeader";
 import { TabScreen } from "../_components/Screens";
 
 /**
- * Add to my record (p-add), with only the tiles that work. Upload document,
- * Scan or photograph, Record a vaccination, Family history and Upload a
- * receipt are hidden (PLAN.md section 11). "Add a condition" is new.
+ * Add to my record (p-add), with only the tiles that work. Scan or
+ * photograph, Record a vaccination and Upload a receipt are hidden (PLAN.md
+ * section 11). "Add a condition", "Add a relative" and "Upload a document"
+ * (the redesign's family history and documents) are new.
  */
 function AddScreen() {
   return (
@@ -29,6 +30,12 @@ function AddScreen() {
           </Tile>
           <Tile href="/record/conditions/new" icon="heart-pulse" title="Add a condition">
             A diagnosis or ongoing health issue
+          </Tile>
+          <Tile href="/record/family/new" icon="tree" title="Add a relative">
+            Family history for your tree
+          </Tile>
+          <Tile href="/profile/documents/upload" icon="document-plus" title="Upload a document">
+            A letter or result, as a PDF or photo
           </Tile>
         </ul>
       </div>

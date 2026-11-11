@@ -149,7 +149,9 @@ test("meds: current and expired", async ({ page }) => {
 test("add: only the working tiles, then a note from start to delete", async ({ page }) => {
   await gotoScreen(page, "/add", "Add to my record");
   await expect(page.getByRole("link", { name: /Log appointment/ })).toBeVisible();
-  for (const hidden of ["Upload document", "Scan or photograph", "Record a vaccination", "Family history", "Upload a receipt"]) {
+  await expect(page.getByRole("link", { name: /Add a relative/ })).toHaveAttribute("href", "/record/family/new");
+  await expect(page.getByRole("link", { name: /Upload a document/ })).toHaveAttribute("href", "/profile/documents/upload");
+  for (const hidden of ["Scan or photograph", "Record a vaccination", "Upload a receipt"]) {
     await expect(page.getByText(hidden)).toHaveCount(0);
   }
   await expectNoAxeViolations(page);
