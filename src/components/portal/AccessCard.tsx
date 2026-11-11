@@ -1,123 +1,136 @@
-import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "@/components/ui/Icon";
 
 /**
- * The indigo hero above the portal's entry card, from c-code "HERO ABOVE
- * CARD" (867:58739): a "Clinical Access Portal" pill, a Sora Light headline
- * and one line under it. c-end uses the same hero with its own title.
+ * Pieces of the portal's code, waiting and ended steps (boards PortalEntryB
+ * and PortalWaitB). Phase 7 lays these screens out to the boards; these
+ * pieces already wear the new look.
+ */
+
+/**
+ * A page title block: Sora 300 at 44px with an optional line under it. On
+ * light pages the line is ink-2; inside `.on-session` pass tone="session".
  */
 export function PortalHero({
   title,
   subtitle,
+  tone = "default",
   className,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
+  tone?: "default" | "session";
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col items-center px-4 pt-10 text-center sm:pt-[60px]", className)}>
-      <p className="flex h-7 items-center gap-1.5 rounded-pill border border-white/30 bg-white/10 px-[15px] text-label font-medium tracking-normal text-white">
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-white" />
-        Clinical Access Portal
-      </p>
-      <h1 className="mt-5 max-w-[22ch] font-display text-[36px] font-light leading-[1.1] tracking-[-0.02em] text-white sm:text-[52px]">
-        {title}
-      </h1>
-      {subtitle && <p className="mt-3 max-w-[470px] text-body-lg text-white">{subtitle}</p>}
+    <div className={cn("flex flex-col gap-2.5 px-5 pt-8 sm:px-14", className)}>
+      <h1 className="max-w-[20ch] font-display text-display font-light">{title}</h1>
+      {subtitle && (
+        <p className={cn("max-w-[52ch] text-body-lg", tone === "session" ? "text-on-session-2" : "text-ink-2")}>
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
 
 const eyebrowTone = {
-  indigo: { dot: "bg-brand-indigo", text: "text-indigo-text" },
-  red: { dot: "bg-status-danger", text: "text-red-700" },
-  peach: { dot: "bg-brand-peach", text: "text-peach-700" },
-  teal: { dot: "bg-brand-teal", text: "text-teal-700" },
-  neutral: { dot: "bg-text-tertiary", text: "text-text-tertiary" },
+  default: "text-ink-2",
+  critical: "text-critical",
+  urgent: "text-urgent",
 } as const;
 
 export type AccessCardTone = keyof typeof eyebrowTone;
 
 /**
- * The white entry card, from Figma "Doctor Access Card" (867:58736): 420px
- * wide, 36px padding, 28px corners, an eyebrow with a dot, a Sora Light
- * heading, a line of body text, then the card's controls.
+ * A step's content block (code entry, error, expired, ended): a small 600
+ * line, a Sora 300 heading, a line of body text, then the controls. Flat on
+ * the page: no card fill, no shadow.
  *
- * The heading is the page's main heading after the hero's h1, so it is an h2.
- * `headingRef` lets a screen move focus to it when the state changes, so
- * screen reader users hear the new state ("That code doesn't match.").
+ * `headingRef` lets a screen move focus to the heading when the state
+ * changes, so screen reader users hear the new state.
  */
 export function AccessCard({
   eyebrow,
-  tone = "indigo",
+  tone = "default",
   title,
   body,
   children,
   headingRef,
+  surface = "default",
   className,
 }: {
   eyebrow: string;
   tone?: AccessCardTone;
+  /** "session" on session indigo (the waiting screen): white text. */
+  surface?: "default" | "session";
   title: ReactNode;
   body?: ReactNode;
   children?: ReactNode;
   headingRef?: React.Ref<HTMLHeadingElement>;
   className?: string;
 }) {
-  const t = eyebrowTone[tone];
   return (
-    <section
-      className={cn(
-        "mx-auto flex w-full max-w-[420px] flex-col gap-5 rounded-sheet bg-surface-card p-6 text-text-primary shadow-[0_12px_16px_rgba(0,0,0,0.1)] sm:p-9",
-        className,
-      )}
-    >
-      <p className={cn("flex items-center gap-2 text-label font-medium uppercase", t.text)}>
-        <span aria-hidden="true" className={cn("size-1.5 rounded-full", t.dot)} />
-        {eyebrow}
-      </p>
-      <h2
-        ref={headingRef}
-        tabIndex={-1}
-        className="font-display text-display-sm font-light leading-[1.25] focus:outline-none"
-      >
+    <section className={cn("flex w-full max-w-[520px] flex-col gap-5", surface === "session" ? "text-white" : "text-ink", className)}>
+      <p className={cn("text-caption font-semibold", surface === "session" ? "text-white" : eyebrowTone[tone])}>{eyebrow}</p>
+      <h2 ref={headingRef} tabIndex={-1} className="font-display text-title font-light focus:outline-none">
         {title}
       </h2>
-      {body && <div className="text-body-lg text-text-tertiary">{body}</div>}
+      {body && <div className={cn("text-body-lg", surface === "session" ? "text-on-session-2" : "text-ink-2")}>{body}</div>}
       {children}
     </section>
   );
 }
 
 /**
- * A short list of steps with a circle each (c-waiting, c-opening). The
- * circle is decorative; screen readers hear "done" or "in progress".
+ * Steps with a state each (PortalWaitB "Code accepted / Waiting for
+ * approval / Open record"): 76px rows between hairlines. Done is a filled
+ * disc with a tick, current a ring with 600 text, to do a faint ring in
+ * dimmed text. No pulse. Screen readers hear "done", "in progress" or
+ * "not yet".
  */
 export type Step = { label: string; state: "done" | "current" | "todo" };
 
-export function StepList({ steps, className }: { steps: Step[]; className?: string }) {
+export function StepList({
+  steps,
+  tone = "session",
+  className,
+}: {
+  steps: Step[];
+  /** "session" on session indigo (the board); "default" on a light page. */
+  tone?: "session" | "default";
+  className?: string;
+}) {
+  const s = tone === "session";
   return (
-    <ol className={cn("flex flex-col gap-4", className)}>
-      {steps.map((s) => (
-        <li key={s.label} className="flex items-center gap-3 text-body-lg">
+    <ol className={cn("flex flex-col border-b", s ? "border-on-session-border" : "border-border-card", className)}>
+      {steps.map((step) => (
+        <li
+          key={step.label}
+          aria-current={step.state === "current" ? "step" : undefined}
+          className={cn(
+            "flex min-h-19 items-center gap-4 border-t text-row",
+            s ? "border-on-session-border" : "border-border-card",
+            step.state === "current" && "font-semibold",
+            step.state === "todo" && (s ? "text-on-session-2" : "text-ink-2"),
+          )}
+        >
           <span
             aria-hidden="true"
             className={cn(
-              "flex size-5 shrink-0 items-center justify-center rounded-full border",
-              s.state === "done" && "border-brand-teal bg-brand-teal text-white",
-              s.state === "current" && "border-2 border-brand-indigo bg-brand-indigo-tint",
-              s.state === "todo" && "border-border-default bg-surface-page",
+              "flex size-6 shrink-0 items-center justify-center rounded-full",
+              step.state === "done" && (s ? "bg-white text-session" : "bg-accent text-white"),
+              step.state === "current" && (s ? "border-2 border-white" : "border-2 border-accent"),
+              step.state === "todo" && (s ? "border-2 border-on-session-ring" : "border-2 border-ring-off"),
             )}
           >
-            {s.state === "done" && <Check className="size-3" strokeWidth={3} />}
-            {s.state === "current" && <span className="size-1.5 animate-pulse rounded-full bg-brand-indigo" />}
+            {step.state === "done" && <Icon name="tick" size={14} strokeWidth={3.5} />}
           </span>
-          <span className={s.state === "todo" ? "text-text-tertiary" : "text-text-primary"}>
-            {s.label}
+          <span>
+            {step.label}
             <span className="sr-only">
-              {s.state === "done" ? " (done)" : s.state === "current" ? " (in progress)" : " (not yet)"}
+              {step.state === "done" ? " (done)" : step.state === "current" ? " (in progress)" : " (not yet)"}
             </span>
           </span>
         </li>

@@ -1,55 +1,26 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Icon, type IconName } from "./Icon";
 
 /**
- * Inline banner card, from Figma "Banner Card" (44:530), in four tones.
- * Home uses it for "Upcoming" (indigo), "Refill due soon" (peach) and
- * "Sharing in progress" (indigo, links to /session).
+ * A one-item card with a bare icon: "Upcoming", "Refill due soon",
+ * "Sharing in progress". Surface with a border-card edge; `tone="urgent"`
+ * is the one tinted form (urgent-tint, urgent icon and eyebrow), for
+ * something due soon.
  *
- * Layout: 40px icon tile, eyebrow line, bold title, meta line, and an
- * optional trailing badge ("2d", "24:12"). With `href` the whole card is one
- * link; its accessible name is the title plus eyebrow, so keep them meaningful.
+ * Layout: the icon, an eyebrow line, the title (500), a caption, and an
+ * optional short badge on the right ("2d", "24:12"). With `href` the whole
+ * card is one link; its accessible name is the eyebrow plus title.
  */
-
-const tones = {
-  indigo: {
-    card: "bg-[rgba(91,122,232,0.12)] border-[rgba(91,122,232,0.5)]",
-    tile: "bg-surface-card text-brand-indigo",
-    eyebrow: "text-indigo-text",
-    badge: "text-indigo-text",
-  },
-  teal: {
-    card: "bg-brand-teal-tint border-[rgba(0,168,150,0.5)]",
-    tile: "bg-brand-teal text-white",
-    eyebrow: "text-teal-700",
-    badge: "text-teal-700",
-  },
-  peach: {
-    card: "bg-brand-peach-tint border-[rgba(232,144,107,0.5)]",
-    tile: "bg-brand-peach text-white",
-    eyebrow: "text-peach-700",
-    badge: "text-peach-700",
-  },
-  neutral: {
-    card: "bg-surface-card border-border-default",
-    tile: "bg-surface-sunken text-text-tertiary",
-    eyebrow: "text-text-tertiary",
-    badge: "text-text-tertiary",
-  },
-} as const;
-
 export type BannerCardProps = {
-  tone?: keyof typeof tones;
-  icon: ReactNode;
+  tone?: "default" | "urgent";
+  icon: IconName;
   eyebrow?: ReactNode;
-  /** Uppercase the eyebrow ("REFILL DUE SOON"). */
-  eyebrowCaps?: boolean;
   title: ReactNode;
   meta?: ReactNode;
-  /** Short badge on the right ("2d", "24:12"). Give it an `aria-label` via `badgeLabel` if it is cryptic. */
+  /** Short badge on the right ("2d", "24:12"). Give its spoken form in `badgeLabel` if it is cryptic. */
   badge?: ReactNode;
-  /** Spoken form of the badge, e.g. "in 2 days". */
   badgeLabel?: string;
   href?: string;
   /** Heading level for the title when the card is not a link. */
@@ -58,10 +29,9 @@ export type BannerCardProps = {
 };
 
 export function BannerCard({
-  tone = "indigo",
+  tone = "default",
   icon,
   eyebrow,
-  eyebrowCaps = false,
   title,
   meta,
   badge,
@@ -70,29 +40,20 @@ export function BannerCard({
   titleAs = "p",
   className,
 }: BannerCardProps) {
-  const t = tones[tone];
+  const urgent = tone === "urgent";
   const TitleTag = href ? "span" : titleAs;
   const body = (
     <>
-      <span
-        aria-hidden="true"
-        className={cn("flex size-10 shrink-0 items-center justify-center rounded-sm [&_svg]:size-6", t.tile)}
-      >
-        {icon}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <Icon name={icon} className={urgent ? "text-urgent" : "text-accent"} />
+      <span className="flex min-w-0 flex-1 flex-col">
         {eyebrow && (
-          <span className={cn("text-label font-medium", eyebrowCaps && "uppercase", t.eyebrow)}>
-            {eyebrow}
-          </span>
+          <span className={cn("text-meta font-semibold", urgent ? "text-urgent" : "text-ink-2")}>{eyebrow}</span>
         )}
-        <TitleTag className="text-h4 font-bold text-text-primary">{title}</TitleTag>
-        {meta && <span className="text-meta text-text-tertiary">{meta}</span>}
+        <TitleTag className="text-row font-medium text-ink">{title}</TitleTag>
+        {meta && <span className="text-caption text-ink-2">{meta}</span>}
       </span>
       {badge && (
-        <span
-          className={cn("shrink-0 rounded-sm bg-surface-card px-2.5 py-1 text-label font-medium", t.badge)}
-        >
+        <span className={cn("shrink-0 text-caption font-semibold", urgent ? "text-urgent" : "text-ink-2")}>
           {badgeLabel ? (
             <>
               <span aria-hidden="true">{badge}</span>
@@ -107,9 +68,8 @@ export function BannerCard({
   );
 
   const classes = cn(
-    "flex items-center gap-3.5 rounded-card border p-4 shadow-sm",
-    t.card,
-    href && "transition-[filter] duration-150 hovered:brightness-[0.98]",
+    "flex min-h-16 items-center gap-3.5 rounded-card px-4.5 py-3",
+    urgent ? "bg-urgent-tint" : "border border-border-card bg-surface",
     className,
   );
 

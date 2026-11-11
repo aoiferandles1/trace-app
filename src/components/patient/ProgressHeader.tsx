@@ -1,12 +1,12 @@
-import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/cn";
 
 /**
- * Sign-up progress, from Figma "Step Progress" (85:2628) as on p-verify and
- * p-about: a 2px indigo track, then "< Step 3 of 7". The back link returns to
- * the previous step; step 1 has no back link.
+ * Sign-up progress (BRIEF.md section 7): a thin 3px accent bar at the top,
+ * not dots, then "Step 3 of 7". The step line links back to the previous
+ * step; step 1 has no back link.
  */
 export function ProgressHeader({
   step,
@@ -22,21 +22,21 @@ export function ProgressHeader({
 }) {
   const label = `Step ${step} of ${total}`;
   return (
-    <div className={cn("flex flex-col gap-1.5 px-5 pt-2", className)}>
-      <ProgressBar value={step} max={total} label="Sign-up progress" valueText={label} className="mb-2" />
+    <div className={cn("flex flex-col gap-1 px-5 pt-3", className)}>
+      <ProgressBar value={step} max={total} label="Sign-up progress" valueText={label} />
       {backHref ? (
         <Link
           href={backHref}
-          className="-ml-2 flex h-11 w-fit items-center gap-1.5 rounded-md px-2 text-body-tiny text-text-tertiary hovered:text-text-primary"
+          className="-ml-1.5 flex h-11 w-fit items-center gap-1 rounded-full pr-2 text-caption text-ink-2 hovered:text-ink"
         >
-          <ChevronLeft aria-hidden="true" className="size-4" />
+          <Icon name="chevron-left" size={20} />
           <span>
             {label}
             <span className="sr-only">. Back to the previous step</span>
           </span>
         </Link>
       ) : (
-        <p className="flex h-11 items-center text-body-tiny text-text-tertiary">{label}</p>
+        <p className="flex h-11 items-center text-caption text-ink-2">{label}</p>
       )}
     </div>
   );

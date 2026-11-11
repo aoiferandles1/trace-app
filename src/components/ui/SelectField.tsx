@@ -1,13 +1,13 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { describedBy, Field, fieldIds, type FieldLabelStyle } from "./Field";
+import { describedBy, Field, fieldIds } from "./Field";
+import { Icon } from "./Icon";
 import { controlBase, controlBorder } from "./TextField";
 
 /**
- * Dropdown for enumerated choices, from Figma "Select" (85:2690). It is a
+ * Dropdown for enumerated choices, styled as a text field (BRIEF.md section 7). It is a
  * native <select> with the chevron drawn on top, so keyboard, screen reader
  * and phone pickers all work without extra code.
  *
@@ -18,7 +18,6 @@ export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 export type SelectFieldProps = Omit<ComponentProps<"select">, "children"> & {
   label: ReactNode;
-  labelStyle?: FieldLabelStyle;
   labelHidden?: boolean;
   options: SelectOption[];
   placeholder?: string;
@@ -31,7 +30,6 @@ export type SelectFieldProps = Omit<ComponentProps<"select">, "children"> & {
 export function SelectField({
   id: idProp,
   label,
-  labelStyle,
   labelHidden,
   options,
   placeholder,
@@ -52,7 +50,6 @@ export function SelectField({
     <Field
       id={id}
       label={label}
-      labelStyle={labelStyle}
       labelHidden={labelHidden}
       hint={hint}
       error={error}
@@ -69,8 +66,8 @@ export function SelectField({
           className={cn(
             controlBase,
             controlBorder(Boolean(error)),
-            "h-[50px] appearance-none pl-4 pr-11",
-            isEmpty && placeholder && "text-text-tertiary",
+            "h-(--h-input) appearance-none pl-4 pr-11",
+            isEmpty && placeholder && "text-ink-2",
           )}
           {...rest}
         >
@@ -85,9 +82,10 @@ export function SelectField({
             </option>
           ))}
         </select>
-        <ChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-text-tertiary"
+        <Icon
+          name="chevron-down"
+          size={18}
+          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-2"
         />
       </div>
     </Field>

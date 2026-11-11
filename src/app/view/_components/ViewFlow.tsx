@@ -1,6 +1,5 @@
 "use client";
 
-import { Clock, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
@@ -10,7 +9,7 @@ import { PortalHeader } from "@/components/portal/PortalHeader";
 import { Avatar } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { CodeInput } from "@/components/ui/CodeInput";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TextField } from "@/components/ui/TextField";
 import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
@@ -233,33 +232,26 @@ export function ViewFlow() {
     }
   }
 
-  const header = <PortalHeader clinician={clinician ?? undefined} />;
-  const footer = <PortalFooter />;
+  const onSession = screen.kind === "waiting";
+  const header = <PortalHeader clinician={clinician ?? undefined} tone={onSession ? "session" : "default"} />;
+  const footer = <PortalFooter tone={onSession ? "session" : "default"} />;
 
   if (screen.kind === "loading") {
     return (
-      <PortalShell tone="indigo" header={header} footer={footer}>
-        <div className="flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center">
-          <h1 className="font-display text-[64px] font-bold leading-none tracking-[-0.03em] sm:text-[80px]">
+      <PortalShell tone="ground" header={header} footer={footer}>
+        <div className="flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-4 px-5 py-16 text-center">
+          <h1 className="font-display text-display-xl font-light">
             trace
             <span className="sr-only"> Clinical Access Portal</span>
           </h1>
-          <p className="text-body-lg">{siteHost()}/view · Clinical Access Portal</p>
+          <p className="text-body-lg text-ink-2">{siteHost()}/view, Clinical Access Portal</p>
           {problem ? (
-            <p role="alert" className="max-w-[420px] rounded-md bg-surface-card px-4 py-3 text-body-sm text-red-700">
+            <Notice tone="critical" live="assertive" className="max-w-[420px] text-left">
               {problem}
-            </p>
+            </Notice>
           ) : (
-            <p role="status" className="flex items-center gap-2">
-              <span className="sr-only">Loading the portal</span>
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  aria-hidden="true"
-                  className="size-2.5 animate-pulse rounded-full bg-white"
-                  style={{ animationDelay: `${i * 200}ms` }}
-                />
-              ))}
+            <p role="status" className="text-caption text-ink-2">
+              Loading the portal&hellip;
             </p>
           )}
         </div>
@@ -268,15 +260,13 @@ export function ViewFlow() {
   }
 
   return (
-    <PortalShell tone="indigo" header={header} footer={footer}>
+    <PortalShell tone={onSession ? "session" : "ground"} header={header} footer={footer}>
       <PortalHero
+        tone={onSession ? "session" : "default"}
         title="Read your patient's record."
         subtitle="Nothing to install. No hospital integration. Your patient controls exactly what you see, and for how long."
       />
-      <p className="mt-12 mb-6 text-center text-label font-medium uppercase tracking-[0.14em] sm:mt-[60px]">
-        Clinical access · New session
-      </p>
-      <div className="px-4">
+      <div className="px-5 pt-10 sm:px-14">
         {screen.kind === "name" && (
           <NameCard
             headingRef={headingRef}
@@ -292,7 +282,7 @@ export function ViewFlow() {
           <AccessCard
             headingRef={headingRef}
             eyebrow={screen.kind === "wrong" ? "Incorrect code" : "New session"}
-            tone={screen.kind === "wrong" ? "red" : "indigo"}
+            tone={screen.kind === "wrong" ? "critical" : "default"}
             title={screen.kind === "wrong" ? "That code doesn't match." : "Enter the patient's code."}
             body={
               screen.kind === "wrong"
@@ -317,6 +307,7 @@ export function ViewFlow() {
               <CodeInput
                 id="portal-code"
                 length={4}
+                size="lg"
                 label="Patient's share code"
                 labelHidden
                 value={digits}
@@ -344,7 +335,7 @@ export function ViewFlow() {
           <AccessCard
             headingRef={headingRef}
             eyebrow="Code expired"
-            tone="peach"
+            tone="urgent"
             title="This code has expired."
             body="Codes last 5 minutes. Ask your patient for a new one."
           >
@@ -379,18 +370,17 @@ export function ViewFlow() {
           <AccessCard
             headingRef={headingRef}
             eyebrow="Not shared"
-            tone="neutral"
             title="Your patient chose not to share their record."
             body="You can ask them to share again, or continue the consultation without it."
           >
-            <HintStrip tone="neutral" icon={<Info aria-hidden="true" className="size-4 shrink-0" />}>
+            <Notice tone="neutral" icon="info">
               This is normal. Patients are in control.
-            </HintStrip>
+            </Notice>
             <div className="flex flex-col gap-3">
               <Button size="lg" fullWidth onClick={() => go({ kind: "code" }, "code")}>
                 Enter a new code
               </Button>
-              <Button variant="secondary" size="lg" fullWidth onClick={() => go({ kind: "name" })}>
+              <Button variant="text" className="self-center" onClick={() => go({ kind: "name" })}>
                 Close
               </Button>
             </div>
@@ -402,7 +392,7 @@ export function ViewFlow() {
           <AccessCard
             headingRef={headingRef}
             eyebrow="No answer"
-            tone="peach"
+            tone="urgent"
             title="Your patient didn't answer in time."
             body="Requests close after 5 minutes. Ask your patient for a new code."
           >
@@ -417,7 +407,6 @@ export function ViewFlow() {
           <AccessCard
             headingRef={headingRef}
             eyebrow="Not shared"
-            tone="neutral"
             title="Your patient withdrew the code."
             body="They cancelled the share before answering. Ask them for a new code if you still need their record."
           >
@@ -442,7 +431,7 @@ export function ViewFlow() {
           />
         )}
       </div>
-      <FirstTimeAccordion className="mt-16 mb-16 sm:mt-[80px]" />
+      {!onSession && <FirstTimeAccordion className="mx-5 mb-16 mt-16 sm:mx-14 sm:mt-20" />}
     </PortalShell>
   );
 }
@@ -451,7 +440,7 @@ function NeedHelp() {
   return (
     <a
       href="#first-time"
-      className="mx-auto rounded-xs py-3.5 text-button-md font-medium text-indigo-text hovered:underline"
+      className="flex min-h-11 w-fit items-center text-caption font-semibold text-accent hovered:underline"
       onClick={() => setTimeout(() => document.getElementById("first-time")?.focus(), 0)}
     >
       Need help?
@@ -461,12 +450,12 @@ function NeedHelp() {
 
 function RequestingAs({ clinician, onChange }: { clinician: Clinician; onChange: () => void }) {
   return (
-    <p className="text-center text-body-sm text-text-tertiary">
+    <p className="text-caption text-ink-2">
       Requesting as {[clinician.name, clinician.role, clinician.practice].filter(Boolean).join(", ")}.{" "}
       <button
         type="button"
         onClick={onChange}
-        className="hit-area rounded-xs font-medium text-indigo-text underline underline-offset-2"
+        className="hit-area font-semibold text-accent hovered:underline"
       >
         Change details
       </button>
@@ -543,7 +532,7 @@ function NameCard({
           Continue
         </Button>
       </form>
-      <p className="text-center text-body-sm text-text-tertiary">Remembered on this computer for next time.</p>
+      <p className="text-caption text-ink-2">Remembered on this computer for next time.</p>
     </AccessCard>
   );
 }
@@ -572,18 +561,18 @@ function LockedCard({
     <AccessCard
       headingRef={headingRef}
       eyebrow="Too many attempts"
-      tone="red"
+      tone="critical"
       title="Too many attempts."
       body={
         <>
           <p>Ask your patient to generate a new code.</p>
-          <p className="mt-2 text-body-sm">
+          <p className="mt-2 text-caption">
             {unlocked ? "You can try again now." : `Code entry is paused for this browser until ${time}.`}
           </p>
         </>
       }
     >
-      <CodeInput id="portal-code" length={4} label="Patient's share code" labelHidden value="" onChange={() => {}} disabled />
+      <CodeInput id="portal-code" length={4} size="lg" label="Patient's share code" labelHidden value="" onChange={() => {}} disabled />
       <Button size="lg" fullWidth disabled={!unlocked} onClick={onUnlock}>
         Enter a new code
       </Button>
@@ -612,19 +601,22 @@ function WaitingCard({
   return (
     <AccessCard
       headingRef={headingRef}
+      surface="session"
       eyebrow="Request sent"
-      tone="teal"
       title="Waiting for patient to approve."
       body="Patient will see exactly what you're asking to view, and chooses what to share."
     >
       {left !== null && (
-        <p className="flex items-center gap-2 px-3.5 text-label font-medium text-indigo-text">
-          <Clock aria-hidden="true" className="size-4 shrink-0" />
-          <span aria-hidden="true">Patient has {formatCountdown(left)} to respond</span>
-          <span className="sr-only">The patient has about {formatCountdownSpoken(Math.ceil(left / 60000) * 60000)} to respond</span>
-        </p>
+        <div className="flex flex-col">
+          <p className="text-caption text-on-session-2">Patient has</p>
+          <p aria-hidden="true" className="font-display text-display-xl font-light tabular-nums">
+            {formatCountdown(left)}
+          </p>
+          <p className="sr-only">The patient has about {formatCountdownSpoken(Math.ceil(left / 60000) * 60000)} to respond</p>
+        </div>
       )}
       <StepList
+        tone="session"
         steps={[
           { label: "Code accepted", state: "done" },
           { label: "Waiting for approval", state: "current" },
@@ -632,15 +624,15 @@ function WaitingCard({
         ]}
       />
       {problem && (
-        <p role="alert" className="text-body-sm text-red-700">
+        <Notice tone="critical" live="assertive" surface="session">
           {problem}
-        </p>
+        </Notice>
       )}
-      <div className="flex flex-col items-center gap-2">
-        <Button variant="ghost" size="md" onClick={onCancel} loading={cancelling}>
+      <div className="flex flex-col items-start gap-1">
+        <Button variant="text" tone="session" size="md" onClick={onCancel} loading={cancelling}>
           Cancel request
         </Button>
-        <p className="text-center text-body-tiny text-text-tertiary">The patient keeps their code and can still share later</p>
+        <p className="text-caption text-on-session-2">The patient keeps their code and can still share later</p>
       </div>
     </AccessCard>
   );
@@ -686,35 +678,35 @@ function OpeningCard({
     <AccessCard
       headingRef={headingRef}
       eyebrow="Approved"
-      tone="teal"
       title={`Opening ${first}'s record.`}
       body={`Loading the sections ${first} chose to share.`}
     >
-      <div className="flex items-center gap-3 rounded-pill-loose bg-brand-indigo-tint p-1.5 pr-4">
-        <Avatar initials={initialsOf(full)} size="sm" tone="solid" />
+      <div className="flex items-center gap-3">
+        <Avatar initials={initialsOf(full)} size={44} tone="solid" />
         <div className="min-w-0">
-          <p className="text-body-sm font-medium">{full}</p>
-          <p className="text-body-tiny text-text-tertiary">
+          <p className="text-row font-medium">{full}</p>
+          <p className="text-caption text-ink-2">
             {["GP visit profile", durationLabel(durationKind)].filter(Boolean).join(" · ")}
           </p>
         </div>
       </div>
-      <div className="flex flex-col gap-2 px-8">
-        <p className="flex justify-between text-body-tiny">
-          <span className="text-text-tertiary">Loading record</span>
-          <span aria-hidden="true" className="font-medium text-indigo-text">
+      <div className="flex flex-col gap-2">
+        <p className="flex justify-between text-caption">
+          <span className="text-ink-2">Loading record</span>
+          <span aria-hidden="true" className="font-semibold">
             {progress}%
           </span>
         </p>
         <ProgressBar value={progress} label="Loading record" valueText={`${progress}%`} />
       </div>
       <StepList
+        tone="default"
         steps={steps.map((label, i) => ({
           label,
           state: progress >= (i + 1) * 33 ? "done" : progress >= i * 33 ? "current" : "todo",
         }))}
       />
-      <p className="text-center text-body-tiny text-text-tertiary">Encrypted in transit · read-only · access logged</p>
+      <p className="text-caption text-ink-2">Encrypted in transit · read-only · access logged</p>
     </AccessCard>
   );
 }

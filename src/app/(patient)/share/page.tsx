@@ -7,8 +7,8 @@ import { SessionReady } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { Button } from "@/components/ui/Button";
 import { SectionLabel } from "@/components/ui/Card";
-import { ChoiceCardGroup } from "@/components/ui/ChoiceCardGroup";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Notice } from "@/components/ui/Notice";
 import { LockedRow, SwitchGroup, SwitchRow } from "@/components/ui/Switch";
 import {
   DURATION_OPTIONS,
@@ -75,30 +75,30 @@ function SharePrefsScreen() {
         </Button>
       }
     >
-      <div className="flex flex-col gap-6 px-4 pb-8 pt-2">
+      <div className="flex flex-col gap-6 px-5 pb-8 pt-2">
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-h3 font-medium">Confirm preferences</h2>
-          <p className="text-body-sm text-text-tertiary">
+          <h2 className="font-display text-heading font-light">Confirm preferences</h2>
+          <p className="text-caption text-ink-2">
             Confirm or edit what you consent to your doctor having access to
           </p>
         </div>
 
         {alreadyOpen && (
-          <HintStrip tone="peach">
+          <Notice tone="urgent">
             A doctor can already see your record.{" "}
             <Link href="/session" className="underline underline-offset-2">
               View session
             </Link>
-          </HintStrip>
+          </Notice>
         )}
 
         <section aria-labelledby="using-label" className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <SectionLabel id="using-label">Sharing using</SectionLabel>
-            <p className="text-body-sm font-medium text-indigo-text">GP visit profile</p>
+            <p className="text-caption font-medium text-accent">GP visit profile</p>
           </div>
           <SwitchGroup aria-label="What your doctor can see">
-            <LockedRow title="Critical safety" tone="critical" />
+            <LockedRow title="Critical safety" />
             <LockedRow title="Medications" />
             <SwitchRow
               title="Active conditions"
@@ -118,7 +118,7 @@ function SharePrefsScreen() {
             <SwitchRow title="Care team" checked={prefs.share_care_team} onCheckedChange={set("share_care_team")} />
           </SwitchGroup>
           <SwitchRow
-            surface="sunken"
+            surface="tile"
             title="Mental health history"
             description="Off by default · tap to include"
             checked={prefs.share_mental_health}
@@ -126,15 +126,20 @@ function SharePrefsScreen() {
           />
         </section>
 
-        <ChoiceCardGroup<DurationKind>
-          legend="Share for"
-          options={DURATION_OPTIONS}
-          value={prefs.duration_kind}
-          onChange={set("duration_kind")}
-        />
+        <section aria-labelledby="duration-label" className="flex flex-col gap-2">
+          <SectionLabel id="duration-label">For how long</SectionLabel>
+          <SegmentedControl<DurationKind>
+            label="For how long"
+            size="lg"
+            options={DURATION_OPTIONS}
+            value={prefs.duration_kind}
+            onChange={set("duration_kind")}
+          />
+        </section>
 
         <SwitchRow
-          surface="sunken"
+          surface="tile"
+          control="track"
           title="Doctor can add session notes"
           description="Notes are added to your record when the session ends"
           checked={prefs.allow_notes}
@@ -142,7 +147,7 @@ function SharePrefsScreen() {
         />
 
         {error && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             {shareErrorMessage(error)}
             {error === "session_live" && (
               <>
@@ -152,7 +157,7 @@ function SharePrefsScreen() {
                 </Link>
               </>
             )}
-          </HintStrip>
+          </Notice>
         )}
       </div>
     </SubScreen>

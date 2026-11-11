@@ -1,17 +1,15 @@
-import { TriangleAlert } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
 /**
- * Critical safety strip, from Figma "Critical Safety Strip" (50:997).
- * Allergies, blood type and implants. Always shown, always first, never
- * toggled off (PLAN.md section 2).
+ * Pinned safety facts (board RecordA2): a 48px critical-tint strip, radius
+ * 16. Allergies are critical 600 text with a warning icon; the other facts
+ * (blood type, implants) follow in ink-2. Always shown, always
+ * first, never toggled off (PLAN.md section 2).
  *
- * - `variant="patient"` (p-record): red tint, filled red pills with white text.
- * - `variant="portal"` (c-overview): lighter tint, white pills with red text.
- *
- * It is a labelled region with a real list, and the word "Critical" is text,
- * so the meaning never depends on colour. Lives in components/patient but the
- * portal uses it too.
+ * It is a labelled region with a real list, and each fact says what it is in
+ * words ("Penicillin allergy"), so the meaning never depends on colour.
+ * `variant="portal"` drops the tint (the portal shows facts in its header).
  */
 export function CriticalSafetyStrip({
   items,
@@ -19,7 +17,7 @@ export function CriticalSafetyStrip({
   emptyText = "No allergies or blood type recorded",
   className,
 }: {
-  /** e.g. ["Penicillin allergy", "A+ Blood Type"]. */
+  /** e.g. ["Penicillin allergy", "A+ Blood Type"]. Items that say "allergy" are shown as critical. */
   items: string[];
   variant?: "patient" | "portal";
   emptyText?: string;
@@ -29,35 +27,31 @@ export function CriticalSafetyStrip({
     <section
       aria-label="Critical safety information"
       className={cn(
-        "flex items-center gap-3 rounded-card border px-4 py-2.5",
-        variant === "patient"
-          ? "border-status-danger bg-status-danger-tint shadow-strip"
-          : "border-[rgba(216,90,74,0.2)] bg-[rgba(251,234,231,0.45)] px-6 shadow-strip",
+        "flex min-h-12 items-center rounded-strip px-4 py-2",
+        variant === "patient" ? "bg-critical-tint" : "border border-border-card bg-surface",
         className,
       )}
     >
-      <p className="flex shrink-0 items-center gap-1.5 text-body-tiny font-bold uppercase tracking-[0.04em] text-red-700">
-        <TriangleAlert aria-hidden="true" className="size-4" />
-        Critical
-      </p>
       {items.length > 0 ? (
-        <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
-          {items.map((item) => (
-            <li
-              key={item}
-              className={cn(
-                "rounded-md px-2.5 py-1 text-label font-medium",
-                variant === "patient"
-                  ? "border border-status-danger bg-critical-pill text-white"
-                  : "border border-status-danger bg-white text-red-700",
-              )}
-            >
-              {item}
-            </li>
-          ))}
+        <ul className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          {items.map((item) => {
+            const allergy = /allerg/i.test(item);
+            return (
+              <li
+                key={item}
+                className={cn(
+                  "flex items-center gap-1.5",
+                  allergy ? "text-label font-semibold text-critical" : "text-caption text-ink-2",
+                )}
+              >
+                {allergy && <Icon name="warning" size={18} />}
+                {item}
+              </li>
+            );
+          })}
         </ul>
       ) : (
-        <p className="text-label font-medium text-red-700">{emptyText}</p>
+        <p className="text-caption text-ink-2">{emptyText}</p>
       )}
     </section>
   );

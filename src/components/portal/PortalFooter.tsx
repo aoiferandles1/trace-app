@@ -1,43 +1,40 @@
-import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 /**
- * Clinician portal footer, from Figma "Footer / Desktop" (489:3498): an
- * indigo/700 bar with white 12px text.
+ * The portal's footer (boards PortalEntryB and PortalWaitB): a quiet row of
+ * 13px ink-2 text with accent links, on the page, no bar.
  *
- * Copy differs from Figma on purpose (PLAN.md section 11, listed in
- * docs/REVIEW.md): "End-to-end encrypted · Access audited" became
- * "Encrypted in transit · Access logged", the dead Privacy / Data Protection /
- * Accessibility / Support links are gone, and a line says Trace is a
- * portfolio project, not a medical service, linking to the case study.
+ * Copy differs from the old Figma on purpose (PLAN.md section 11, listed in
+ * docs/REVIEW.md): "Encrypted in transit · Access logged", and a line saying
+ * Trace is a portfolio project, not a medical service, linking to the case
+ * study.
  */
 
 export const CASE_STUDY_URL = "https://aoiferandles.com/trace/";
 
-export function PortalFooter({ className }: { className?: string }) {
+export function PortalFooter({ tone = "default", className }: { tone?: "default" | "session"; className?: string }) {
+  const session = tone === "session";
+  const link = cn("font-medium", session ? "text-white underline underline-offset-2" : "text-accent hovered:underline");
   return (
     <footer
       className={cn(
-        "on-dark flex flex-col gap-2 border-t border-border-default bg-indigo-700 px-4 py-3 text-label tracking-normal text-white sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:gap-6",
+        "flex flex-col gap-2 px-5 py-5 text-meta sm:px-14 lg:min-h-16 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:py-0",
+        session ? "text-on-session-2" : "text-ink-2",
         className,
       )}
     >
-      <p>Trace · Clinical Access Portal</p>
       <p>
         A portfolio project by Aoife Randles, not a medical service.{" "}
-        <Link href={CASE_STUDY_URL} className="underline underline-offset-2">
+        <Link href={CASE_STUDY_URL} className={link}>
           Read the case study
         </Link>
         {" · "}
-        <Link href="/terms" className="underline underline-offset-2">
+        <Link href="/terms" className={link}>
           Terms
         </Link>
       </p>
-      <p className="flex items-center gap-2">
-        <ShieldCheck aria-hidden="true" className="size-4" />
-        Encrypted in transit · Access logged
-      </p>
+      <p>Encrypted in transit · Access logged</p>
     </footer>
   );
 }

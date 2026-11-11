@@ -55,7 +55,7 @@ test.describe("UI kit", () => {
     await page.keyboard.press("Escape");
     await expect(dialog).toBeVisible();
 
-    await dialog.getByRole("button", { name: "Deny access" }).click();
+    await dialog.getByRole("button", { name: "Deny", exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(opener).toBeFocused();
     await expect(page.getByText("Last answer: denied")).toBeVisible();

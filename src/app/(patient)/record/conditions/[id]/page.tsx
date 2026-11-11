@@ -1,12 +1,11 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
 import { SessionReady } from "@/components/patient/PatientSession";
-import { Pencil } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { HintStrip } from "@/components/ui/HintStrip";
-import { Pill } from "@/components/ui/Pill";
+import { Notice } from "@/components/ui/Notice";
 import { isUuid, type Condition } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -33,12 +32,10 @@ function ConditionDetailScreen() {
       ) : !c ? (
         <NotFound what="condition" />
       ) : (
-        <div className="flex flex-col gap-5 px-4 pb-8 pt-2">
+        <div className="flex flex-col gap-5 px-5 pb-8 pt-2">
           <Card padding="lg" className="flex flex-col gap-3">
-            <Pill tone={c.status === "resolved" ? "neutral" : "indigo"} size="md">
-              {c.status}
-            </Pill>
-            <h2 className="text-h3 font-medium">{c.name}</h2>
+            <p className="text-caption text-ink-2">{c.status}</p>
+            <h2 className="font-display text-title-sm font-light">{c.name}</h2>
             <DetailList
               rows={[
                 ...(c.clinician ? [{ label: "Doctor", value: c.clinician }] : []),
@@ -50,10 +47,10 @@ function ConditionDetailScreen() {
             />
           </Card>
           {c.is_mental_health && (
-            <HintStrip tone="indigo">About mental health. Left out of a share unless you include mental health.</HintStrip>
+            <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <ButtonLink href={`/record/conditions/${c.id}/edit`} variant="secondary" iconLeft={<Pencil aria-hidden="true" className="size-4" />}>
+            <ButtonLink href={`/record/conditions/${c.id}/edit`} variant="secondary" iconLeft={<Icon name="pencil" size={16} />}>
               Edit
             </ButtonLink>
             <DeleteWithConfirm

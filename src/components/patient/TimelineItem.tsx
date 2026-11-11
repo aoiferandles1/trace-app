@@ -1,21 +1,21 @@
-import { ChevronRight } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { Pill, type Tone } from "@/components/ui/Pill";
+import type { IconName } from "@/components/ui/Icon";
+import { Card } from "@/components/ui/Card";
+import { ListRow } from "@/components/ui/ListRow";
 
 /**
- * Timeline, from Figma "Timeline Event Card" (163:7141) as on p-record and
- * the portal's timeline column.
+ * The record's timeline as rows in one card (board RecordA2):
  *
  *   <TimelineYear>2026</TimelineYear>
  *   <TimelineList>
- *     <TimelineItem kind="result" date="5 JAN 2026" title="Blood test..." meta="Mater Hospital" href="/record/..." />
+ *     <TimelineItem kind="result" date="2 Nov" title="Blood count and INR" href="/record/..." />
  *   </TimelineList>
  *
- * A dot on a grey spine marks each entry (the spine runs on to the next dot); its colour follows the entry kind
- * (ENTRY_KINDS) and the kind is also written in a tag, so colour is never the
- * only signal. Upcoming entries get a hollow dot and grey text.
+ * Each row: a bare icon for the kind, the title, the kind in words (plus any
+ * meta) as the caption, and the date on the right, in accent 600 when it is
+ * upcoming. With `href` the row links to its detail. (BRIEF.md 5.6 makes
+ * upcoming rows plain text; that is Phase 5's change, so pass no href then.)
  */
 
 export type EntryKind =
@@ -28,41 +28,35 @@ export type EntryKind =
   | "vaccination"
   | "session_notes";
 
-/** Label and colour for each `entries.kind`. Reuse this wherever a kind is shown. */
-export const ENTRY_KINDS: Record<EntryKind, { label: string; tone: Tone }> = {
-  visit: { label: "Visit", tone: "indigo" },
-  result: { label: "Result", tone: "teal" },
-  prescription: { label: "Prescription", tone: "peach" },
-  note: { label: "Note", tone: "neutral" },
-  letter: { label: "Letter", tone: "indigo" },
-  imaging: { label: "Imaging", tone: "teal" },
-  vaccination: { label: "Vaccination", tone: "teal" },
-  session_notes: { label: "Session notes", tone: "indigo" },
-};
-
-const dot: Record<Tone, string> = {
-  indigo: "bg-timeline-visit",
-  teal: "bg-timeline-test",
-  peach: "bg-timeline-meds",
-  red: "bg-status-danger",
-  neutral: "bg-text-primary",
+/** Label and icon for each `entries.kind`. Reuse this wherever a kind is shown. */
+export const ENTRY_KINDS: Record<EntryKind, { label: string; icon: IconName }> = {
+  visit: { label: "Visit", icon: "calendar" },
+  result: { label: "Result", icon: "drop" },
+  prescription: { label: "Prescription", icon: "pill" },
+  note: { label: "Note", icon: "pencil" },
+  letter: { label: "Letter", icon: "document" },
+  imaging: { label: "Imaging", icon: "document" },
+  vaccination: { label: "Vaccination", icon: "shield" },
+  session_notes: { label: "Session notes", icon: "pencil" },
 };
 
 export function TimelineYear({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <h3 className={cn("text-body-tiny font-medium text-text-tertiary", className)}>{children}</h3>
-  );
+  return <h3 className={cn("font-display text-year font-light", className)}>{children}</h3>;
 }
 
 export function TimelineList({ children, className }: { children: ReactNode; className?: string }) {
-  return <ol className={cn("flex flex-col", className)}>{children}</ol>;
+  return (
+    <Card as="ol" className={className}>
+      {children}
+    </Card>
+  );
 }
 
 export type TimelineItemProps = {
   kind: EntryKind;
-  /** Display date, already formatted: "5 JAN 2026". */
+  /** Display date, already formatted: "2 Nov". */
   date: string;
-  /** Machine date for <time dateTime>, e.g. "2026-01-05". */
+  /** Machine date for <time dateTime>, e.g. "2026-11-02". */
   dateTime?: string;
   title: ReactNode;
   meta?: ReactNode;
@@ -71,73 +65,28 @@ export type TimelineItemProps = {
   className?: string;
 };
 
-export function TimelineItem({
-  kind,
-  date,
-  dateTime,
-  title,
-  meta,
-  href,
-  upcoming = false,
-  className,
-}: TimelineItemProps) {
+export function TimelineItem({ kind, date, dateTime, title, meta, href, upcoming = false, className }: TimelineItemProps) {
   const k = ENTRY_KINDS[kind];
-  const card = (
-    <>
-      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <time
-          dateTime={dateTime}
-          className={cn("text-body-tiny leading-[1.3]", upcoming ? "text-text-tertiary" : "text-indigo-text")}
-        >
-          {upcoming && <span className="sr-only">Upcoming, </span>}
-          {date}
-        </time>
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span
-            className={cn(
-              "text-label font-medium",
-              upcoming ? "text-text-tertiary" : "text-text-primary",
-            )}
-          >
-            {title}
-          </span>
-          <Pill tone={k.tone} size="sm">
-            {k.label}
-          </Pill>
-        </span>
-        {meta && <span className="text-body-sm text-text-tertiary">{meta}</span>}
-      </span>
-      {href && (
-        <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center text-text-primary">
-          <ChevronRight className="size-4" />
-        </span>
-      )}
-    </>
-  );
-
-  const cardClasses = cn(
-    "flex min-w-0 flex-1 items-center gap-3 rounded-md bg-surface-card px-6 py-[18px]",
-    href && "transition-colors duration-150 hovered:bg-neutral-50",
-  );
-
   return (
-    <li className={cn("group relative flex gap-4 pb-3", className)}>
-      <span aria-hidden="true" className="relative flex w-5 shrink-0 justify-center pt-7">
-        <span
-          className={cn(
-            "relative z-10 size-3.5 rounded-full",
-            upcoming ? "border-2 border-border-strong bg-surface-card" : dot[k.tone],
-          )}
-        />
-        <span className="absolute -bottom-10 top-7 w-0.5 bg-timeline-spine group-last:hidden" />
-      </span>
-      {href ? (
-        <Link href={href} className={cardClasses}>
-          {card}
-        </Link>
-      ) : (
-        <div className={cardClasses}>{card}</div>
-      )}
+    <li className={className}>
+      <ListRow
+        icon={k.icon}
+        title={title}
+        caption={
+          <>
+            {k.label}
+            {meta && <>, {meta}</>}
+          </>
+        }
+        value={
+          <time dateTime={dateTime}>
+            {upcoming && <span className="sr-only">Upcoming, </span>}
+            {date}
+          </time>
+        }
+        valueStyle={upcoming ? "accent" : "caption"}
+        href={href}
+      />
     </li>
   );
 }

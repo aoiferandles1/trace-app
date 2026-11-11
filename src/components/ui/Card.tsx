@@ -1,23 +1,40 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Containers and section labels shared by both apps.
+ * Containers, headings and avatars shared by both apps (BRIEF.md section 3.3).
  */
 
-/** White card: 16px radius, 1px Border/Default, Shadow/SM. */
+/**
+ * Card: surface fill, 1px border-card, radius 24 on the phone and 12 in the
+ * portal. No shadow.
+ *
+ * - `padding="rows"` (default): 2px 18px, for a card of rows (ListRow,
+ *   ToggleRow...). Rows carry their own vertical padding, and `divided`
+ *   (on by default for rows) draws a 1px border-row between them, none after
+ *   the last.
+ * - "md" 16px, "lg" 20px, "none".
+ */
 export function Card({
   className,
-  padding = "md",
+  padding = "rows",
+  divided,
+  as: Tag = "div",
   ...rest
-}: ComponentProps<"div"> & { padding?: "none" | "sm" | "md" | "lg" }) {
+}: HTMLAttributes<HTMLElement> & {
+  padding?: "rows" | "none" | "md" | "lg";
+  divided?: boolean;
+  as?: "div" | "ul" | "ol" | "section" | "article";
+}) {
+  const divide = divided ?? padding === "rows";
   return (
-    <div
+    <Tag
       className={cn(
-        "rounded-card border border-border-default bg-surface-card shadow-sm",
-        padding === "sm" && "p-3",
+        "rounded-card border border-border-card bg-surface",
+        padding === "rows" && "px-4.5 py-0.5",
         padding === "md" && "p-4",
-        padding === "lg" && "px-6 py-6 sm:px-8",
+        padding === "lg" && "p-5",
+        divide && "divide-y divide-border-row",
         className,
       )}
       {...rest}
@@ -26,99 +43,114 @@ export function Card({
 }
 
 /**
- * Uppercase section label ("QUICK ACTIONS", "ONGOING CONDITIONS").
- * Renders an <h2> by default because it introduces a section; pass `as` to change the level.
+ * Small group label ("For how long", "They will see", "Not shared"): Inter
+ * 14/20 600 in ink-2. Renders an <h2> by default; pass `as` to change the level.
  */
 export function SectionLabel({
   children,
   as: Tag = "h2",
+  tone = "default",
   className,
   id,
 }: {
   children: ReactNode;
-  as?: "h2" | "h3" | "h4" | "p" | "span";
+  as?: "h2" | "h3" | "h4" | "p" | "span" | "legend";
+  /** "session": on session indigo (white at 78%). */
+  tone?: "default" | "session";
   className?: string;
   id?: string;
 }) {
   return (
-    <Tag id={id} className={cn("text-label font-medium uppercase text-text-tertiary", className)}>
+    <Tag
+      id={id}
+      className={cn(
+        "text-caption font-semibold",
+        tone === "session" ? "text-on-session-2" : "text-ink-2",
+        className,
+      )}
+    >
       {children}
     </Tag>
   );
 }
 
 /**
- * Small eyebrow above a heading, from Figma "Eyebrow" (70:2158): a dot and the
- * label in the tone's text colour ("About You", "NEW SESSION").
+ * Section heading ("Coming up", "Recent", "History"): Sora 300, 20/26 on the
+ * phone and 22/28 in the portal. An <h2> by default.
  */
-const eyebrowTone = {
-  indigo: { text: "text-indigo-text", dot: "bg-brand-indigo" },
-  teal: { text: "text-teal-700", dot: "bg-brand-teal" },
-  peach: { text: "text-peach-700", dot: "bg-brand-peach" },
-  neutral: { text: "text-text-tertiary", dot: "bg-neutral-500" },
-  red: { text: "text-red-700", dot: "bg-status-danger" },
-  onDark: { text: "text-white", dot: "bg-white" },
-} as const;
-
-export function Eyebrow({
+export function SectionHeading({
   children,
-  tone = "indigo",
-  uppercase = false,
-  size = "md",
+  as: Tag = "h2",
   className,
+  id,
 }: {
   children: ReactNode;
-  tone?: keyof typeof eyebrowTone;
-  uppercase?: boolean;
-  /** md: 14px. sm: 12px Label, as on the sign-up steps ("About You"). */
-  size?: "sm" | "md";
+  as?: "h2" | "h3" | "h4";
   className?: string;
+  id?: string;
 }) {
-  const t = eyebrowTone[tone];
   return (
-    <p
-      className={cn(
-        "flex items-center gap-2 font-medium",
-        uppercase ? "text-label uppercase" : size === "sm" ? "text-label" : "text-body-sm",
-        t.text,
-        className,
-      )}
-    >
-      <span aria-hidden="true" className={cn("size-1.5 rounded-full", t.dot)} />
+    <Tag id={id} className={cn("font-display text-heading font-light", className)}>
       {children}
-    </p>
+    </Tag>
   );
 }
 
-/** Initials in a circle. Decorative unless `label` is given. */
+/**
+ * Initials in a circle. Avatars are one of the two filled circles the design
+ * allows. Decorative unless `label` is given.
+ *
+ * Tones (from the boards):
+ * - "outline": surface with a border-control ring, session-indigo letters (Home's JD).
+ * - "solid": accent fill, white letters (the doctor on Share confirm, the portal's JD).
+ * - "tint": locked-tint fill, session-indigo letters (the access request, care team).
+ * - "session": white fill, session-indigo letters, on session indigo.
+ * - "onAccent": white fill, accent letters, inside an accent card.
+ *
+ * Sizes 40 to 88. `display` sets the letters in Sora 300 (the portal header
+ * and session screens); otherwise Inter 600.
+ */
+const avatarSizes = {
+  40: { box: "size-10", inter: "text-caption", sora: "text-row" },
+  44: { box: "size-11", inter: "text-label", sora: "text-row" },
+  48: { box: "size-12", inter: "text-label", sora: "text-year" },
+  52: { box: "size-13", inter: "text-row", sora: "text-year" },
+  56: { box: "size-14", inter: "text-row", sora: "text-year" },
+  88: { box: "size-22", inter: "text-numeral-lg", sora: "text-numeral-lg" },
+} as const;
+
+export type AvatarSize = keyof typeof avatarSizes;
+
 export function Avatar({
   initials,
-  size = "md",
+  size = 44,
   tone = "tint",
+  display = false,
   label,
   className,
 }: {
   initials: string;
-  size?: "sm" | "md" | "lg" | "xl";
-  /** tint: indigo tint with Indigo/Text letters. solid: Indigo/Accessible with white. onDark: Brand/Indigo on indigo screens. */
-  tone?: "tint" | "solid" | "onDark";
+  size?: AvatarSize;
+  tone?: "outline" | "solid" | "tint" | "session" | "onAccent";
+  display?: boolean;
   label?: string;
   className?: string;
 }) {
+  const s = avatarSizes[size];
   return (
     <span
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full font-bold",
-        size === "sm" && "size-9 text-body-sm",
-        size === "md" && "size-12 text-h4",
-        size === "lg" && "size-16 text-[18px]",
-        size === "xl" && "size-24 text-[36px]",
-        tone === "tint" && "bg-brand-indigo-tint text-indigo-text",
-        tone === "solid" && "bg-indigo-accessible text-white",
-        tone === "onDark" && "bg-brand-indigo text-white",
+        "inline-flex shrink-0 items-center justify-center rounded-full leading-none",
+        s.box,
+        display ? cn("font-display font-light", s.sora) : cn("font-semibold", s.inter),
+        tone === "outline" && "border border-border-control bg-surface text-session",
+        tone === "solid" && "bg-accent text-white",
+        tone === "tint" && "bg-locked-tint text-session",
+        tone === "session" && "bg-white text-session",
+        tone === "onAccent" && "bg-white text-accent",
         className,
       )}
     >

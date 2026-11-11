@@ -1,16 +1,15 @@
 "use client";
 
-import { NotebookPen } from "lucide-react";
 import { useId } from "react";
 import { Button } from "@/components/ui/Button";
 import { TextArea } from "@/components/ui/TextArea";
 import { cn } from "@/lib/cn";
 
 /**
- * The doctor's session notes, from Figma "Session Notes" (57:1521) as on
- * c-overview: indigo tint (PortalShell draws the 3px indigo edge), four fields (Chief
- * complaint, Assessment, Plan, Follow-up), a note that they go back to the
- * record, then "Save notes" and "End session".
+ * The doctor's session notes (board PortalRecordE): on ground, a Sora 20
+ * title and a line saying they go to the record, four fields (Chief
+ * complaint, Assessment, Plan, Follow-up), then "Save notes" and "End
+ * session". Phase 7 adds the resizable, collapsible panel.
  *
  * Controlled: the page owns the draft and the autosave (PLAN.md section 7).
  * `saveState` drives a polite status message ("Saving…", "Saved").
@@ -63,50 +62,33 @@ export function SessionNotesPanel({
 }) {
   const titleId = useId();
   return (
-    <aside
-      aria-labelledby={titleId}
-      className={cn(
-        "flex flex-col gap-[22px] bg-brand-indigo-tint px-6 pb-7 pt-8 lg:pt-12",
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-1.5">
-        <h2 id={titleId} className="flex items-center gap-2 text-body-tiny font-bold">
-          <NotebookPen aria-hidden="true" className="size-4" />
+    <aside aria-labelledby={titleId} className={cn("flex flex-col gap-3 px-5 py-5.5", className)}>
+      <div className="flex flex-col gap-1">
+        <h2 id={titleId} className="font-display text-heading font-light">
           Session notes
         </h2>
-        <p className="text-body-tiny text-text-tertiary">Patient granted permission to add notes</p>
+        <p className="text-caption text-ink-2">
+          Added to {patientFirstName}&rsquo;s record when the session ends.
+        </p>
       </div>
-      <div aria-hidden="true" className="h-px bg-brand-indigo" />
       {FIELDS.map((f) => (
         <TextArea
           key={f.key}
           label={f.label}
-          labelStyle="eyebrow"
           density="compact"
-          rows={3}
-          placeholder="Type notes here..."
+          rows={2}
           value={notes[f.key]}
           disabled={disabled}
           onChange={(e) => onChange({ ...notes, [f.key]: e.target.value })}
         />
       ))}
-      <p className="text-body-tiny text-indigo-text">
-        Notes are written back to {patientFirstName}&rsquo;s record when the session ends.
-      </p>
-      <p
-        role="status"
-        className={cn(
-          "min-h-5 text-body-tiny",
-          saveState === "error" ? "text-red-700" : "text-text-tertiary",
-        )}
-      >
+      <p role="status" className={cn("min-h-5 text-caption", saveState === "error" ? "text-critical" : "text-ink-2")}>
         {STATUS[saveState]}
       </p>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <Button
           variant="primary"
-          size="md"
+          size="lg"
           fullWidth
           onClick={onSave}
           loading={saveState === "saving"}

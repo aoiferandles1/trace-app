@@ -1,15 +1,15 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { ConditionCard, conditionTone } from "@/components/patient/ConditionCard";
 import { CriticalSafetyStrip } from "@/components/patient/CriticalSafetyStrip";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { TimelineItem, TimelineList, TimelineYear } from "@/components/patient/TimelineItem";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { ButtonLink } from "@/components/ui/Button";
-import { SectionLabel } from "@/components/ui/Card";
+import { Card, SectionHeading } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
+import { ListRow } from "@/components/ui/ListRow";
 import { dayKey, formatTimelineDate, yearOfIso } from "@/lib/dates";
-import { conditionMeta, criticalItems, type Condition, type ConditionStatus, type Entry } from "@/lib/patient/types";
+import { conditionMeta, criticalItems, type Condition, type Entry } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
 import { entryMeta } from "../_components/entryMeta";
@@ -34,13 +34,13 @@ function RecordScreen() {
   const data = useLoad(loadRecord);
 
   return (
-    <TabScreen header={<ScreenHeader title="Record" />}>
-      <div className="flex flex-col gap-8 px-4 pb-8 pt-2">
-        <section aria-labelledby="critical-label" className="flex flex-col gap-3">
-          <SectionLabel id="critical-label">Critical</SectionLabel>
+    <TabScreen header={<PageHeader title="Record" />}>
+      <div className="flex flex-col gap-6 px-5 pb-8 pt-2">
+        <section aria-labelledby="critical-label" className="flex flex-col gap-2">
+          <h2 id="critical-label" className="sr-only">Critical</h2>
           <CriticalSafetyStrip items={criticalItems(profile)} />
           {criticalItems(profile).length === 0 && (
-            <ButtonLink href="/profile/edit#critical" variant="ghost" size="sm" className="w-fit" iconLeft={<Plus aria-hidden="true" className="size-4" />}>
+            <ButtonLink href="/profile/edit#critical" variant="text" size="sm" className="w-fit" iconLeft={<Icon name="plus" size={20} strokeWidth={2.25} />}>
               Add allergies or blood type
             </ButtonLink>
           )}
@@ -64,49 +64,47 @@ function Conditions({ conditions }: { conditions: Condition[] }) {
   return (
     <>
       <section aria-labelledby="conditions-label" className="flex flex-col gap-3">
-        <SectionLabel id="conditions-label">Ongoing conditions</SectionLabel>
-        {ongoing.length === 0 && <p className="text-body-sm text-text-tertiary">No ongoing conditions.</p>}
+        <SectionHeading id="conditions-label">Ongoing conditions</SectionHeading>
+        {ongoing.length === 0 && <p className="text-caption text-ink-2">No ongoing conditions.</p>}
         {ongoing.length > 0 && (
-          <ul className="flex flex-col gap-2.5">
-            {ongoing.map((c, i) => (
+          <Card as="ul">
+            {ongoing.map((c) => (
               <li key={c.id}>
-                <ConditionCard
-                  name={c.name}
-                  status={c.status as ConditionStatus}
-                  meta={conditionMeta(c) || undefined}
-                  colour={conditionTone(i)}
+                <ListRow
+                  title={c.name}
+                  caption={conditionMeta(c) || undefined}
+                  value={c.status}
                   href={`/record/conditions/${c.id}`}
                 />
               </li>
             ))}
-          </ul>
+          </Card>
         )}
         <ButtonLink
           href="/record/conditions/new"
-          variant="ghost"
+          variant="text"
           size="sm"
           className="w-fit"
-          iconLeft={<Plus aria-hidden="true" className="size-4" />}
+          iconLeft={<Icon name="plus" size={20} strokeWidth={2.25} />}
         >
           Add a condition
         </ButtonLink>
       </section>
       {resolved.length > 0 && (
         <section aria-labelledby="resolved-label" className="flex flex-col gap-3">
-          <SectionLabel id="resolved-label">Resolved conditions</SectionLabel>
-          <ul className="flex flex-col gap-2.5">
+          <SectionHeading id="resolved-label">Resolved conditions</SectionHeading>
+          <Card as="ul">
             {resolved.map((c) => (
               <li key={c.id}>
-                <ConditionCard
-                  name={c.name}
-                  status="resolved"
-                  meta={conditionMeta(c) || undefined}
-                  colour="neutral"
+                <ListRow
+                  title={c.name}
+                  caption={conditionMeta(c) || undefined}
+                  value="resolved"
                   href={`/record/conditions/${c.id}`}
                 />
               </li>
             ))}
-          </ul>
+          </Card>
         </section>
       )}
     </>
@@ -122,13 +120,13 @@ function Timeline({ entries }: { entries: Entry[] }) {
   }
   return (
     <section aria-labelledby="timeline-label" className="flex flex-col gap-3">
-      <SectionLabel id="timeline-label">Timeline</SectionLabel>
+      <SectionHeading id="timeline-label">Timeline</SectionHeading>
       {entries.length === 0 && (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-body-sm text-text-tertiary">
+        <div className="flex flex-col items-start">
+          <p className="text-body text-ink-2">
             Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here.
           </p>
-          <ButtonLink href="/add" variant="secondary">
+          <ButtonLink href="/add" variant="text">
             Add to my record
           </ButtonLink>
         </div>

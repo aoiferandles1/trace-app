@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SessionReady } from "@/components/patient/PatientSession";
-import { Pill, type Tone } from "@/components/ui/Pill";
+import { cn } from "@/lib/cn";
 import { formatTime, formatWeekdayDate } from "@/lib/dates";
 import { serverNow } from "@/lib/serverClock";
 import {
@@ -38,15 +38,15 @@ async function loadLog() {
     .map((s) => ({ session: s, events: byId.get(s.id) ?? [] }));
 }
 
-const STATUS: Record<string, { label: string; tone: Tone }> = {
-  code_issued: { label: "Code ready", tone: "indigo" },
-  requested: { label: "Waiting for you", tone: "peach" },
-  active: { label: "Live now", tone: "teal" },
-  paused: { label: "Time's up", tone: "peach" },
-  ended: { label: "Ended", tone: "neutral" },
-  denied: { label: "Denied", tone: "red" },
-  expired: { label: "Expired", tone: "neutral" },
-  cancelled: { label: "Cancelled", tone: "neutral" },
+const STATUS: Record<string, { label: string; urgent: boolean }> = {
+  code_issued: { label: "Code ready", urgent: false },
+  requested: { label: "Waiting for you", urgent: true },
+  active: { label: "Live now", urgent: false },
+  paused: { label: "Time's up", urgent: true },
+  ended: { label: "Ended", urgent: false },
+  denied: { label: "Denied", urgent: true },
+  expired: { label: "Expired", urgent: false },
+  cancelled: { label: "Cancelled", urgent: false },
 };
 
 const SECTION_NAMES: Record<string, string> = {
@@ -108,12 +108,12 @@ function AccessLogScreen() {
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : data.data.length === 0 ? (
-        <p className="px-5 py-10 text-center text-body-sm text-text-tertiary">
+        <p className="px-5 py-10 text-center text-body text-ink-2">
           You haven&apos;t shared your record yet. Every share shows up here.
         </p>
       ) : (
-        <div className="flex flex-col gap-4 px-4 pb-8 pt-2">
-          <p className="text-body-sm text-text-tertiary">Every share, newest first. Only you can see this.</p>
+        <div className="flex flex-col gap-4 px-5 pb-8 pt-2">
+          <p className="text-caption text-ink-2">Every share, newest first. Only you can see this.</p>
           <ul className="flex flex-col gap-3">
             {data.data.map(({ session, events }, i) => (
               <li key={session.id}>
@@ -128,7 +128,7 @@ function AccessLogScreen() {
 }
 
 function SessionCard({ session: s, events, open }: { session: ShareSession; events: AccessEvent[]; open: boolean }) {
-  const status = STATUS[s.status] ?? { label: s.status, tone: "neutral" as Tone };
+  const status = STATUS[s.status] ?? { label: s.status, urgent: false };
   const who = s.clinician_name
     ? [s.clinician_name, s.clinician_role].filter(Boolean).join(" · ")
     : "No one used this code";
@@ -137,33 +137,33 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
   return (
     <article
       aria-label={`${who}, ${formatWeekdayDate(when)}`}
-      className="flex flex-col gap-3 rounded-card border border-border-default bg-surface-card p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-card border border-border-card bg-surface p-4.5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-h4 font-bold">{who}</h2>
-          {s.clinician_practice && <p className="text-meta text-text-tertiary">{s.clinician_practice}</p>}
+          <h2 className="text-row font-medium">{who}</h2>
+          {s.clinician_practice && <p className="text-caption text-ink-2">{s.clinician_practice}</p>}
         </div>
-        <Pill tone={status.tone}>{status.label}</Pill>
+        <p className={cn("shrink-0 text-caption", status.urgent ? "font-semibold text-urgent" : "text-ink-2")}>{status.label}</p>
       </div>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-body-sm">
-        <dt className="text-text-tertiary">When</dt>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-caption">
+        <dt className="text-ink-2">When</dt>
         <dd>
           {formatWeekdayDate(when)} · {formatTime(when)}
         </dd>
         {minutes !== null && (
           <>
-            <dt className="text-text-tertiary">How long</dt>
+            <dt className="text-ink-2">How long</dt>
             <dd>{formatDuration(minutes)}</dd>
           </>
         )}
-        <dt className="text-text-tertiary">Shared</dt>
+        <dt className="text-ink-2">Shared</dt>
         <dd>{sharedList({ ...prefsOf(s), allow_notes: false }).join(", ")}</dd>
         {s.notes_entry_id && (
           <>
-            <dt className="text-text-tertiary">Notes</dt>
+            <dt className="text-ink-2">Notes</dt>
             <dd>
-              <Link href={`/record/${s.notes_entry_id}`} className="text-indigo-text underline underline-offset-2">
+              <Link href={`/record/${s.notes_entry_id}`} className="text-accent underline underline-offset-2">
                 Session notes
               </Link>
             </dd>
@@ -171,15 +171,15 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
         )}
       </dl>
       {events.length > 0 && (
-        <details open={open} className="group rounded-md bg-surface-sunken">
-          <summary className="flex min-h-11 cursor-pointer items-center px-3 text-body-sm font-medium text-indigo-text">
+        <details open={open} className="group border-t border-border-row pt-1">
+          <summary className="flex min-h-11 cursor-pointer items-center text-caption font-semibold text-accent">
             What happened ({events.length})
           </summary>
-          <ol className="flex flex-col gap-1.5 px-3 pb-3">
+          <ol className="flex flex-col gap-1.5 pb-1">
             {events.map((e) => (
-              <li key={e.id} className="flex gap-3 text-body-tiny">
-                <span className="w-14 shrink-0 text-text-tertiary">{formatTime(e.at)}</span>
-                <span className="text-text-primary">{describe(e, s)}</span>
+              <li key={e.id} className="flex gap-3 text-caption">
+                <span className="w-14 shrink-0 text-ink-2">{formatTime(e.at)}</span>
+                <span className="text-ink">{describe(e, s)}</span>
               </li>
             ))}
           </ol>

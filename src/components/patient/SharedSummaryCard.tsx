@@ -1,99 +1,118 @@
-import { ChevronDown, Clock } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Icon } from "@/components/ui/Icon";
+import { SectionLabel } from "@/components/ui/Card";
+import { SharedMark } from "@/components/ui/Toggle";
 import { cn } from "@/lib/cn";
 
 /**
- * Pieces of the indigo share screens (p-code, p-active, p-paused, p-ended).
+ * Pieces of the session-indigo share screens (boards CodeA2 and SessionA2).
  */
 
 /**
- * "Sharing preferences" (p-code) / "Dr Hennessy can see" (p-active): an
- * Indigo/Accessible card listing each shared section with a white "Shared"
- * pill, and an optional "Not included" line at the end.
+ * What is shared, on session indigo: a heading, then one row per shared
+ * section (name, an optional caption in white at 78%, and a white tick disc
+ * read as "Shared") divided by on-session hairlines. `notIncluded` adds the
+ * "Not shared" group with an empty ring per item (CodeA2).
  */
 export function SharedSummaryCard({
   heading,
   rows,
   notIncluded,
+  headingStyle = "label",
   className,
 }: {
   heading: string;
-  rows: { label: string; detail: string }[] | null;
-  notIncluded?: string;
+  rows: { label: string; detail?: string }[] | null;
+  /** Section names that are not shared. A string is shown as one line. */
+  notIncluded?: string[] | string;
+  /** "heading": Sora 20 ("Sharing", CodeA2). "label": 14px 600 ("Dr Hennessy can see", SessionA2). */
+  headingStyle?: "heading" | "label";
   className?: string;
 }) {
+  const notList = typeof notIncluded === "string" ? null : notIncluded;
   return (
-    <section
-      aria-label={heading}
-      className={cn("flex flex-col rounded-card-tight bg-indigo-accessible pt-1.5 text-white", className)}
-    >
-      <h2 className="px-4 pb-2 pt-3 text-label font-medium uppercase">{heading}</h2>
-      {rows === null ? (
-        <p className="px-4 pb-4 text-body-tiny">Loading&hellip;</p>
-      ) : (
-        <ul className="divide-y divide-indigo-divider-dark">
-          {rows.map((r) => (
-            <li key={r.label} className="flex items-center justify-between gap-3 px-4 py-[11px]">
-              <span className="flex min-w-0 flex-col gap-px">
-                <span className="text-body-lg">{r.label}</span>
-                <span className="text-body-tiny">{r.detail}</span>
-              </span>
-              <span className="shrink-0 rounded-full bg-white px-2.5 py-[3px] text-label font-medium text-indigo-text">
-                Shared
-              </span>
-            </li>
-          ))}
-        </ul>
+    <div className={cn("flex flex-col gap-4", className)}>
+      <section aria-label={heading} className="flex flex-col gap-1">
+        {headingStyle === "heading" ? (
+          <h2 className="font-display text-heading font-light">{heading}</h2>
+        ) : (
+          <SectionLabel tone="session">{heading}</SectionLabel>
+        )}
+        {rows === null ? (
+          <p className="py-3 text-caption text-on-session-2">Loading&hellip;</p>
+        ) : (
+          <ul className="divide-y divide-on-session-border">
+            {rows.map((r) => (
+              <li key={r.label} className="flex min-h-11 items-center justify-between gap-3 py-1.5">
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-row font-medium">{r.label}</span>
+                  {r.detail && <span className="text-caption text-on-session-2">{r.detail}</span>}
+                </span>
+                <SharedMark />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      {notList && notList.length > 0 && (
+        <section aria-label="Not shared" className="flex flex-col gap-2">
+          <SectionLabel tone="session">Not shared</SectionLabel>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+            {notList.map((n) => (
+              <li key={n} className="flex items-center gap-2.5 text-caption text-on-session-2">
+                <span aria-hidden="true" className="size-4.5 shrink-0 rounded-full border-2 border-on-session-ring" />
+                {n}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-      {notIncluded && <p className="px-4 pb-3 pt-2.5 text-body-tiny">Not included: {notIncluded}</p>}
-      {!notIncluded && <span className="pb-2" />}
-    </section>
+      {typeof notIncluded === "string" && notIncluded && (
+        <p className="text-caption text-on-session-2">Not shared: {notIncluded}</p>
+      )}
+    </div>
   );
 }
 
 /**
- * The session's status row at the top of p-active, p-paused and p-ended:
- * an optional minimise link, a coloured dot with the state in words, and the
- * time on the right. The time is not a live region (it ticks); milestones are
+ * The session's status row at the top of the session screens: an optional
+ * minimise link, the state in words, and the time on the right. No dot and
+ * no "Live" stamp. The time is not a live region (it ticks); milestones are
  * announced elsewhere.
  */
 export function SessionStatusRow({
   label,
-  dot,
   time,
   timeLabel,
   minimiseHref,
-  tone = "indigo",
+  tone = "session",
 }: {
   label: string;
-  dot: "teal" | "peach" | "red";
   time?: string;
   /** Spoken form of the time ("24 minutes 31 seconds left"). */
   timeLabel?: string;
   minimiseHref?: string;
-  tone?: "indigo" | "page";
+  tone?: "session" | "ground";
 }) {
-  const dotClass = { teal: "bg-teal-400", peach: "bg-brand-peach", red: "bg-status-danger" }[dot];
   return (
-    <div className={cn("flex min-h-11 items-center gap-2", tone === "indigo" ? "text-white" : "text-text-primary")}>
+    <div className={cn("flex min-h-11 items-center gap-2", tone === "session" ? "text-white" : "text-ink")}>
       {minimiseHref && (
         <Link
           href={minimiseHref}
           aria-label="Minimise. Back to Home"
-          className="-ml-2.5 inline-flex size-11 shrink-0 items-center justify-center rounded-full hovered:bg-white/10"
+          className={cn(
+            "-ml-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full hit-area-square",
+            tone === "session" ? "hovered:bg-on-session-border" : "hovered:bg-border-row",
+          )}
         >
-          <ChevronDown aria-hidden="true" className="size-6" />
+          <Icon name="chevron-down" />
         </Link>
       )}
-      <p className="flex items-center gap-1.5 text-label font-medium">
-        <span aria-hidden="true" className={cn("size-2 rounded-full", dotClass)} />
-        {label}
-      </p>
+      <p className="text-caption font-semibold">{label}</p>
       <span className="flex-1" />
       {time !== undefined && (
-        <p className="flex items-center gap-1.5 text-label font-medium">
-          <Clock aria-hidden="true" className="size-4" />
+        <p className="text-caption font-semibold tabular-nums">
           <span aria-hidden={timeLabel ? true : undefined}>{time}</span>
           {timeLabel && <span className="sr-only">{timeLabel}</span>}
         </p>
@@ -102,7 +121,7 @@ export function SessionStatusRow({
   );
 }
 
-/** A full-width white action on indigo ("End sharing now"). */
-export function OnDarkNote({ children }: { children: ReactNode }) {
-  return <p className="text-center text-body-tiny text-white">{children}</p>;
+/** A short centred line on session indigo, under the main action ("Access ends at 3:37pm"). */
+export function OnSessionNote({ children }: { children: ReactNode }) {
+  return <p className="text-center text-caption text-on-session-2">{children}</p>;
 }

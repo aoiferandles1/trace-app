@@ -2,10 +2,13 @@
 
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { IconButton } from "./IconButton";
 
 /**
- * Bottom sheet, from p-request ("Sheet · Access Request"): page-coloured
- * panel with 28px top corners and a grabber, over a dark scrim.
+ * Bottom sheet (BRIEF.md section 3.9, boards TimelineA2 and ApproveA2): a
+ * white panel with 28px top corners, a 40 x 4 grab handle in border-control,
+ * a 36px close button at the top right, over the rgba(20,22,58,.45) scrim.
+ * It is at most 75% of the viewport tall and its content scrolls. No shadow.
  *
  * It is a modal <dialog> opened with showModal(), so the browser moves focus
  * in, makes the page behind inert, and returns focus to whatever opened it
@@ -13,9 +16,9 @@ import { cn } from "@/lib/cn";
  * cannot leave it for the browser's own controls.
  *
  * - `title` is the dialog's accessible name (rendered as the sheet's h2).
- * - Escape calls `onClose`. Set `dismissible={false}` to ignore Escape and
- *   backdrop clicks when the user must answer with a button (the access
- *   request: Allow or Deny).
+ * - Escape, the close button and a backdrop tap call `onClose`. Set
+ *   `dismissible={false}` when the user must answer with a button (the
+ *   access request: Allow or Deny); the close button is then not drawn.
  * - Put the primary actions in `actions`; they sit at the bottom.
  */
 
@@ -23,7 +26,7 @@ export type BottomSheetProps = {
   open: boolean;
   onClose: () => void;
   title: ReactNode;
-  /** Small caps line above the title ("ACCESS REQUEST"). */
+  /** Small accent line above the title ("Access request"). */
   eyebrow?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
@@ -98,24 +101,24 @@ export function BottomSheet({
         if (dismissible && e.target === ref.current) onClose();
       }}
       className={cn(
-        "m-0 mx-auto mt-auto max-h-[92dvh] w-full max-w-[430px] overflow-y-auto rounded-t-sheet bg-surface-page p-0 text-text-primary shadow-sheet",
-        "backdrop:bg-[rgba(12,25,39,0.6)]",
-        "open:animate-[sheet-up_220ms_cubic-bezier(0.2,0.8,0.2,1)]",
+        "m-0 mx-auto mt-auto max-h-[75dvh] w-full max-w-[430px] overflow-y-auto rounded-t-sheet bg-surface p-0 text-ink",
+        "backdrop:bg-scrim open:animate-sheet-up",
         className,
       )}
     >
-      <div className="flex min-h-full flex-col gap-3.5 px-5 pb-6 pt-2.5">
-        <div aria-hidden="true" className="flex justify-center pb-1.5 pt-0.5">
-          <span className="h-1 w-10 rounded-full bg-border-strong" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          {eyebrow && <p className="text-label font-medium uppercase text-indigo-text">{eyebrow}</p>}
-          <h2 id={titleId} className="font-display text-[26px] font-light leading-8">
-            {title}
-          </h2>
+      <div className="flex min-h-full flex-col gap-4 px-5 pb-6 pt-3">
+        <span aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-border-control" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            {eyebrow && <p className="text-meta leading-4 font-semibold text-accent">{eyebrow}</p>}
+            <h2 id={titleId} className="font-display text-title-md font-light">
+              {title}
+            </h2>
+          </div>
+          {dismissible && <IconButton label="Close" icon="close" iconSize={22} size={36} tone="muted" onClick={onClose} />}
         </div>
         {children}
-        {actions && <div className="mt-4 flex flex-col gap-3.5">{actions}</div>}
+        {actions && <div className="flex flex-col items-center gap-1 pt-1">{actions}</div>}
       </div>
     </dialog>
   );

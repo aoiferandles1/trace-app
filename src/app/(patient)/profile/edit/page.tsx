@@ -92,7 +92,7 @@ function EditProfileScreen() {
       footer={<SaveButton form="profile-form" busy={busy}>Save changes</SaveButton>}
     >
       <FormFrame id="profile-form" onSubmit={submit} error={saveError}>
-        <h2 className="text-label font-medium uppercase text-text-tertiary">Personal details</h2>
+        <h2 className="font-display text-heading font-light">Personal details</h2>
         <TextField id={ids.first_name} label="First name" autoComplete="given-name" value={v.first_name} onChange={set("first_name")} error={errors.first_name} />
         <TextField id={ids.last_name} label="Last name" autoComplete="family-name" value={v.last_name} onChange={set("last_name")} error={errors.last_name} />
         <TextField
@@ -112,10 +112,10 @@ function EditProfileScreen() {
         <TextField label="Town or city" optional autoComplete="address-level2" value={v.city} onChange={set("city")} placeholder="e.g. Dublin" />
         <SelectField label="Country" autoComplete="country-name" options={COUNTRIES} value={v.country} onChange={set("country")} />
 
-        <h2 id="critical" className="mt-4 text-label font-medium uppercase text-red-700">
+        <h2 id="critical" className="mt-4 font-display text-heading font-light">
           Critical safety
         </h2>
-        <p className="-mt-2 text-body-sm text-text-tertiary">Always shown first to any doctor you share with.</p>
+        <p className="-mt-2 text-caption text-ink-2">Always shown first to any doctor you share with.</p>
         <SelectField label="Blood type" options={BLOOD_TYPE_OPTIONS} value={v.blood_type} onChange={set("blood_type")} />
         <TextField
           label="Known allergies"
@@ -127,9 +127,9 @@ function EditProfileScreen() {
         />
         <TextField label="Implants or devices" optional value={v.implants} onChange={set("implants")} placeholder="e.g. pacemaker, stent" />
 
-        <h2 className="mt-4 text-label font-medium uppercase text-text-tertiary">Email</h2>
+        <h2 className="mt-4 font-display text-heading font-light">Email</h2>
         <SwitchRow
-          surface="sunken"
+          surface="tile"
           title="Reminders and health tips by email"
           description="Optional. Trace does not send these yet."
           checked={reminders}

@@ -1,13 +1,12 @@
 "use client";
 
-import { Check, Plus } from "lucide-react";
+import { TickIndicator } from "@/components/ui/Toggle";
 import { useSyncExternalStore, type ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
-import { cn } from "@/lib/cn";
 import { GP_PROFILE_KEY } from "../_lib/gpProfile";
 import { useStepSave } from "../_lib/useStepSave";
 
@@ -42,15 +41,9 @@ function WelcomeStepScreen() {
         </div>
       }>
       <div className="flex flex-col gap-6 px-5 pb-10 pt-5">
-        <span
-          aria-hidden="true"
-          className="flex size-20 items-center justify-center rounded-full bg-brand-teal-tint text-brand-teal [&_svg]:size-8"
-        >
-          <Check />
-        </span>
-        <h1 className="text-h2 font-bold">Welcome to Trace{profile.first_name ? `, ${profile.first_name}` : ""}!</h1>
-        <p className="text-body-sm text-text-tertiary">Your record is ready. Here&apos;s what you&apos;ve set up:</p>
-        <ul className="flex flex-col gap-5 rounded-card border border-border-default bg-surface-card p-4">
+        <h1 className="font-display text-title font-light">Welcome to Trace{profile.first_name ? `, ${profile.first_name}` : ""}!</h1>
+        <p className="text-body text-ink-2">Your record is ready. Here&apos;s what you&apos;ve set up:</p>
+        <ul className="flex flex-col gap-4 rounded-card border border-border-card bg-surface p-4.5">
           <Item done title="Account created">
             {email}
           </Item>
@@ -71,9 +64,9 @@ function WelcomeStepScreen() {
           <Item title="Add your first entry">Log a visit, write a note, or add a medication</Item>
         </ul>
         {error && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             {error}
-          </HintStrip>
+          </Notice>
         )}
         <Button size="lg" fullWidth loading={busy} onClick={() => void save({}, "/home")}>
           Go to my record
@@ -86,21 +79,13 @@ function WelcomeStepScreen() {
 function Item({ done = false, title, children }: { done?: boolean; title: string; children?: ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span
-        aria-hidden="true"
-        className={cn(
-          "flex size-6 shrink-0 items-center justify-center rounded-full [&_svg]:size-3.5",
-          done ? "bg-brand-teal-tint text-teal-700" : "bg-surface-sunken text-text-tertiary",
-        )}
-      >
-        {done ? <Check /> : <Plus />}
-      </span>
+      <TickIndicator checked={done} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className={cn("text-body-sm font-bold", done ? "text-text-primary" : "text-text-tertiary")}>
+        <span className="text-row font-medium text-ink">
           {title}
           <span className="sr-only">{done ? ", done" : ", to do"}</span>
         </span>
-        {children && <span className="break-words text-body-sm text-text-tertiary">{children}</span>}
+        {children && <span className="break-words text-caption text-ink-2">{children}</span>}
       </span>
     </li>
   );

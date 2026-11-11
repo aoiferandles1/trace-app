@@ -1,11 +1,13 @@
 import { cn } from "@/lib/cn";
+import { Avatar } from "@/components/ui/Card";
 
 /**
- * The patient band at the top of the portal overview, from c-overview
- * "Patient Header" (Patient Card Header 163:7142): initials, name, details,
- * then a row of figures ("A+ Blood", "3 Conditions", "3 Medications").
+ * The patient at the top of the portal record (board PortalRecordE's
+ * header): a 56px accent avatar with Sora initials, the name in Sora 300 at
+ * 30px with the details as a caption, then one row of facts, each a small
+ * ink-2 label over a 17px 600 value. No dividers, no pills.
  *
- * Figures are a <dl> so each number is read with its label.
+ * Facts are a <dl> so each value is read with its label.
  */
 export function PatientSummaryCard({
   name,
@@ -16,37 +18,30 @@ export function PatientSummaryCard({
 }: {
   name: string;
   initials: string;
-  /** "34 · Female · DOB 12 Mar 1991 · Dublin" */
+  /** "35, female, born 12 Mar 1991, Dublin" */
   details: string;
   figures: Array<{ value: string; label: string }>;
   className?: string;
 }) {
   return (
-    <section
-      aria-label="Patient"
-      className={cn(
-        "flex flex-wrap items-center gap-4 rounded-pill-tight border border-border-default bg-surface-card px-[22px] py-4 shadow-strip",
-        className,
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className="flex size-12 shrink-0 items-center justify-center rounded-full bg-status-info-tint font-display text-[15px] font-bold text-indigo-text"
-      >
-        {initials}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-h3 font-medium">{name}</p>
-        <p className="text-body-tiny text-indigo-text">{details}</p>
+    <section aria-label="Patient" className={cn("flex flex-col gap-5.5", className)}>
+      <div className="flex items-center gap-4">
+        <Avatar initials={initials} size={56} tone="solid" display />
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="font-display text-name font-light">{name}</p>
+          <p className="text-caption text-ink-2">{details}</p>
+        </div>
       </div>
-      <dl className="flex flex-wrap gap-y-2 divide-x divide-brand-indigo">
-        {figures.map((f) => (
-          <div key={f.label} className="flex flex-col-reverse items-center px-3 first:pl-0 sm:px-[18px]">
-            <dt className="text-body-tiny font-bold uppercase tracking-[0.045em] text-text-tertiary">{f.label}</dt>
-            <dd className="font-display text-[17px] font-bold text-text-tertiary">{f.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {figures.length > 0 && (
+        <dl className="flex flex-wrap gap-x-16 gap-y-3">
+          {figures.map((f) => (
+            <div key={f.label} className="flex flex-col-reverse gap-0.5">
+              <dd className="text-row-lg font-semibold">{f.value}</dd>
+              <dt className="text-meta leading-4 text-ink-2">{f.label}</dt>
+            </div>
+          ))}
+        </dl>
+      )}
     </section>
   );
 }

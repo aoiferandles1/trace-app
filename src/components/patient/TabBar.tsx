@@ -1,43 +1,37 @@
 "use client";
 
-import { Activity, House, Pill, Plus, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
 /**
- * Patient bottom navigation, from Figma "Tab Bar" (47:929): Home, Timeline,
- * a raised Add button, Meds, Profile. 78px tall, translucent white, 28px top
- * corners.
+ * Phone tab bar (BRIEF.md section 3.8, every phone board): 68px, white, a
+ * border-tabbar hairline on top. Five slots: Home, Record, the centre Add
+ * (a 48px accent disc with a white plus, the one filled circle besides
+ * avatars), Medications, Profile.
  *
- * The active tab comes from the URL (or `active` to override, for /kit).
- * Active tab: Indigo/Text icon and a bold label (so it is not colour alone)
- * plus aria-current="page".
- * Every tab is at least 56 x 48. Render it through PatientShell's `tabBar` slot.
+ * The active tab comes from the URL (or `active`, for /kit): accent 600,
+ * with aria-current="page"; the others ink-2 500. Hide the bar during focused
+ * flows (share code, approve, session, forms): render it through
+ * PatientShell's `tabBar` slot only on the main screens.
  */
 
-export type TabKey = "home" | "timeline" | "add" | "meds" | "profile";
+export type TabKey = "home" | "record" | "add" | "meds" | "profile";
 
-type Tab = { key: TabKey; label: string; href: string; icon: ReactNode; match: (p: string) => boolean };
+type Tab = { key: TabKey; label: string; href: string; icon: IconName; match: (p: string) => boolean };
 
 const TABS: Tab[] = [
-  { key: "home", label: "Home", href: "/home", icon: <House />, match: (p) => p === "/home" },
-  {
-    key: "timeline",
-    label: "Timeline",
-    href: "/record",
-    icon: <Activity />,
-    match: (p) => p.startsWith("/record"),
-  },
-  { key: "add", label: "Add", href: "/add", icon: <Plus />, match: (p) => p.startsWith("/add") },
-  { key: "meds", label: "Meds", href: "/meds", icon: <Pill />, match: (p) => p.startsWith("/meds") },
+  { key: "home", label: "Home", href: "/home", icon: "home", match: (p) => p === "/home" },
+  { key: "record", label: "Record", href: "/record", icon: "record", match: (p) => p.startsWith("/record") },
+  { key: "add", label: "Add", href: "/add", icon: "plus", match: (p) => p.startsWith("/add") },
+  { key: "meds", label: "Medications", href: "/meds", icon: "pill", match: (p) => p.startsWith("/meds") },
   {
     key: "profile",
     label: "Profile",
     href: "/profile",
-    icon: <UserRound />,
-    match: (p) => p.startsWith("/profile"),
+    icon: "person",
+    match: (p) => p.startsWith("/profile") || p.startsWith("/access-log"),
   },
 ];
 
@@ -48,54 +42,37 @@ export function TabBar({ active, className }: { active?: TabKey | "none"; classN
   return (
     <nav
       aria-label="Main"
-      className={cn(
-        "rounded-t-sheet bg-white/90 px-2 min-[375px]:px-6 pb-[max(22px,env(safe-area-inset-bottom))] pt-1 shadow-tabbar backdrop-blur-md",
-        className,
-      )}
+      className={cn("border-t border-border-tabbar bg-surface pb-[env(safe-area-inset-bottom)]", className)}
     >
-      <ul className="flex items-end justify-between">
+      <ul className="flex h-17">
         {TABS.map((tab) => {
           const isActive = tab.key === activeKey;
           if (tab.key === "add") {
             return (
-              <li key={tab.key}>
+              <li key={tab.key} className="flex flex-1 items-center justify-center">
                 <Link
                   href={tab.href}
+                  aria-label={tab.label}
                   aria-current={isActive ? "page" : undefined}
-                  className="group flex flex-col items-center gap-0.5 rounded-card"
+                  className="flex size-12 items-center justify-center rounded-full bg-accent text-white transition-colors duration-150 ease-out hovered:bg-accent-alt"
                 >
-                  <span
-                    aria-hidden="true"
-                    className="-mt-6 flex size-12 items-center justify-center rounded-pill bg-brand-indigo text-white shadow-fab transition-colors duration-150 group-hover:bg-indigo-accessible [&_svg]:size-6"
-                  >
-                    {tab.icon}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-label tracking-normal",
-                      isActive ? "font-bold text-indigo-text" : "font-medium text-text-tertiary",
-                    )}
-                  >
-                    {tab.label}
-                  </span>
+                  <Icon name="plus" strokeWidth={2} />
                 </Link>
               </li>
             );
           }
           return (
-            <li key={tab.key}>
+            <li key={tab.key} className="flex min-w-0 flex-1">
               <Link
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex h-12 w-12 min-[375px]:w-14 flex-col items-center justify-end gap-0.5 rounded-md [&_svg]:size-6",
-                  isActive ? "text-indigo-text" : "text-text-tertiary hovered:text-text-primary",
+                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-micro transition-colors duration-150 ease-out",
+                  isActive ? "font-semibold text-accent" : "font-medium text-ink-2 hovered:text-ink",
                 )}
               >
-                <span aria-hidden="true">{tab.icon}</span>
-                <span className={cn("text-label tracking-normal", isActive ? "font-bold" : "font-medium")}>
-                  {tab.label}
-                </span>
+                <Icon name={tab.icon} />
+                <span className="max-w-full truncate">{tab.label}</span>
               </Link>
             </li>
           );

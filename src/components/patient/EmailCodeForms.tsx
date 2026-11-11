@@ -150,10 +150,10 @@ export function CodeForm({ email, mode }: { email: string; mode: "signup" | "log
         {mode === "signup" ? "Verify email" : "Sign in"}
       </Button>
       <div className="flex flex-col items-center gap-1">
-        <Button variant="ghost" size="md" onClick={resend} loading={resending}>
+        <Button variant="text" size="md" onClick={resend} loading={resending}>
           Didn&apos;t get it? Resend code
         </Button>
-        <p role="status" className="min-h-5 text-center text-body-sm text-text-tertiary">
+        <p role="status" className="min-h-5 text-center text-caption text-ink-2">
           {resent}
         </p>
       </div>

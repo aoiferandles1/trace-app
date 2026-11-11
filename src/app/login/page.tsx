@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { CodeForm, EmailForm } from "@/components/patient/EmailCodeForms";
-import { ChevronLeft } from "lucide-react";
 import { IconButton, IconLink } from "@/components/ui/IconButton";
 import { StepIntro } from "@/components/patient/StepIntro";
 
@@ -20,9 +19,9 @@ export default function LoginPage() {
       header={
         <div className="px-2.5 pt-2">
           {email ? (
-            <IconButton icon={<ChevronLeft />} label="Use a different email" onClick={() => setEmail(null)} />
+            <IconButton icon="chevron-left" label="Use a different email" onClick={() => setEmail(null)} />
           ) : (
-            <IconLink icon={<ChevronLeft />} label="Back to the welcome screen" href="/" />
+            <IconLink icon="chevron-left" label="Back to the welcome screen" href="/" />
           )}
         </div>
       }

@@ -1,17 +1,17 @@
-import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Icon } from "./Icon";
 
 /**
- * Label, hint and error around a form control. Used by TextField, TextArea,
+ * Label, hint and error around a form control (BRIEF.md section 7): a
+ * visible 14px 500 label above, the hint in ink-2, and an error in the
+ * critical colour with an icon, in words. Used by TextField, TextArea,
  * SelectField and CodeInput; screens rarely need it directly.
  *
  * The control must carry `id={ids.control}` and
  * `aria-describedby={describedBy}` so the hint and error are announced.
  * Errors are words, not only red: always pass a message that says what is wrong.
  */
-
-export type FieldLabelStyle = "default" | "eyebrow";
 
 export function fieldIds(id: string) {
   return { control: id, hint: `${id}-hint`, error: `${id}-error`, label: `${id}-label` };
@@ -25,8 +25,6 @@ export function describedBy(id: string, hint?: ReactNode, error?: ReactNode) {
 export type FieldProps = {
   id: string;
   label: ReactNode;
-  /** "default": 14px ink label (forms). "eyebrow": 12px indigo caps (portal session notes). */
-  labelStyle?: FieldLabelStyle;
   /** Hide the label visually but keep it for screen readers. Avoid unless the design gives no room. */
   labelHidden?: boolean;
   hint?: ReactNode;
@@ -42,7 +40,6 @@ export type FieldProps = {
 export function Field({
   id,
   label,
-  labelStyle = "default",
   labelHidden = false,
   hint,
   error,
@@ -54,28 +51,24 @@ export function Field({
   const ids = fieldIds(id);
   const LabelTag = as;
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col gap-1.5", className)}>
       <LabelTag
         id={ids.label}
         {...(as === "label" ? { htmlFor: ids.control } : {})}
-        className={cn(
-          labelHidden && "sr-only",
-          labelStyle === "default" && "text-body-sm text-text-primary",
-          labelStyle === "eyebrow" && "text-label font-medium uppercase text-indigo-text",
-        )}
+        className={cn(labelHidden ? "sr-only" : "text-caption font-medium text-ink")}
       >
         {label}
-        {optional && <span className="text-text-tertiary"> (optional)</span>}
+        {optional && <span className="font-normal text-ink-2"> (optional)</span>}
       </LabelTag>
       {children}
       {error && (
-        <p id={ids.error} className="flex items-start gap-1.5 text-body-sm text-red-700">
-          <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <p id={ids.error} className="flex items-start gap-1.5 text-caption text-critical">
+          <Icon name="alert" size={18} className="mt-px" />
           <span>{error}</span>
         </p>
       )}
       {hint && (
-        <p id={ids.hint} className="text-body-sm text-text-tertiary">
+        <p id={ids.hint} className="text-caption text-ink-2">
           {hint}
         </p>
       )}

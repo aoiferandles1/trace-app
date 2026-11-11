@@ -1,8 +1,6 @@
 "use client";
 
-import { Activity, CalendarDays, Clock, FileText, Share2 } from "lucide-react";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
-import { ListItemCard } from "@/components/patient/ListItemCard";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { QuickActionTile } from "@/components/patient/QuickActionTile";
 import { StatTile } from "@/components/patient/StatTile";
 import { ENTRY_KINDS } from "@/components/patient/TimelineItem";
@@ -11,7 +9,8 @@ import { ShareTodayCard } from "@/components/patient/ShareTodayCard";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { BannerCard } from "@/components/ui/BannerCard";
 import { ButtonLink } from "@/components/ui/Button";
-import { SectionLabel } from "@/components/ui/Card";
+import { Card, SectionHeading } from "@/components/ui/Card";
+import { ListRow } from "@/components/ui/ListRow";
 import {
   dayKey,
   daysUntil,
@@ -86,7 +85,7 @@ function HomeScreen() {
   const greeting = `${greetingFor(now)}${profile.first_name ? `, ${profile.first_name}` : ""}`;
 
   return (
-    <TabScreen header={<ScreenHeader variant="greeting" title={greeting} subtitle={formatHeaderDate(now)} />}>
+    <TabScreen header={<PageHeader variant="greeting" title={greeting} subtitle={formatHeaderDate(now)} />}>
       {data.status !== "ready" || !share.loaded ? (
         <LoadStatus status={data.status === "ready" ? "loading" : data.status} onRetry={data.reload} />
       ) : (
@@ -130,8 +129,7 @@ function HomeBody({
 
   const upcomingCard = nextVisit ? (
     <BannerCard
-      tone="indigo"
-      icon={<CalendarDays />}
+      icon="calendar"
       eyebrow="Upcoming"
       title={[nextVisit.title, nextVisit.clinician].filter(Boolean).join(" · ")}
       meta={[formatWeekdayDate(nextVisit.occurs_at), formatTime(nextVisit.occurs_at), nextVisit.place]
@@ -146,7 +144,6 @@ function HomeBody({
         return d === 0 ? "today" : `in ${daysText(d).toLowerCase()}`;
       })()}
       href={`/record/${nextVisit.id}`}
-      className="py-6"
     />
   ) : null;
 
@@ -162,25 +159,25 @@ function HomeBody({
   ) : null;
 
   return (
-    <div className="flex flex-col gap-8 px-4 pb-8 pt-4">
+    <div className="flex flex-col gap-6 px-5 pb-8 pt-2">
       {topCard}
       <section aria-label="Your record at a glance" className={refill ? "grid grid-cols-3 gap-3" : "grid grid-cols-2 gap-3"}>
         <StatTile value={addedThisMonth} label="added this month" />
         <StatTile value={current.length} label={current.length === 1 ? "medication" : "medications"} />
         {refill && refillDays !== null && (
-          <StatTile value={daysText(refillDays)} label="until refill" tone="peach" />
+          <StatTile value={daysText(refillDays)} label="until refill" urgent />
         )}
       </section>
 
       {isEmpty && (
         <section
           aria-labelledby="empty-title"
-          className="flex flex-col gap-3 rounded-card border border-border-default bg-surface-card p-5 shadow-sm"
+          className="flex flex-col gap-3 rounded-card border border-border-card bg-surface p-5"
         >
-          <h2 id="empty-title" className="text-h4 font-bold">
+          <h2 id="empty-title" className="font-display text-heading font-light">
             Your record is empty
           </h2>
-          <p className="text-body-sm text-text-tertiary">
+          <p className="text-caption text-ink-2">
             Start with what you know: a medication you take, your next appointment, or a note for yourself.
           </p>
           <ButtonLink href="/add" className="w-fit">
@@ -192,62 +189,59 @@ function HomeBody({
       {!topCard && upcomingCard}
 
       <section aria-labelledby="quick-label" className="flex flex-col gap-3">
-        <SectionLabel id="quick-label">Quick actions</SectionLabel>
+        <SectionHeading id="quick-label">Quick actions</SectionHeading>
         <ul className="grid grid-cols-4 gap-2">
           <li>
-            <QuickActionTile href="/add/note" label="Add note" icon={<FileText />} tone="indigo" />
+            <QuickActionTile href="/add/note" label="Add note" icon="pencil" />
           </li>
           <li>
-            <QuickActionTile href="/add/appointment" label="Log appt" icon={<CalendarDays />} tone="peach" />
+            <QuickActionTile href="/add/appointment" label="Log appt" icon="calendar" />
           </li>
           <li>
-            <QuickActionTile href="/meds" label="Prescriptions" icon={<Clock />} tone="indigo" />
+            <QuickActionTile href="/meds" label="Prescriptions" icon="pill" />
           </li>
           <li>
-            <QuickActionTile href="/record" label="My record" icon={<Activity />} tone="neutral" />
+            <QuickActionTile href="/record" label="My record" icon="record" />
           </li>
         </ul>
       </section>
 
       {refill && refillDays !== null && (
         <section aria-labelledby="upcoming-label" className="flex flex-col gap-3">
-          <SectionLabel id="upcoming-label">Upcoming</SectionLabel>
+          <SectionHeading id="upcoming-label">Upcoming</SectionHeading>
           <BannerCard
-            tone="peach"
-            icon={<Clock />}
+            tone="urgent"
+            icon="pill"
             eyebrow="Refill due soon"
-            eyebrowCaps
             title={`${medicationName(refill)} · ${refillDays === 0 ? "due today" : `${daysText(refillDays)} left`}`}
             meta={[refill.prescriber, refill.prescriber_org].filter(Boolean).join(" · ") || undefined}
             badge={refillDays === 0 ? "Today" : `${refillDays}d`}
             badgeLabel={refillDays === 0 ? "due today" : `in ${daysText(refillDays)}`}
             href="/meds"
-            className="py-6"
           />
         </section>
       )}
 
       {recent.length > 0 && (
         <section aria-labelledby="recent-label" className="flex flex-col gap-3">
-          <SectionLabel id="recent-label">Recently added</SectionLabel>
-          <ul className="flex flex-col gap-3">
+          <SectionHeading id="recent-label">Recently added</SectionHeading>
+          <Card as="ul">
             {recent.map((e) => {
               const k = ENTRY_KINDS[e.kind];
               const detail = e.kind === "note" ? e.body?.split("\n")[0] : e.place ?? e.clinician;
               return (
                 <li key={e.id}>
-                  <ListItemCard
+                  <ListRow
+                    icon={k.icon}
                     title={e.title}
-                    tone={k.tone}
-                    tag={{ label: k.label }}
-                    meta={[formatShortDate(e.occurs_at), detail].filter(Boolean).join(" · ")}
+                    caption={[k.label, detail].filter(Boolean).join(", ")}
+                    value={formatShortDate(e.occurs_at)}
                     href={`/record/${e.id}`}
-                    chevronTone={k.tone}
                   />
                 </li>
               );
             })}
-          </ul>
+          </Card>
         </section>
       )}
     </div>
@@ -264,8 +258,7 @@ function LiveCard({ session }: { session: ShareSession }) {
   const name = clinicianName(session);
   return (
     <BannerCard
-      tone="indigo"
-      icon={<Share2 />}
+      icon="share"
       eyebrow={paused ? "Time's up" : "Sharing in progress"}
       title={`${name} · GP visit`}
       meta={
@@ -278,7 +271,6 @@ function LiveCard({ session }: { session: ShareSession }) {
       badge={ticking ? formatCountdown(left) : undefined}
       badgeLabel={ticking ? `${formatCountdownSpoken(left)} left` : undefined}
       href="/session"
-      className="py-6"
     />
   );
 }

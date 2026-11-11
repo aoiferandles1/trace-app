@@ -5,9 +5,10 @@ import { PatientShell } from "@/components/layout/PatientShell";
 import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { usePatientSession } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { TabBar } from "@/components/patient/TabBar";
-import { Button } from "@/components/ui/Button";
+import { DemoStrip } from "@/components/ui/DemoStrip";
+import { StateMessage } from "@/components/ui/StateMessage";
 import { formatCountdown } from "@/lib/format";
 import { clinicianName, isOpen, msUntil } from "@/lib/patient/share";
 import { useNow } from "@/lib/useNow";
@@ -15,12 +16,12 @@ import { useNow } from "@/lib/useNow";
 /**
  * Frames for the signed-in patient screens.
  *
- * - TabScreen: the five main screens (Home, Timeline, Add, Meds, Profile),
- *   with the tab bar.
+ * - TabScreen: the five main screens (Home, Record, Add, Medications,
+ *   Profile), with the tab bar.
  * - SubScreen: details and forms, with a back link and no tab bar.
  *
- * Both render <LiveBannerSlot /> (the banner across the top while a doctor
- * has access) and <DemoMarker /> (demo accounts only).
+ * Both render <DemoMarker /> (demo accounts only, at the very top) and
+ * <LiveBannerSlot /> (the strip while a doctor has access).
  */
 
 /** The live share banner (p-home-live), on every screen while a session is active or paused. */
@@ -40,37 +41,19 @@ export function LiveBannerSlot(): ReactNode {
 }
 
 /**
- * "Demo · sample data" (PLAN.md section 9): a slim strip at the top of every
- * signed-in screen of a demo (anonymous) account. Real accounts never see it.
+ * "Demo with sample data" (BRIEF.md section 3.2): the strip at the top of
+ * every signed-in screen of a demo (anonymous) account. Real accounts never
+ * see it.
  */
-export function DemoMarker({ tone = "page" }: { tone?: "page" | "indigo" }): ReactNode {
+export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" }): ReactNode {
   const { isAnonymous } = usePatientSession();
   if (!isAnonymous) return null;
-  return (
-    <p
-      className={
-        tone === "indigo"
-          ? "bg-indigo-700 py-1 text-center text-label font-medium text-white"
-          : "bg-brand-peach-tint py-1 text-center text-label font-medium text-peach-700"
-      }
-    >
-      Demo · sample data
-    </p>
-  );
+  return <DemoStrip tone={tone === "session" ? "session" : "default"} />;
 }
 
 export function TabScreen({ header, children }: { header: ReactNode; children: ReactNode }) {
   return (
-    <PatientShell
-      banner={<LiveBannerSlot />}
-      header={
-        <>
-          <DemoMarker />
-          {header}
-        </>
-      }
-      tabBar={<TabBar />}
-    >
+    <PatientShell demo={<DemoMarker />} banner={<LiveBannerSlot />} header={header} tabBar={<TabBar />}>
       {children}
     </PatientShell>
   );
@@ -91,13 +74,9 @@ export function SubScreen({
 }) {
   return (
     <PatientShell
+      demo={<DemoMarker />}
       banner={<LiveBannerSlot />}
-      header={
-        <>
-          <DemoMarker />
-          <ScreenHeader title={title} backHref={backHref} backLabel={backLabel} />
-        </>
-      }
+      header={<PageHeader title={title} backHref={backHref} backLabel={backLabel} />}
       footer={footer}
     >
       {children}
@@ -105,34 +84,31 @@ export function SubScreen({
   );
 }
 
-/** Loading and failed states for a screen's data. `tone="indigo"` on the full-bleed indigo screens. */
+/** Loading and failed states for a screen's data. `tone="session"` on the session-indigo screens. */
 export function LoadStatus({
   status,
   onRetry,
-  tone = "page",
+  tone = "ground",
 }: {
   status: "loading" | "error";
   onRetry: () => void;
-  tone?: "page" | "indigo";
+  tone?: "ground" | "session";
 }) {
   if (status === "loading") {
     return (
-      <p
-        role="status"
-        className={tone === "indigo" ? "px-5 py-10 text-center text-body-sm" : "px-5 py-10 text-center text-body-sm text-text-tertiary"}
-      >
+      <p role="status" className={tone === "session" ? "px-5 py-10 text-center text-caption text-on-session-2" : "px-5 py-10 text-center text-caption text-ink-2"}>
         Loading&hellip;
       </p>
     );
   }
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 px-5 py-10 text-center">
-      <p className={tone === "indigo" ? "text-body-sm" : "text-body-sm text-text-primary"}>
-        This couldn&apos;t load. Check your connection and try again.
-      </p>
-      <Button variant={tone === "indigo" ? "tertiary" : "secondary"} onClick={onRetry}>
-        Try again
-      </Button>
-    </div>
+    <StateMessage
+      tone="error"
+      align="center"
+      surface={tone === "session" ? "session" : "default"}
+      className="px-5 py-10"
+      message="This couldn't load. Check your connection and try again."
+      action={{ label: "Try again", onClick: onRetry }}
+    />
   );
 }

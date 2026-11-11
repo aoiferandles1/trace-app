@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { EntryKind } from "@/components/patient/TimelineItem";
-import { FilterTabs, tabPanelProps } from "@/components/ui/FilterTabs";
+import { SegmentedControl, tabPanelProps } from "@/components/ui/SegmentedControl";
 import type { Entry } from "../../_lib/api";
 import { patientFirstName } from "../../_lib/format";
 import { useSectionRecord } from "./SessionContext";
@@ -56,15 +56,18 @@ export function TimelineView() {
     <>
       <PageTitle title="Timeline" meta={meta} />
       {kinds.length > 1 && (
-        <FilterTabs<Filter>
+        <SegmentedControl<Filter>
+          mode="tabs"
+          fill={false}
+          className="w-fit"
           idBase="timeline"
           label="Filter the timeline"
           value={filter}
           onChange={setFilter}
-          items={[{ value: "all", label: "All" }, ...kinds.map((k) => ({ value: k as Filter, label: PLURAL[k] }))]}
+          options={[{ value: "all", label: "All" }, ...kinds.map((k) => ({ value: k as Filter, label: PLURAL[k] }))]}
         />
       )}
-      <div {...(kinds.length > 1 ? tabPanelProps("timeline", filter) : {})} className="flex flex-col gap-6 rounded-md">
+      <div {...(kinds.length > 1 ? tabPanelProps("timeline", filter) : {})} className="flex flex-col gap-6 rounded-tile">
         {shown.length === 0 ? (
           <EmptyLine>No past entries shared.</EmptyLine>
         ) : (
@@ -73,7 +76,7 @@ export function TimelineView() {
       </div>
       {record.upcoming && record.upcoming.length > 0 && (
         <section aria-labelledby="tl-upcoming" className="flex flex-col gap-4 pt-4">
-          <h2 id="tl-upcoming" className="font-display text-[28px] font-light leading-tight lg:text-[34px]">
+          <h2 id="tl-upcoming" className="font-display text-heading font-light">
             Upcoming
           </h2>
           {byYear(record.upcoming).map((g) => (
@@ -89,15 +92,15 @@ function YearCard({ year, entries, upcoming = false }: { year: string; entries: 
   return (
     <section
       aria-label={`${upcoming ? "Upcoming in " : ""}${year}, ${entries.length} ${entries.length === 1 ? "entry" : "entries"}`}
-      className="rounded-pill-tight border border-border-default bg-surface-card px-6 pt-6 pb-2 shadow-card"
+      className="rounded-card border border-border-card bg-surface px-4.5 pb-1 pt-4"
     >
-      <h3 className="flex items-baseline gap-4">
-        <span className="font-display text-[34px] font-light leading-none">{year}</span>
-        <span className="text-body-tiny text-text-tertiary">
+      <h3 className="flex items-baseline gap-3">
+        <span className="font-display text-year font-light">{year}</span>
+        <span className="text-caption text-ink-2">
           {entries.length} {entries.length === 1 ? "entry" : "entries"}
         </span>
       </h3>
-      <ol className="mt-2">
+      <ol className="mt-1">
         {entries.map((e) => (
           <TimelineRow key={e.id} entry={e} upcoming={upcoming} />
         ))}

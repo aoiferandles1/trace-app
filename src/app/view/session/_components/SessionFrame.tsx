@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
@@ -11,7 +11,7 @@ import { PortalHeader } from "@/components/portal/PortalHeader";
 import { PortalSidebar, portalNavItems, type PortalSection } from "@/components/portal/PortalSidebar";
 import { SessionNotesPanel, type SaveState, type SessionNotes } from "@/components/portal/SessionNotesPanel";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { TextArea } from "@/components/ui/TextArea";
 import { formatCountdown, initialsOf } from "@/lib/format";
 import { clockOffset, portalApi, PortalApiError, type Patient, type PortalStatus } from "../../_lib/api";
@@ -188,19 +188,14 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   const setPatient = useCallback((p: Patient) => setPatientState(p), []);
 
 
-  const header = (
-    <PortalHeader
-      clinician={
-        status?.clinician?.name
-          ? {
-              name: status.clinician.name,
-              role: status.clinician.role ?? undefined,
-              practice: status.clinician.practice ?? undefined,
-            }
-          : undefined
+  const clinician = status?.clinician?.name
+    ? {
+        name: status.clinician.name,
+        role: status.clinician.role ?? undefined,
+        practice: status.clinician.practice ?? undefined,
       }
-    />
-  );
+    : undefined;
+  const header = <PortalHeader clinician={clinician} />;
   const footer = <PortalFooter />;
   const liveRegion = (
     <p role="status" aria-live="polite" className="sr-only">
@@ -211,13 +206,13 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   // ---- Loading -------------------------------------------------------------
   if (!status || !["active", "paused", "ended"].includes(status.status)) {
     return (
-      <PortalShell tone="indigo" header={header} footer={footer}>
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-          <h1 className="font-display text-display-sm font-light">
+      <PortalShell tone="ground" header={header} footer={footer}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-2 px-5 text-center">
+          <h1 className="font-display text-title font-light">
             {loadError ? "The portal could not reach Trace." : "Loading the record"}
           </h1>
           {loadError && (
-            <Button variant="tertiary" onClick={() => void refreshStatus()}>
+            <Button variant="text" onClick={() => void refreshStatus()}>
               Try again
             </Button>
           )}
@@ -257,7 +252,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   if (status.status === "ended") {
     return (
       <SessionContext.Provider value={ctx}>
-        <PortalShell tone="indigo" header={header} footer={footer}>
+        <PortalShell tone="ground" header={header} footer={footer}>
           {liveRegion}
           <EndedScreen status={status} unsaved={unsaved} notesAllowed={notesAllowed} />
         </PortalShell>
@@ -281,7 +276,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   if (pathname === "/view/session/end") {
     return (
       <SessionContext.Provider value={ctx}>
-        <PortalShell tone="indigo" header={header} footer={footer}>
+        <PortalShell tone="ground" header={header} footer={footer}>
           {liveRegion}
           <MilestoneAnnouncer status={status} offset={offset} onAnnounce={setAnnouncement} />
           {children}
@@ -300,7 +295,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   return (
     <SessionContext.Provider value={ctx}>
       <PortalShell
-        header={header}
+        tone="surface"
         footer={footer}
         notes={notesPanel}
         sidebar={
@@ -312,12 +307,13 @@ export function SessionFrame({ children }: { children: ReactNode }) {
             }}
             items={portalNavItems(locked)}
             active={sectionFor(pathname)}
+            clinician={clinician}
           />
         }
       >
         {liveRegion}
         <MilestoneAnnouncer status={status} offset={offset} onAnnounce={setAnnouncement} />
-        <div className="flex flex-col gap-6 px-4 pt-6 pb-12 sm:px-8 lg:px-12 lg:pt-8">
+        <div className="flex flex-col gap-6 px-5 pb-12 pt-6 sm:px-10 lg:pt-7">
           <Banner status={status} offset={offset} patientName={name} />
           {children}
         </div>
@@ -376,22 +372,22 @@ function PausedScreen({ status, offset }: { status: PortalStatus; offset: number
   const closesAt = status.closes_at;
   const left = closesAt ? Date.parse(closesAt) - now : null;
   return (
-    <div className="px-4 py-12 sm:px-8 lg:py-20">
+    <div className="px-5 py-12 sm:px-10 lg:py-20">
       <AccessCard
         headingRef={heading}
         eyebrow="Access paused"
-        tone="peach"
+        tone="urgent"
         title="Time's up on this share."
         body="The patient's timer ran out, so their record is hidden. It comes back here if they add more time."
       >
         {left !== null && left > 0 && (
-          <p className="flex items-center gap-2 text-label font-medium text-indigo-text">
-            <Clock aria-hidden="true" className="size-4 shrink-0" />
+          <p className="flex items-center gap-2 text-caption text-ink-2">
+            <Icon name="clock" size={18} />
             If nothing changes, the session closes at {formatClock(closesAt)}.
           </p>
         )}
         {status.allow_notes && (
-          <HintStrip tone="indigo">You can still finish your notes. They go to the record when the session ends.</HintStrip>
+          <Notice tone="neutral">You can still finish your notes. They go to the record when the session ends.</Notice>
         )}
         <Button variant="secondary" size="lg" fullWidth onClick={() => void endSession()} loading={ending}>
           End session now
@@ -415,11 +411,11 @@ function UnsavedNotes({ notes }: { notes: SessionNotes }) {
   if (!text) return null;
   return (
     <div className="flex flex-col gap-3">
-      <HintStrip tone="peach" live="assertive">
+      <Notice tone="urgent" live="assertive">
         Your last changes to the notes were not saved before the session ended, so they are not in the record. Copy
         them now if you need them: they are gone when you leave this page.
-      </HintStrip>
-      <TextArea label="Notes not saved" labelStyle="eyebrow" density="compact" rows={6} readOnly value={text} />
+      </Notice>
+      <TextArea label="Notes not saved" density="compact" rows={6} readOnly value={text} />
     </div>
   );
 }
@@ -456,9 +452,9 @@ function EndedScreen({
   return (
     <>
       <PortalHero title="Session ended." />
-      <div className="px-4 pt-12 pb-16 sm:pt-[60px]">
-        <AccessCard headingRef={heading} eyebrow="Session ended" tone="neutral" title={title} body={body}>
-          {notesLine && <HintStrip tone={status.notes_saved_to_record ? "teal" : "neutral"}>{notesLine}</HintStrip>}
+      <div className="px-5 pb-16 pt-10 sm:px-14">
+        <AccessCard headingRef={heading} eyebrow="Session ended" title={title} body={body}>
+          {notesLine && <Notice tone="neutral">{notesLine}</Notice>}
           {unsaved && <UnsavedNotes notes={unsaved} />}
           <ButtonLink href="/view" size="lg" fullWidth>
             Start a new session

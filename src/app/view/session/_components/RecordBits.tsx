@@ -1,20 +1,19 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { ENTRY_KINDS } from "@/components/patient/TimelineItem";
-import { Pill } from "@/components/ui/Pill";
+import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 import type { Entry } from "../../_lib/api";
 import { entryDateParts, formatEntryDate, isoDay } from "../../_lib/format";
 
-/** Page title block: "Overview" in Sora Light 40, a meta line under it. */
+/** Page title block: the page title in Sora 300 (26/32 in the portal), a meta line under it. */
 export function PageTitle({ title, meta }: { title: string; meta?: ReactNode }) {
   return (
     <div>
-      <h1 className="font-display text-[34px] font-light leading-tight tracking-[-0.01em] lg:text-[40px]">{title}</h1>
-      {meta && <p className="mt-1 text-body-tiny text-text-tertiary">{meta}</p>}
+      <h1 className="font-display text-title font-light">{title}</h1>
+      {meta && <p className="mt-1 text-caption text-ink-2">{meta}</p>}
     </div>
   );
 }
@@ -33,11 +32,11 @@ export function SectionHeading({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <h2 id={id} className="font-display text-[28px] font-light leading-tight lg:text-[34px]">
-        {title} {count && <span className="ml-1 font-sans text-body-sm text-text-tertiary">{count}</span>}
+      <h2 id={id} className="font-display text-heading font-light">
+        {title} {count && <span className="ml-1 font-sans text-caption text-ink-2">{count}</span>}
       </h2>
       {link && (
-        <Link href={link.href} className="hit-area shrink-0 rounded-xs text-label font-medium text-indigo-text">
+        <Link href={link.href} className="hit-area shrink-0 text-caption font-semibold text-accent hovered:underline">
           {link.label}
         </Link>
       )}
@@ -45,22 +44,22 @@ export function SectionHeading({
   );
 }
 
-/** A white card that holds a list of rows (c-overview's conditions and medications). */
+/** A card that holds a list of rows (the overview's conditions and medications). */
 export function ListCard({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("rounded-pill-tight bg-surface-card px-6 py-4 shadow-card sm:px-8", className)}>{children}</div>;
+  return <div className={cn("rounded-card border border-border-card bg-surface px-4.5 py-1", className)}>{children}</div>;
 }
 
 /** Placeholder while a section loads. Polite, so it is not read on every page. */
 export function LoadingRecord() {
   return (
-    <p role="status" className="py-12 text-center text-body-sm text-text-tertiary">
+    <p role="status" className="py-12 text-center text-caption text-ink-2">
       Loading the record…
     </p>
   );
 }
 
 export function EmptyLine({ children }: { children: ReactNode }) {
-  return <p className="py-3 text-body-sm text-text-tertiary">{children}</p>;
+  return <p className="py-3 text-body text-ink-2">{children}</p>;
 }
 
 /** Groups entries by year, newest first, keeping their order. */
@@ -81,8 +80,8 @@ export function entryMeta(e: Entry): string {
 }
 
 /**
- * A timeline row as on c-timeline: the day and month, a dot, the title, the
- * meta line and the kind tag. Entries with a body (results, letters, session
+ * A timeline row: the day in Sora with its month, a bare icon for the kind,
+ * the title, and the kind and meta line as a caption. Entries with a body (results, letters, session
  * notes) expand to show it; the whole header is the button.
  */
 export function TimelineRow({ entry, upcoming = false }: { entry: Entry; upcoming?: boolean }) {
@@ -91,55 +90,42 @@ export function TimelineRow({ entry, upcoming = false }: { entry: Entry; upcomin
   const d = entryDateParts(entry.occurs_at);
   const k = ENTRY_KINDS[entry.kind];
   const hasBody = Boolean(entry.body?.trim());
-  const dot = {
-    indigo: "bg-timeline-visit",
-    teal: "bg-timeline-test",
-    peach: "bg-timeline-meds",
-    red: "bg-status-danger",
-    neutral: "bg-text-primary",
-  }[k.tone];
 
   const head = (
     <>
       <time dateTime={isoDay(entry.occurs_at)} className="flex w-10 shrink-0 flex-col items-center">
         <span className="sr-only">{upcoming ? "Upcoming, " : ""}{formatEntryDate(entry.occurs_at)}</span>
-        <span aria-hidden="true" className="font-display text-[22px] font-light leading-none">
+        <span aria-hidden="true" className={cn("font-display text-title-sm font-light", upcoming && "text-accent")}>
           {d.day}
         </span>
-        <span aria-hidden="true" className="mt-1 text-body-tiny text-text-tertiary">
+        <span aria-hidden="true" className={cn("text-micro", upcoming ? "text-accent" : "text-ink-2")}>
           {d.month}
         </span>
       </time>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", upcoming ? "border border-border-strong bg-surface-card" : dot)} />
-          <span className="text-body-sm font-bold">{entry.title}</span>
-        </span>
-        {entryMeta(entry) && <span className="text-body-sm text-text-tertiary">{entryMeta(entry)}</span>}
-        <span>
-          <Pill tone={k.tone} size="sm">
-            {k.label}
-          </Pill>
-        </span>
+      <Icon name={k.icon} className="mt-0.5 text-accent" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-row font-medium">{entry.title}</span>
+        <span className="text-caption text-ink-2">{[k.label, entryMeta(entry)].filter(Boolean).join(", ")}</span>
       </span>
       {hasBody && (
-        <ChevronDown
-          aria-hidden="true"
-          className={cn("mt-1 size-4 shrink-0 transition-transform duration-150", open && "rotate-180")}
+        <Icon
+          name="chevron-down"
+          size={20}
+          className={cn("mt-0.5 text-ink-2 transition-transform duration-150 ease-out", open && "rotate-180")}
         />
       )}
     </>
   );
 
   return (
-    <li className="border-b border-border-default py-5 last:border-b-0">
+    <li className="border-b border-border-row py-4 last:border-b-0">
       {hasBody ? (
         <button
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen(!open)}
-          className="flex w-full items-start gap-4 rounded-sm text-left"
+          className="flex w-full items-start gap-4 text-left"
         >
           {head}
         </button>
@@ -147,7 +133,7 @@ export function TimelineRow({ entry, upcoming = false }: { entry: Entry; upcomin
         <div className="flex items-start gap-4">{head}</div>
       )}
       {hasBody && (
-        <div id={panelId} hidden={!open} className="mt-3 ml-14 whitespace-pre-line rounded-md bg-surface-page px-4 py-3 text-body-sm">
+        <div id={panelId} hidden={!open} className="ml-24 mt-2 whitespace-pre-line text-body">
           {entry.body}
         </div>
       )}

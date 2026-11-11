@@ -1,331 +1,260 @@
 @import "tailwindcss";
 
 /*
- * Trace design tokens.
+ * Trace design tokens (redesign, docs/redesign/BRIEF.md section 2).
  *
- * Every value below mirrors a Figma variable from the Foundations page
- * (file FIaa9qCUZYAlCpxIs5hC4H, page 2:2). Names follow the Figma names with
- * "/" and spaces turned into "-" and lower-cased, so `Text/Primary` is
- * `--text-primary` and `indigo/600` is `--indigo-600`.
+ * Every colour, radius, size and type role here comes from the brief's token
+ * table or from an approved board in docs/redesign/canvas/. Components use
+ * Tailwind utilities built from these tokens (`bg-surface`, `text-ink-2`,
+ * `rounded-card`, `text-title`), never raw hex.
  *
- * Tokens marked "not a Figma variable" are values the final screens use as
- * raw hex, or substitutions made for WCAG 2.2 AA. Each substitution is listed
- * in docs/REVIEW.md.
+ * Phone and desktop differ in radius, control height and some type sizes.
+ * Those tokens are CSS variables that change inside `.desk` (the portal
+ * shell sets it; `.desk-lg` applies it from 1024px), so one utility gives the
+ * right value in either place: `rounded-card` is 24px on the phone and 12px
+ * in the portal.
+ *
+ * There are no shadows and no gradients in this design.
  */
 
 :root {
-  /* Palette: neutral */
-  --neutral-50: #f8f7fb;
-  --neutral-100: #efedf5;
-  --neutral-200: #e1e4ea;
-  --neutral-300: #c8ced8;
-  --neutral-400: #b4bcc8;
-  --neutral-500: #8a94a3;
-  --neutral-600: #5c677a;
-  --neutral-700: #2a3651;
-  --neutral-800: #1a2d4f;
-  --neutral-900: #0c1927;
+  /* Colour (BRIEF.md section 2) */
+  --ground: #f7f7fb;
+  --surface: #ffffff;
+  --ink: #14163a;
+  --ink-2: #5b6085;
+  --segment-text: #4a4f7a;
+  --accent: #5468d4;
+  --accent-alt: #4353c4; /* pressed state of accent */
+  --session: #3d4eb8;
+  --session-deep: #2a3787; /* approve-access backdrop (ApproveA2 board) */
+  --locked-tint: #e8ebfa;
+  --urgent-tint: #fdebdd;
+  --urgent: #9a4a0a; /* urgent text, and the dot of an out-of-range result */
+  --critical-tint: #fceae7;
+  --critical: #a12a1e;
+  --border-card: #e1e4f2;
+  --border-row: #eceef8;
+  --border-control: #dcdff0;
+  --border-tabbar: #e4e6f2;
+  /* Brief #9096BE is 2.9:1 on white and 2.7:1 on ground; darkened to 3:1 on ground (see docs/REVIEW.md). */
+  --ring-off: #878db3;
+  --switch-off: #7b80a8; /* off track and knob of the track switch (ShareA2 board), 3.6:1 on ground */
+  --tree-line: #c4c8e2; /* family tree connectors, notes resize grip */
+  --tree-node: #b1b6d6; /* family tree node rings, share-header dashes */
+  --tree-faint: #d5d8ec; /* the small tree drawing on the Record family card */
+  --range-band: #c9d0f3;
+  --on-session-border: rgba(255, 255, 255, 0.28);
+  --on-session-2: rgba(255, 255, 255, 0.78); /* secondary text on session indigo, 5.0:1 */
+  --on-session-ring: rgba(255, 255, 255, 0.5); /* empty rings on session indigo, 3.0:1 */
+  --on-session-dash: rgba(255, 255, 255, 0.6); /* dashed "Not shared" rings in the portal rail */
+  --scrim: rgba(20, 22, 58, 0.45);
 
-  /* Palette: indigo */
-  --indigo-50: #f2f5fe;
-  --indigo-100: #e3eafd;
-  --indigo-200: #c6d4fa;
-  --indigo-300: #a0b6f5;
-  --indigo-400: #7b9aff;
-  --indigo-500: #5b7ae8;
-  --indigo-600: #4258cb;
-  --indigo-700: #2e40a0;
-  --indigo-800: #1f2a66;
-  --indigo-900: #1e1f3d;
+  /* Focus ring: ink, white inside `.on-session` */
+  --focus-ring: var(--ink);
 
-  /* Palette: teal */
-  --teal-50: #e5f5f3;
-  --teal-100: #c9ebe6;
-  --teal-200: #95d7cb;
-  --teal-300: #4fc4b0;
-  --teal-400: #00c9b4;
-  --teal-500: #00a896;
-  --teal-600: #008576;
-  --teal-700: #00665b;
-  --teal-800: #1e3d38;
-  --teal-900: #0e2a2a;
+  /* Phone values of the context tokens */
+  --r-card: 24px;
+  --r-tile: 20px;
+  --r-button: 26px;
+  --r-control: 18px;
+  --r-segment: 14px;
+  --r-input: 16px;
+  --r-code: 18px;
 
-  /* Palette: peach */
-  --peach-50: #fef0e7;
-  --peach-100: #fce2d5;
-  --peach-200: #f9d0b8;
-  --peach-300: #f8c0a0;
-  --peach-400: #f4a882;
-  --peach-500: #e8906b;
-  --peach-600: #c5764f;
-  --peach-700: #8e5439;
-  --peach-800: #5c3b26;
-  --peach-900: #2e1f18;
+  --h-button-lg: 52px;
+  --h-button-md: 44px;
+  --h-button-sm: 36px;
+  --h-segment: 40px;
+  --h-segment-lg: 44px;
+  --h-input: 56px;
 
-  /* Palette: red */
-  --red-50: #fbeae7;
-  --red-100: #f9d6cf;
-  --red-200: #f4baaf;
-  --red-300: #ed9888;
-  --red-400: #e87867;
-  --red-500: #d85a4a;
-  --red-600: #b14233;
-  --red-700: #832e22;
-  --red-800: #5c2520;
-  --red-900: #3a1e1a;
+  --t-title: 28px;
+  --t-title-lh: 34px;
+  --t-title-ls: -0.01em;
+  --t-heading: 20px;
+  --t-heading-lh: 26px;
+  --t-numeral: 22px;
+  --t-numeral-lh: 28px;
+  --t-code: 44px;
+  --t-code-lh: 52px;
+}
 
-  /* Palette: dark and common */
-  --dark-base: #0d1525;
-  --dark-surface: #162032;
-  --dark-raised: #1b2538;
-  --common-white: #ffffff;
+/* Desktop and portal values. */
+.desk {
+  --r-card: 12px;
+  --r-tile: 12px;
+  --r-button: 12px;
+  --r-control: 12px;
+  --r-segment: 8px;
+  --r-input: 12px;
+  --r-code: 12px;
+  --h-button-md: 40px;
+  --h-segment: 34px;
+  --h-segment-lg: 34px;
+  --h-input: 44px;
+  --t-title: 26px;
+  --t-title-lh: 32px;
+  --t-title-ls: 0em;
+  --t-heading: 22px;
+  --t-heading-lh: 28px;
+  --t-numeral: 20px;
+  --t-numeral-lh: 26px;
+  --t-code: 48px;
+  --t-code-lh: 56px;
+}
 
-  /* Brand */
-  --brand-navy: #1a2d4f;
-  --brand-indigo: #5b7ae8;
-  --brand-peach: #e8906b;
-  --brand-teal: #00a896;
-  --brand-navy-tint: #e1e4ea;
-  --brand-indigo-tint: #f2f5fe;
-  --brand-peach-tint: #fef0e7;
-  --brand-teal-tint: #e5f5f3;
-
-  /* Indigo roles (Figma colour styles, not variables) */
-  --indigo-accessible: #5469cf; /* Indigo/Accessible: fills with white text, 4.9:1 */
-  --indigo-text: #4258cb; /* Indigo/Text: indigo text on light surfaces, 6.0:1 on white */
-  --indigo-surface-dark: #3a4ebf; /* Indigo/Surface-Dark: full-bleed indigo screens, portal sidebar */
-  --indigo-divider-dark: #4a5ec9; /* not a Figma variable: divider on Surface-Dark */
-
-  /* Surfaces */
-  --surface-page: #f8f7fb;
-  --surface-card: #ffffff;
-  --surface-sunken: #efedf5;
-  --surface-elevated: #ffffff;
-
-  /* Text */
-  --text-primary: #0c1927;
-  --text-secondary: #8a94a3; /* 3.1:1 on white. Decorative use only, never meaningful text */
-  --text-tertiary: #5c677a; /* 5.7:1 on white. Use for all secondary text that carries meaning */
-  --text-link: #4258cb; /* Figma: #5b7ae8 (3.9:1). Substituted with Indigo/Text for AA */
-  --text-on-accent: #ffffff;
-
-  /* Borders */
-  --border-default: #e1e4ea;
-  --border-strong: #c8ced8;
-  --border-control: #7a8495; /* not a Figma variable: field and switch outlines, 3:1 on every surface */
-
-  /* Status */
-  --status-success: #00a896;
-  --status-success-tint: #e5f5f3;
-  --status-danger: #d85a4a;
-  --status-danger-tint: #fbeae7;
-  --status-warning: #e8906b;
-  --status-warning-tint: #fef0e7;
-  --status-info: #5b7ae8;
-  --status-info-tint: #f2f5fe;
-  --critical-pill: #b83c2e; /* not a Figma variable: filled pills in the patient critical strip */
-
-  /* Timeline */
-  --timeline-visit: #5b7ae8;
-  --timeline-test: #00a896;
-  --timeline-meds: #e8906b;
-  --timeline-spine: #e1e4ea;
-
-  /* Interactive (from the Button component) */
-  --interactive-primary: #5469cf;
-  --interactive-primary-hover: #4258cb;
-  --interactive-primary-press: #2e40a0;
-  --interactive-disabled-bg: #e1e4ea;
-  --interactive-disabled-text: #b4bcc8;
-
-  /* Focus ring. Figma: 2px white gap, then 2px Indigo/Text. */
-  --focus-ring: #4258cb;
+@media (min-width: 1024px) {
+  .desk-lg {
+    --r-card: 12px;
+    --r-tile: 12px;
+    --r-button: 12px;
+    --r-control: 12px;
+    --r-segment: 8px;
+    --r-input: 12px;
+    --r-code: 12px;
+    --h-button-md: 40px;
+    --h-segment: 34px;
+    --h-segment-lg: 34px;
+    --h-input: 44px;
+    --t-title: 26px;
+    --t-title-lh: 32px;
+    --t-title-ls: 0em;
+    --t-heading: 22px;
+    --t-heading-lh: 28px;
+    --t-numeral: 20px;
+    --t-numeral-lh: 26px;
+    --t-code: 48px;
+    --t-code-lh: 56px;
+  }
 }
 
 /*
- * Tailwind theme. Default colours, radii and shadows are cleared so only
- * Trace tokens exist: `bg-surface-card`, `text-text-tertiary`,
- * `border-border-default`, `rounded-card`, `shadow-card`.
+ * Tailwind theme. Tailwind's own colours, radii and shadows are cleared, so
+ * only Trace tokens exist.
  */
 @theme inline {
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;
-  --color-white: var(--common-white);
+  --color-white: #ffffff;
 
-  --color-neutral-50: var(--neutral-50);
-  --color-neutral-100: var(--neutral-100);
-  --color-neutral-200: var(--neutral-200);
-  --color-neutral-300: var(--neutral-300);
-  --color-neutral-400: var(--neutral-400);
-  --color-neutral-500: var(--neutral-500);
-  --color-neutral-600: var(--neutral-600);
-  --color-neutral-700: var(--neutral-700);
-  --color-neutral-800: var(--neutral-800);
-  --color-neutral-900: var(--neutral-900);
-
-  --color-indigo-50: var(--indigo-50);
-  --color-indigo-100: var(--indigo-100);
-  --color-indigo-200: var(--indigo-200);
-  --color-indigo-300: var(--indigo-300);
-  --color-indigo-400: var(--indigo-400);
-  --color-indigo-500: var(--indigo-500);
-  --color-indigo-600: var(--indigo-600);
-  --color-indigo-700: var(--indigo-700);
-  --color-indigo-800: var(--indigo-800);
-  --color-indigo-900: var(--indigo-900);
-
-  --color-teal-50: var(--teal-50);
-  --color-teal-100: var(--teal-100);
-  --color-teal-200: var(--teal-200);
-  --color-teal-300: var(--teal-300);
-  --color-teal-400: var(--teal-400);
-  --color-teal-500: var(--teal-500);
-  --color-teal-600: var(--teal-600);
-  --color-teal-700: var(--teal-700);
-  --color-teal-800: var(--teal-800);
-  --color-teal-900: var(--teal-900);
-
-  --color-peach-50: var(--peach-50);
-  --color-peach-100: var(--peach-100);
-  --color-peach-200: var(--peach-200);
-  --color-peach-300: var(--peach-300);
-  --color-peach-400: var(--peach-400);
-  --color-peach-500: var(--peach-500);
-  --color-peach-600: var(--peach-600);
-  --color-peach-700: var(--peach-700);
-  --color-peach-800: var(--peach-800);
-  --color-peach-900: var(--peach-900);
-
-  --color-red-50: var(--red-50);
-  --color-red-100: var(--red-100);
-  --color-red-200: var(--red-200);
-  --color-red-300: var(--red-300);
-  --color-red-400: var(--red-400);
-  --color-red-500: var(--red-500);
-  --color-red-600: var(--red-600);
-  --color-red-700: var(--red-700);
-  --color-red-800: var(--red-800);
-  --color-red-900: var(--red-900);
-
-  --color-brand-navy: var(--brand-navy);
-  --color-brand-indigo: var(--brand-indigo);
-  --color-brand-peach: var(--brand-peach);
-  --color-brand-teal: var(--brand-teal);
-  --color-brand-navy-tint: var(--brand-navy-tint);
-  --color-brand-indigo-tint: var(--brand-indigo-tint);
-  --color-brand-peach-tint: var(--brand-peach-tint);
-  --color-brand-teal-tint: var(--brand-teal-tint);
-
-  --color-indigo-accessible: var(--indigo-accessible);
-  --color-indigo-text: var(--indigo-text);
-  --color-indigo-surface-dark: var(--indigo-surface-dark);
-  --color-indigo-divider-dark: var(--indigo-divider-dark);
-
-  --color-surface-page: var(--surface-page);
-  --color-surface-card: var(--surface-card);
-  --color-surface-sunken: var(--surface-sunken);
-  --color-surface-elevated: var(--surface-elevated);
-
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-tertiary: var(--text-tertiary);
-  --color-text-link: var(--text-link);
-  --color-text-on-accent: var(--text-on-accent);
-
-  --color-border-default: var(--border-default);
-  --color-border-strong: var(--border-strong);
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-segment-text: var(--segment-text);
+  --color-accent: var(--accent);
+  --color-accent-alt: var(--accent-alt);
+  --color-session: var(--session);
+  --color-session-deep: var(--session-deep);
+  --color-locked-tint: var(--locked-tint);
+  --color-urgent-tint: var(--urgent-tint);
+  --color-urgent: var(--urgent);
+  --color-critical-tint: var(--critical-tint);
+  --color-critical: var(--critical);
+  --color-border-card: var(--border-card);
+  --color-border-row: var(--border-row);
   --color-border-control: var(--border-control);
-
-  --color-status-success: var(--status-success);
-  --color-status-success-tint: var(--status-success-tint);
-  --color-status-danger: var(--status-danger);
-  --color-status-danger-tint: var(--status-danger-tint);
-  --color-status-warning: var(--status-warning);
-  --color-status-warning-tint: var(--status-warning-tint);
-  --color-status-info: var(--status-info);
-  --color-status-info-tint: var(--status-info-tint);
-  --color-critical-pill: var(--critical-pill);
-
-  --color-timeline-visit: var(--timeline-visit);
-  --color-timeline-test: var(--timeline-test);
-  --color-timeline-meds: var(--timeline-meds);
-  --color-timeline-spine: var(--timeline-spine);
-
-  --color-interactive-primary: var(--interactive-primary);
-  --color-interactive-primary-hover: var(--interactive-primary-hover);
-  --color-interactive-primary-press: var(--interactive-primary-press);
-  --color-interactive-disabled-bg: var(--interactive-disabled-bg);
-  --color-interactive-disabled-text: var(--interactive-disabled-text);
+  --color-border-tabbar: var(--border-tabbar);
+  --color-ring-off: var(--ring-off);
+  --color-switch-off: var(--switch-off);
+  --color-tree-line: var(--tree-line);
+  --color-tree-node: var(--tree-node);
+  --color-tree-faint: var(--tree-faint);
+  --color-range-band: var(--range-band);
+  --color-on-session-border: var(--on-session-border);
+  --color-on-session-2: var(--on-session-2);
+  --color-on-session-ring: var(--on-session-ring);
+  --color-on-session-dash: var(--on-session-dash);
+  --color-scrim: var(--scrim);
 
   /* Fonts (variables set by next/font in src/app/fonts.ts) */
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  /* Type scale (Figma text styles). Letter spacing in Figma is a percentage. */
-  --text-display: 64px;
-  --text-display--line-height: 1.04;
-  --text-display--letter-spacing: -0.02em;
-  --text-h1: 48px;
-  --text-h1--line-height: 1.08;
-  --text-h1--letter-spacing: -0.018em;
-  --text-display-sm: 32px;
-  --text-display-sm--line-height: 1.2;
-  --text-display-sm--letter-spacing: -0.01em;
-  --text-h2: 28px;
-  --text-h2--line-height: 1.2;
-  --text-h2--letter-spacing: -0.012em;
-  --text-heading-lg: 24px;
-  --text-heading-lg--line-height: 1.2;
-  --text-heading-lg--letter-spacing: -0.01em;
-  --text-h3: 20px;
-  --text-h3--line-height: 1.3;
-  --text-h3--letter-spacing: -0.005em;
-  --text-h4: 16px;
-  --text-h4--line-height: 1.3;
-  --text-h4--letter-spacing: -0.005em;
-  --text-body-lg: 16px;
-  --text-body-lg--line-height: 1.5;
-  --text-body-sm: 14px;
-  --text-body-sm--line-height: 1.5;
-  --text-body-tiny: 12px;
-  --text-body-tiny--line-height: 1.4;
-  --text-label: 12px;
-  --text-label--line-height: 1.3;
-  --text-label--letter-spacing: 0.02em;
-  --text-caption: 10px;
-  --text-caption--line-height: 1.3;
-  --text-button-lg: 16px;
-  --text-button-lg--line-height: 1.2;
-  --text-button-md: 14px;
-  --text-button-md--line-height: 1.2;
-  --text-button-sm: 13px;
-  --text-button-sm--line-height: 1.2;
-  --text-meta: 13px; /* not a Figma style: secondary lines on cards (13px Regular) */
-  --text-meta--line-height: 1.3;
+  /*
+   * Type roles. Size, line height and tracking come with the token; add the
+   * weight (Sora roles: `font-display font-light`; Inter: font-normal 400,
+   * font-medium 500, font-semibold 600).
+   */
+  /* Sora */
+  --text-display-xl: 72px; /* portal waiting countdown */
+  --text-display-xl--line-height: 80px;
+  --text-hero: 56px; /* Home: the visit time */
+  --text-hero--line-height: 60px;
+  --text-hero--letter-spacing: -0.03em;
+  --text-display: 44px; /* portal entry and waiting titles */
+  --text-display--line-height: 52px;
+  --text-display--letter-spacing: -0.015em;
+  --text-countdown: 40px; /* session active: time left */
+  --text-countdown--line-height: 44px;
+  --text-code: var(--t-code); /* share code digits: 44 phone, 48 portal */
+  --text-code--line-height: var(--t-code-lh);
+  --text-numeral-lg: 32px; /* date-tile days, vitals, step numbers */
+  --text-numeral-lg--line-height: 36px;
+  --text-name: 30px; /* portal header: patient name */
+  --text-name--line-height: 36px;
+  --text-name--letter-spacing: -0.01em;
+  --text-title: var(--t-title); /* page title: 28/34 phone, 26/32 portal */
+  --text-title--line-height: var(--t-title-lh);
+  --text-title--letter-spacing: var(--t-title-ls);
+  --text-title-md: 26px; /* sheet titles, portal pane titles */
+  --text-title-md--line-height: 32px;
+  --text-title-md--letter-spacing: -0.01em;
+  --text-title-sm: 24px; /* detail screen titles, history strengths */
+  --text-title-sm--line-height: 30px;
+  --text-title-sm--letter-spacing: -0.01em;
+  --text-heading: var(--t-heading); /* section heading: 20/26 phone, 22/28 portal */
+  --text-heading--line-height: var(--t-heading-lh);
+  --text-numeral: var(--t-numeral); /* strength in a row: 22/28 phone, 20/26 portal */
+  --text-numeral--line-height: var(--t-numeral-lh);
+  --text-year: 20px; /* year column in timelines */
+  --text-year--line-height: 26px;
+  /* Inter */
+  --text-unit: 18px; /* a unit after a big numeral ("9:30 am") */
+  --text-unit--line-height: 24px;
+  --text-row-lg: 17px; /* portal overview lists and header facts */
+  --text-row-lg--line-height: 24px;
+  --text-body-lg: 16px; /* block values in sheets and detail panes */
+  --text-body-lg--line-height: 24px;
+  --text-row: 16px; /* row title (500) */
+  --text-row--line-height: 22px;
+  --text-body: 15px; /* body (400) */
+  --text-body--line-height: 22px;
+  --text-label: 15px; /* tile labels, text buttons (600) */
+  --text-label--line-height: 20px;
+  --text-caption: 14px; /* caption, secondary (ink-2) */
+  --text-caption--line-height: 20px;
+  --text-meta: 13px; /* block labels ("Seen by"), small sub lines */
+  --text-meta--line-height: 18px;
+  --text-micro: 12px; /* tab labels, demo strip, chart labels. Nothing smaller exists. */
+  --text-micro--line-height: 16px;
 
   /* Radius */
   --radius-*: initial;
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 12px; /* not a Figma variable: raw 12px used by many components */
-  --radius-card-tight: 14px;
-  --radius-card: 16px;
-  --radius-pill-tight: 22px;
-  --radius-pill: 24px;
-  --radius-pill-loose: 26px;
-  --radius-sheet: 28px; /* not a Figma variable: tab bar and bottom sheet top corners */
+  --radius-card: var(--r-card); /* 24 phone, 12 portal */
+  --radius-tile: var(--r-tile); /* 20 phone (scope tiles, setting rows), 12 portal */
+  --radius-tile-lg: 22px; /* Home "Coming up" date tiles */
+  --radius-feature: 28px; /* accent cards (Home today, Insurance connected) */
+  --radius-strip: 16px; /* Record safety strip */
+  --radius-button: var(--r-button); /* 26 pill phone, 12 portal */
+  --radius-control: var(--r-control); /* segmented control outer: 18 phone, 12 portal */
+  --radius-segment: var(--r-segment); /* segmented control segment: 14 phone, 8 portal */
+  --radius-input: var(--r-input); /* 16 phone, 12 portal */
+  --radius-code: var(--r-code); /* code boxes: 18 phone, 12 portal */
+  --radius-rail: 12px; /* portal rail items */
+  --radius-sheet: 28px; /* bottom sheet top corners */
 
-  /* Shadows */
+  /* No shadows exist in this design. */
   --shadow-*: initial;
-  --shadow-sm: 0 1px 2px rgba(60, 40, 30, 0.04);
-  --shadow-card: 0 4px 20px rgba(91, 122, 232, 0.06);
-  --shadow-md: 0 4px 20px rgba(60, 40, 30, 0.06);
-  --shadow-lg: 0 12px 40px rgba(60, 40, 30, 0.1);
-  --shadow-tabbar: 0 -2px 12px rgba(0, 0, 0, 0.04);
-  --shadow-sheet: 0 -8px 28px rgba(0, 0, 0, 0.2);
-  --shadow-fab: 0 4px 16px -2px rgba(91, 122, 232, 0.4);
-  --shadow-strip: 0 4px 4px rgba(0, 0, 0, 0.04);
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+
+  /* Motion: 150 to 200ms ease-out on colour, opacity and the sheet. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --animate-sheet-up: sheet-up 200ms var(--ease-out);
 }
 
 @layer base {
@@ -334,24 +263,26 @@
   }
 
   body {
-    background: var(--surface-page);
-    color: var(--text-primary);
+    background: var(--ground);
+    color: var(--ink);
     font-family: var(--font-sans);
-    font-variation-settings: "opsz" 14;
+    font-size: 15px;
+    line-height: 22px;
     -webkit-font-smoothing: antialiased;
   }
 
   /*
-   * One visible focus style everywhere (WCAG 2.4.7, 2.4.11).
-   * Inside an `.on-dark` surface the ring turns white.
+   * One visible focus style everywhere (WCAG 2.4.7, 2.4.11): a 2px ink
+   * outline with a 2px gap. Inside `.on-session` (session indigo) it is white.
    */
   :focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
-  .on-dark {
-    --focus-ring: #ffffff;
+  [data-force~="focus"] {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -364,6 +295,11 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* Session indigo surfaces: white text and a white focus ring. */
+.on-session {
+  --focus-ring: #ffffff;
 }
 
 /*
@@ -401,13 +337,6 @@
   }
 }
 
-@layer base {
-  [data-force~="focus"] {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-  }
-}
-
 /* Expands the tap target of a small control to at least 44px tall without changing its look. */
 @utility hit-area {
   position: relative;
@@ -420,6 +349,22 @@
     min-height: 44px;
     height: 100%;
     transform: translateY(-50%);
+  }
+}
+
+/* Same, in both directions: at least 44 x 44 around a small control. */
+@utility hit-area-square {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    min-width: 44px;
+    min-height: 44px;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
   }
 }
 

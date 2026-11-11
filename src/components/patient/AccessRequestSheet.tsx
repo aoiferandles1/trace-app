@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { createClient } from "@/lib/supabase/client";
 import {
   clinicianName,
@@ -26,8 +26,9 @@ import { useShareSession } from "./ShareSession";
  * is `requested` and closes by itself when that stops being true (the doctor
  * cancelled, or 5 minutes passed).
  *
- * Nothing opens until the patient taps Allow; Deny sits under it with equal
- * weight (PLAN.md section 2). Escape and the backdrop do nothing: the patient
+ * Nothing opens until the patient taps Allow (filled); Deny is a text
+ * button under it, lighter in weight but just as reachable: full width of
+ * its words, 44px tall (BRIEF.md section 5.4, board ApproveA2). Escape and the backdrop do nothing: the patient
  * answers with a button. Focus starts on the request itself, not on Allow, so
  * a stray Enter cannot grant access.
  */
@@ -86,7 +87,7 @@ export function AccessRequestSheet() {
       actions={
         <>
           <Button
-            variant="secondary"
+            variant="primary"
             size="lg"
             fullWidth
             onClick={() => respond(true)}
@@ -96,19 +97,19 @@ export function AccessRequestSheet() {
             Allow access
           </Button>
           <Button
-            variant="secondary"
-            size="lg"
-            fullWidth
+            variant="text"
+            size="md"
+            className="px-4"
             onClick={() => respond(false)}
             loading={busy === "deny"}
             disabled={busy === "allow"}
           >
-            Deny access
+            Deny
           </Button>
         </>
       }
     >
-      <div id="access-request-body" tabIndex={-1} className="flex flex-col gap-3.5 outline-none">
+      <div id="access-request-body" tabIndex={-1} className="flex flex-col gap-3 outline-none">
         <AccessRequestDetails
           clinician={{
             name,
@@ -120,13 +121,11 @@ export function AccessRequestSheet() {
           shared={sharedList(prefs)}
           notIncluded={joinAnd(notIncludedList(prefs))}
         />
-        <p className="text-body-tiny text-text-tertiary">
-          The name and practice are as they typed them. Trace does not check them.
-        </p>
+        <p className="text-caption text-ink-2">Name and practice are as typed. Trace does not check them.</p>
         {error && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             {error}
-          </HintStrip>
+          </Notice>
         )}
       </div>
     </BottomSheet>

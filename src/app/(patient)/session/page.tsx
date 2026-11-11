@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Clock } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
@@ -9,12 +9,13 @@ import { useShareSession } from "@/components/patient/ShareSession";
 import { SessionStatusRow, SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
 import { Avatar } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Countdown } from "@/components/ui/Countdown";
+import { Notice } from "@/components/ui/Notice";
+import { ThemeColor } from "@/components/ui/ThemeColor";
 import { formatTime } from "@/lib/dates";
 import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
 import {
   clinicianName,
-  formatRemaining,
   hardEndOf,
   hasNotes,
   minutesBetween,
@@ -81,9 +82,10 @@ function SessionScreen() {
   const open = session && (session.status === "active" || session.status === "paused") ? session : null;
 
   return (
-    <PatientShell tone="indigo" header={<DemoMarker tone="indigo" />}>
+    <PatientShell tone="session" demo={<DemoMarker tone="session" />}>
+      <ThemeColor tone="session" />
       {!open ? (
-        <LoadStatus tone="indigo" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
+        <LoadStatus tone="session" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
       ) : open.status === "active" ? (
         <Active session={open} busy={busy === "end"} error={error} onEnd={end} onExpire={refresh} />
       ) : (
@@ -112,7 +114,6 @@ function Active({
   const now = useNow(!manual);
   const left = msUntil(session.expires_at, now);
   const total = Math.max(1, Date.parse(session.expires_at ?? "") - Date.parse(session.approved_at ?? ""));
-  const fraction = manual ? 1 : Math.min(1, left / total);
   const rows = useShareSummary(prefsOf(session), profile, "diagnoses");
   const endsAt = manual ? hardEndOf(session) : session.expires_at;
 
@@ -122,59 +123,50 @@ function Active({
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-[18px] px-4 pb-6 pt-2">
+      <div className="flex flex-1 flex-col gap-4 px-5 pb-6 pt-1">
         <SessionStatusRow
           label="Session active"
-          dot="teal"
           minimiseHref="/home"
           time={manual ? undefined : formatCountdown(left)}
           timeLabel={manual ? undefined : `${formatCountdownSpoken(left)} left`}
         />
-        <div className="flex flex-col items-center gap-3.5 pb-2 pt-5 text-center">
-          <Avatar initials={initialsOf(name)} size="xl" tone="onDark" />
-          <h1 className="font-display text-[30px] font-light leading-9">
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <Avatar initials={initialsOf(name)} size={88} tone="session" display />
+          <h1 className="font-display text-title font-light">
             {name}
             <br />
             has access
           </h1>
-          <p className="text-body-tiny">{[session.clinician_practice, "GP visit"].filter(Boolean).join(" · ")}</p>
+          <p className="text-caption text-on-session-2">
+            {[session.clinician_practice, "GP visit"].filter(Boolean).join(", ")}
+          </p>
         </div>
 
-        <div className="flex flex-col gap-2 rounded-md bg-indigo-accessible p-3">
-          <p className="flex items-center justify-between gap-3 text-body-tiny">
-            <span className="font-medium">Time remaining</span>
-            {manual ? (
-              <span className="font-bold">Until you end it</span>
-            ) : (
-              <>
-                <span aria-hidden="true" className="font-bold">
-                  {formatRemaining(left)}
-                </span>
-                <span className="sr-only">{formatCountdownSpoken(left)}</span>
-              </>
-            )}
+        {manual ? (
+          <p className="flex items-baseline justify-between text-caption">
+            <span className="text-on-session-2">Time left</span>
+            <span className="font-semibold">Until you end it</span>
           </p>
-          <div aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-indigo-surface-dark">
-            <div className="h-full rounded-full bg-white" style={{ width: `${fraction * 100}%` }} />
-          </div>
-        </div>
+        ) : (
+          <Countdown msLeft={left} msTotal={total} tone="session" label="Time left" />
+        )}
 
         <SharedSummaryCard
           heading={`${name} can see`}
           rows={rows}
-          notIncluded={notIncludedList(prefsOf(session)).join(" · ")}
+          notIncluded={notIncludedList(prefsOf(session)).join(", ")}
         />
         {error && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive" surface="session">
             {error}
-          </HintStrip>
+          </Notice>
         )}
       </div>
-      <div className="sticky bottom-0 flex flex-col items-center gap-3 bg-indigo-surface-dark px-4 pb-8 pt-3">
-        <Button variant="tertiary" size="lg" fullWidth onClick={onEnd} loading={busy}>
+      <div className="sticky bottom-0 flex flex-col items-center gap-2 bg-session px-5 pb-6 pt-3">
+        <Button variant="primary" tone="session" size="lg" fullWidth onClick={onEnd} loading={busy}>
           End sharing now
         </Button>
-        {endsAt && <p className="text-center text-body-tiny">Access ends automatically at {formatTime(endsAt)}</p>}
+        {endsAt && <p className="text-center text-caption text-on-session-2">Access ends automatically at {formatTime(endsAt)}</p>}
       </div>
     </>
   );
@@ -197,59 +189,53 @@ function Paused({
   const used = minutesBetween(session.approved_at, session.paused_at ?? session.expires_at);
   const notes = session.allow_notes && hasNotes(session);
   return (
-    <div className="flex flex-1 flex-col gap-5 px-4 pb-10 pt-2">
-      <SessionStatusRow label="Session paused" dot="peach" time="00:00" timeLabel="No time left" minimiseHref="/home" />
-      <div className="flex flex-col items-center gap-5 pt-8 text-center">
-        <span aria-hidden="true" className="flex size-20 items-center justify-center rounded-full bg-brand-indigo">
-          <Clock className="size-8" />
-        </span>
-        <h1 className="font-display text-[44px] font-light leading-[1.1]">Time&apos;s up.</h1>
-        <p className="text-body-lg">
+    <div className="flex flex-1 flex-col gap-5 px-5 pb-10 pt-1">
+      <SessionStatusRow label="Session paused" time="0:00" timeLabel="No time left" minimiseHref="/home" />
+      <div className="flex flex-col items-center gap-3 pt-6 text-center">
+        <Icon name="clock" size={40} strokeWidth={1.5} />
+        <h1 className="font-display text-display font-light">Time&apos;s up.</h1>
+        <p className="text-body-lg text-on-session-2">
           {name}&apos;s access has been paused. Your record is no longer visible until you decide.
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-md bg-indigo-accessible p-3">
-        <p className="flex items-center justify-between gap-3 text-body-tiny">
-          <span className="font-medium">Time used</span>
-          <span className="font-medium">
-            {used} of {used} min
-          </span>
-        </p>
-        <div aria-hidden="true" className="h-1.5 rounded-full bg-white" />
-      </div>
-
-      <section aria-labelledby="extend-title" className="flex gap-3.5 rounded-card bg-indigo-accessible p-4">
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-indigo-surface-dark">
-          <Clock className="size-5" />
+      <p className="flex items-baseline justify-between border-y border-on-session-border py-3 text-caption">
+        <span className="text-on-session-2">Time used</span>
+        <span className="font-semibold">
+          {used} of {used} min
         </span>
-        <div className="flex flex-col gap-1">
-          <h2 id="extend-title" className="text-body-sm font-bold">
-            Extend access
-          </h2>
-          <p className="text-body-tiny">Give {name} more time</p>
-          <div className="mt-2 flex gap-2">
-            <Button
-              variant="tertiary"
-              size="sm"
-              onClick={() => onExtend(15)}
-              loading={busy === 15}
-              disabled={busy !== null && busy !== 15}
-              aria-label="+15m, add 15 minutes"
-            >
-              +15m
-            </Button>
-            <Button
-              variant="tertiary"
-              size="sm"
-              onClick={() => onExtend(30)}
-              loading={busy === 30}
-              disabled={busy !== null && busy !== 30}
-              aria-label="+30m, add 30 minutes"
-            >
-              +30m
-            </Button>
-          </div>
+      </p>
+
+      <section aria-labelledby="extend-title" className="flex flex-col gap-1">
+        <h2 id="extend-title" className="font-display text-heading font-light">
+          Extend access
+        </h2>
+        <p className="text-caption text-on-session-2">Give {name} more time</p>
+        <div className="mt-2 flex gap-2">
+          <Button
+            variant="primary"
+            tone="session"
+            size="md"
+            className="flex-1"
+            onClick={() => onExtend(15)}
+            loading={busy === 15}
+            disabled={busy !== null && busy !== 15}
+            aria-label="+15m, add 15 minutes"
+          >
+            +15m
+          </Button>
+          <Button
+            variant="primary"
+            tone="session"
+            size="md"
+            className="flex-1"
+            onClick={() => onExtend(30)}
+            loading={busy === 30}
+            disabled={busy !== null && busy !== 30}
+            aria-label="+30m, add 30 minutes"
+          >
+            +30m
+          </Button>
         </div>
       </section>
 
@@ -258,27 +244,24 @@ function Paused({
         onClick={onEnd}
         aria-busy={busy === "end" || undefined}
         disabled={busy !== null}
-        className="flex items-center gap-3.5 rounded-card bg-indigo-accessible p-4 text-left hovered:bg-indigo-600"
+        className="flex min-h-16 items-center gap-3.5 border-y border-on-session-border py-2 text-left"
       >
-        <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-indigo-surface-dark">
-          <Check className="size-5" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-row font-medium">Save and end</span>
+          <span className="text-caption text-on-session-2">{notes ? "Session notes saved · access closed" : "Access closed"}</span>
         </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-body-sm font-bold">Save and end</span>
-          <span className="text-body-tiny">{notes ? "Session notes saved · access closed" : "Access closed"}</span>
-        </span>
-        <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
+        <Icon name="chevron-right" size={20} />
       </button>
 
       {session.closes_at && (
-        <p className="text-center text-body-tiny">
+        <p className="text-center text-caption text-on-session-2">
           If you don&apos;t decide, the session closes at {formatTime(session.closes_at)}.
         </p>
       )}
       {error && (
-        <HintStrip tone="danger" live="assertive">
+        <Notice tone="critical" live="assertive" surface="session">
           {error}
-        </HintStrip>
+        </Notice>
       )}
     </div>
   );

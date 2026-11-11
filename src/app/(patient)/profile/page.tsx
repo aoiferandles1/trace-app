@@ -1,19 +1,18 @@
 "use client";
 
-import { ChevronRight, Download, FileText, History, Plus, RotateCcw, Share2, Trash2 } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { ListItemCard } from "@/components/patient/ListItemCard";
 import { leaveForWelcome, SessionReady, usePatientSession } from "@/components/patient/PatientSession";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { StatTile } from "@/components/patient/StatTile";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { Avatar, SectionLabel } from "@/components/ui/Card";
-import { HintStrip } from "@/components/ui/HintStrip";
-import type { Tone } from "@/components/ui/Pill";
+import { Avatar, Card, SectionHeading } from "@/components/ui/Card";
+import { ListRow } from "@/components/ui/ListRow";
+import { Notice } from "@/components/ui/Notice";
 import { dayKey, formatDay } from "@/lib/dates";
 import { initialsOf } from "@/lib/format";
 import { isOpen } from "@/lib/patient/share";
@@ -25,7 +24,6 @@ import { LoadStatus, TabScreen } from "../_components/Screens";
 
 const KIND_ORDER = { gp: 0, specialist: 1, pharmacy: 2 } as Record<string, number>;
 const KIND_LABEL = { gp: "GP", specialist: "Specialist", pharmacy: "Pharmacy" } as Record<string, string>;
-const KIND_TONE = { gp: "indigo", specialist: "indigo", pharmacy: "teal" } as Record<string, Tone>;
 const COUNTRY_CODES: Record<string, string> = { Ireland: "IE", "United Kingdom": "UK" };
 
 async function loadProfile() {
@@ -64,17 +62,17 @@ function ProfileScreen() {
     .join(", ");
 
   return (
-    <TabScreen header={<ScreenHeader title="My profile" />}>
-      <div className="flex flex-col gap-6 px-4 pb-8 pt-4">
-        <section aria-label="You" className="flex flex-col gap-4 rounded-card border border-border-default bg-surface-card p-5">
+    <TabScreen header={<PageHeader title="My profile" />}>
+      <div className="flex flex-col gap-6 px-5 pb-8 pt-2">
+        <section aria-label="You" className="flex flex-col gap-4 rounded-card border border-border-card bg-surface p-5">
           <div className="flex items-center gap-3.5">
-            <Avatar initials={initialsOf(name) || "?"} size="lg" tone="solid" />
+            <Avatar initials={initialsOf(name) || "?"} size={56} tone="outline" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-h3 font-bold">{name || "Your name"}</h2>
-              <p className="text-meta text-text-tertiary">{["Patient", place].filter(Boolean).join(" · ")}</p>
+              <h2 className="font-display text-heading font-light">{name || "Your name"}</h2>
+              <p className="text-caption text-ink-2">{["Patient", place].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
-          <ButtonLink href="/profile/edit" variant="secondary" size="sm" fullWidth>
+          <ButtonLink href="/profile/edit" variant="secondary" size="md" fullWidth>
             Edit profile
           </ButtonLink>
         </section>
@@ -84,21 +82,23 @@ function ProfileScreen() {
         ) : (
           <>
             <section aria-label="Your record in numbers" className="grid grid-cols-3 gap-3">
-              <StatTile size="lg" tone="indigo" value={data.data.records} label="records" />
-              <StatTile size="lg" tone="teal" value={data.data.medications} label="medications" />
-              <StatTile size="lg" tone="peach" value={data.data.conditions} label="conditions" />
+              <StatTile value={data.data.records} label="records" />
+              <StatTile value={data.data.medications} label="medications" />
+              <StatTile value={data.data.conditions} label="conditions" />
             </section>
 
             <section aria-labelledby="details-label" className="flex flex-col gap-3">
-              <SectionLabel id="details-label">Personal details</SectionLabel>
-              <dl className="flex flex-col rounded-card border border-border-default bg-surface-card px-2 py-1.5">
+              <SectionHeading id="details-label">Personal details</SectionHeading>
+              <Card as="article" className="px-4.5">
+                <dl className="divide-y divide-border-row">
                 <InfoRow label="Full name" value={name} />
                 <InfoRow label="Date of birth" value={profile.date_of_birth && formatDay(profile.date_of_birth)} />
                 <InfoRow label="Sex" value={profile.sex} />
                 <InfoRow label="Address" value={profile.address || profile.city} />
                 <InfoRow label="Phone" value={profile.phone} />
                 {email && <InfoRow label="Email" value={email} />}
-              </dl>
+                </dl>
+              </Card>
             </section>
 
             <CareTeam team={data.data.team} />
@@ -113,9 +113,9 @@ function ProfileScreen() {
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
-      <dt className="shrink-0 text-label font-medium text-text-tertiary">{label}</dt>
-      <dd className={cn("min-w-0 flex-1 break-words text-right text-body-sm", value ? "text-text-primary" : "text-text-tertiary")}>
+    <div className="flex min-h-14 items-center gap-3 py-3">
+      <dt className="shrink-0 text-caption text-ink-2">{label}</dt>
+      <dd className={cn("min-w-0 flex-1 break-words text-right text-body", value ? "text-ink" : "text-ink-2")}>
         {value || "Not added"}
       </dd>
     </div>
@@ -125,33 +125,28 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
 function CareTeam({ team }: { team: CareMember[] }) {
   return (
     <section aria-labelledby="team-label" className="flex flex-col gap-3">
-      <SectionLabel id="team-label">Care team</SectionLabel>
-      {team.length === 0 && <p className="text-body-sm text-text-tertiary">No one on your care team yet.</p>}
+      <SectionHeading id="team-label">Care team</SectionHeading>
+      {team.length === 0 && <p className="text-body text-ink-2">No one on your care team yet.</p>}
       {team.length > 0 && (
-        <ul className="flex flex-col gap-2.5">
-          {team.map((m) => {
-            const tone = KIND_TONE[m.kind] ?? "indigo";
-            return (
-              <li key={m.id}>
-                <ListItemCard
-                  title={m.name}
-                  tone={tone}
-                  tag={m.role ? { label: m.role } : undefined}
-                  meta={m.organisation ?? KIND_LABEL[m.kind]}
-                  href={`/profile/care-team/${m.id}`}
-                  chevronTone={tone}
-                />
-              </li>
-            );
-          })}
-        </ul>
+        <Card as="ul">
+          {team.map((m) => (
+            <li key={m.id}>
+              <ListRow
+                title={m.name}
+                caption={[m.role, m.organisation ?? KIND_LABEL[m.kind]].filter(Boolean).join(", ")}
+                chevron
+                href={`/profile/care-team/${m.id}`}
+              />
+            </li>
+          ))}
+        </Card>
       )}
       <ButtonLink
         href="/profile/care-team/new"
-        variant="ghost"
+        variant="text"
         size="sm"
         className="w-fit"
-        iconLeft={<Plus aria-hidden="true" className="size-4" />}
+        iconLeft={<Icon name="plus" size={20} strokeWidth={2.25} />}
       >
         Add to your care team
       </ButtonLink>
@@ -159,9 +154,8 @@ function CareTeam({ team }: { team: CareMember[] }) {
   );
 }
 
-// The list clips its corners (overflow-hidden), so the focus ring sits inside each row.
 const rowClasses =
-  "flex min-h-14 w-full items-center gap-3 px-4 text-left text-body-lg text-text-primary transition-colors duration-150 hovered:bg-neutral-50 focus-visible:-outline-offset-2";
+  "flex min-h-16 w-full items-center gap-3.5 py-2 text-left text-row font-medium text-ink transition-colors duration-150 ease-out hovered:text-accent-alt";
 
 function YourData() {
   const router = useRouter();
@@ -239,60 +233,60 @@ function YourData() {
   return (
     <>
       <section aria-labelledby="data-label" className="flex flex-col gap-3">
-        <SectionLabel id="data-label">Your data</SectionLabel>
-        <ul className="divide-y divide-border-default overflow-hidden rounded-card border border-border-default bg-surface-card">
+        <SectionHeading id="data-label">Your data</SectionHeading>
+        <Card as="ul">
           {share.loaded && !isOpen(share.session) && (
             <li>
               <Link href="/share" className={rowClasses}>
-                <Share2 aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+                <Icon name="share" className="text-accent" />
                 <span className="flex-1">Share my record</span>
-                <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
+                <Icon name="chevron-right" size={18} className="text-ink-2" />
               </Link>
             </li>
           )}
           <li>
             <Link href="/access-log" className={rowClasses}>
-              <History aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+              <Icon name="history" className="text-accent" />
               <span className="flex-1">Access log</span>
-              <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
+              <Icon name="chevron-right" size={18} className="text-ink-2" />
             </Link>
           </li>
           <li>
             <button type="button" className={rowClasses} onClick={exportData} aria-busy={exporting || undefined}>
-              <Download aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+              <Icon name="download" className="text-accent" />
               <span className="flex-1">{exporting ? "Preparing your file…" : "Export my data"}</span>
             </button>
           </li>
           <li>
             <Link href="/terms" className={rowClasses}>
-              <FileText aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+              <Icon name="document" className="text-accent" />
               <span className="flex-1">Privacy and terms</span>
-              <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
+              <Icon name="chevron-right" size={18} className="text-ink-2" />
             </Link>
           </li>
           {isAnonymous && (
             <li>
               <button type="button" className={rowClasses} onClick={() => setConfirmReset(true)}>
-                <RotateCcw aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+                <Icon name="refresh" className="text-accent" />
                 <span className="flex-1">Reset demo</span>
               </button>
             </li>
           )}
           <li>
             <button type="button" className={rowClasses} onClick={() => setConfirmDelete(true)}>
-              <Trash2 aria-hidden="true" className="size-5 shrink-0 text-red-700" />
-              <span className="flex-1 text-red-700">Delete my account</span>
+              <Icon name="trash" className="text-critical" />
+              <span className="flex-1 text-critical">Delete my account</span>
             </button>
           </li>
-        </ul>
+        </Card>
         {exportError && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             Your data couldn&apos;t be exported. Check your connection and try again.
-          </HintStrip>
+          </Notice>
         )}
       </section>
 
-      <Button size="md" fullWidth onClick={signOut} loading={signingOut}>
+      <Button variant="secondary" size="lg" fullWidth onClick={signOut} loading={signingOut}>
         Sign out
       </Button>
 
@@ -305,19 +299,19 @@ function YourData() {
             <Button size="lg" fullWidth onClick={resetDemo} loading={resetting}>
               Reset demo
             </Button>
-            <Button variant="secondary" size="lg" fullWidth onClick={() => setConfirmReset(false)}>
+            <Button variant="text" onClick={() => setConfirmReset(false)}>
               Cancel
             </Button>
           </>
         }
       >
-        <p className="text-body-sm text-text-tertiary">
+        <p className="text-body text-ink-2">
           Jane&apos;s record goes back to how it started. Anything you added, and any share, is cleared.
         </p>
         {resetError && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             The demo couldn&apos;t be reset. Check your connection and try again.
-          </HintStrip>
+          </Notice>
         )}
       </BottomSheet>
       <BottomSheet
@@ -329,20 +323,20 @@ function YourData() {
             <Button size="lg" fullWidth onClick={deleteAccount} loading={deleting}>
               Delete everything
             </Button>
-            <Button variant="secondary" size="lg" fullWidth onClick={() => setConfirmDelete(false)}>
+            <Button variant="text" onClick={() => setConfirmDelete(false)}>
               Keep my account
             </Button>
           </>
         }
       >
-        <p className="text-body-sm text-text-tertiary">
+        <p className="text-body text-ink-2">
           Your whole record goes with it: profile, conditions, medications, timeline, care team and access log. This
           can&apos;t be undone. You can export your data first.
         </p>
         {deleteError && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             Your account couldn&apos;t be deleted. Check your connection and try again.
-          </HintStrip>
+          </Notice>
         )}
       </BottomSheet>
     </>

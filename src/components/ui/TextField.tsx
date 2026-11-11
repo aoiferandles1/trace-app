@@ -2,11 +2,13 @@
 
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { describedBy, Field, fieldIds, type FieldLabelStyle } from "./Field";
+import { describedBy, Field, fieldIds } from "./Field";
 
 /**
- * Single-line text input, from Figma "Input" (33:235): 50px tall, 14px radius,
- * 2px indigo border on focus, red border and a red message on error.
+ * Single-line text input (BRIEF.md section 7): white, 1px border-control,
+ * 56px tall with radius 16 on the phone (44px, radius 12 in the portal),
+ * 16px text. Focus shows the global 2px ink ring and an accent border; an
+ * error turns the border critical and adds a message.
  *
  * Always pass a visible `label`. Pass `error` as words ("Enter a date like
  * 12/03/1991"), never only a red border. Native input props (type,
@@ -14,20 +16,14 @@ import { describedBy, Field, fieldIds, type FieldLabelStyle } from "./Field";
  */
 
 export const controlBase =
-  "w-full rounded-card-tight border bg-surface-card text-body-lg text-text-primary " +
-  "placeholder:text-text-tertiary transition-colors duration-150 " +
-  "focus:outline-none focus:border-brand-indigo focus:shadow-[inset_0_0_0_1px_var(--brand-indigo)] " +
-  "data-[force~=focus]:border-brand-indigo data-[force~=focus]:shadow-[inset_0_0_0_1px_var(--brand-indigo)] data-[force~=focus]:outline-none " +
-  "disabled:cursor-not-allowed disabled:border-border-default disabled:bg-neutral-100 disabled:text-interactive-disabled-text";
+  "w-full rounded-input border bg-surface text-row text-ink placeholder:text-ink-2 " +
+  "transition-colors duration-150 ease-out focus:border-accent data-[force~=focus]:border-accent " +
+  "disabled:cursor-not-allowed disabled:bg-ground disabled:text-ink-2";
 
-export const controlBorder = (invalid: boolean) =>
-  invalid
-    ? "border-status-danger shadow-[inset_0_0_0_1px_var(--status-danger)]"
-    : "border-border-control";
+export const controlBorder = (invalid: boolean) => (invalid ? "border-critical" : "border-border-control");
 
 export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   label: ReactNode;
-  labelStyle?: FieldLabelStyle;
   labelHidden?: boolean;
   hint?: ReactNode;
   error?: ReactNode;
@@ -45,7 +41,6 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
 export function TextField({
   id: idProp,
   label,
-  labelStyle,
   labelHidden,
   hint,
   error,
@@ -64,7 +59,6 @@ export function TextField({
     <Field
       id={id}
       label={label}
-      labelStyle={labelStyle}
       labelHidden={labelHidden}
       hint={hint}
       error={error}
@@ -73,7 +67,7 @@ export function TextField({
     >
       <div className="relative">
         {leading && (
-          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-text-tertiary">
+          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-ink-2">
             {leading}
           </span>
         )}
@@ -85,7 +79,7 @@ export function TextField({
           className={cn(
             controlBase,
             controlBorder(Boolean(error)),
-            "h-[50px] px-4",
+            "h-(--h-input) px-4",
             Boolean(leading) && "pl-11",
             Boolean(trailing) && "pr-12",
             inputClassName,
@@ -93,7 +87,7 @@ export function TextField({
           {...inputProps}
         />
         {trailing && (
-          <span className="absolute inset-y-0 right-3 flex items-center text-text-tertiary">
+          <span className="absolute inset-y-0 right-3 flex items-center text-ink-2">
             {trailing}
           </span>
         )}

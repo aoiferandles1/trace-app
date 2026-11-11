@@ -176,8 +176,8 @@ export function PatientSessionGate({
 
   if (state.status === "error") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface-page px-6 text-center">
-        <p role="alert" className="text-body-lg text-text-primary">
+      <div className="flex min-h-dvh items-center justify-center bg-ground px-6 text-center">
+        <p role="alert" className="text-body-lg text-ink">
           Trace couldn&apos;t load your record. Check your connection and reload the page.
         </p>
       </div>
@@ -220,8 +220,8 @@ export function SessionReady({ children }: { children: ReactNode }) {
 /** Shown for a moment while the session is checked. */
 export function CheckingScreen() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface-page">
-      <p role="status" className="text-body-sm text-text-tertiary">
+    <div className="flex min-h-dvh items-center justify-center bg-ground">
+      <p role="status" className="text-caption text-ink-2">
         Loading&hellip;
       </p>
     </div>

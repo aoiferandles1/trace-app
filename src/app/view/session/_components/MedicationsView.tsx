@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { MedicationCard, type MedicationDetail } from "@/components/patient/MedicationCard";
-import { FilterTabs, tabPanelProps } from "@/components/ui/FilterTabs";
-import type { Tone } from "@/components/ui/Pill";
+import { SegmentedControl, tabPanelProps } from "@/components/ui/SegmentedControl";
 import type { Medication } from "../../_lib/api";
 import { formatDateOnly, medicationName, medicationSummary, patientFirstName, prescriberLine } from "../../_lib/format";
 import { useSectionRecord } from "./SessionContext";
@@ -14,12 +13,6 @@ import { EmptyLine, LoadingRecord, PageTitle } from "./RecordBits";
  * expanded card with Prescriber, Indication, Since and Instructions.
  * Medications are always shared (PLAN.md section 2).
  */
-
-const CLASS_TONE: Record<string, Tone> = {
-  anticoagulant: "indigo",
-  thyroid: "teal",
-  bronchodilator: "peach",
-};
 
 function details(m: Medication, expired: boolean): MedicationDetail[] {
   const since = m.started_on ? m.started_on.slice(0, 4) : null;
@@ -45,17 +38,19 @@ export function MedicationsView() {
   return (
     <>
       <PageTitle title="Medications" meta={`Current and expired prescriptions from ${patientFirstName(record.patient)}'s record`} />
-      <FilterTabs
+      <SegmentedControl
+        mode="tabs"
         idBase="meds"
         label="Medication status"
         value={tab}
         onChange={setTab}
-        items={[
-          { value: "active", label: "Active", count: meds.current.length },
-          { value: "expired", label: "Expired", count: meds.expired.length },
+        className="max-w-[350px]"
+        options={[
+          { value: "active", label: `Active ${meds.current.length}` },
+          { value: "expired", label: `Expired ${meds.expired.length}` },
         ]}
       />
-      <div {...tabPanelProps("meds", tab)} className="flex flex-col gap-6 rounded-card">
+      <div {...tabPanelProps("meds", tab)} className="flex flex-col gap-3 rounded-card">
         {list.length === 0 ? (
           <EmptyLine>{tab === "active" ? "No current medications." : "No expired medications."}</EmptyLine>
         ) : (
@@ -64,7 +59,6 @@ export function MedicationsView() {
               key={m.id}
               name={medicationName(m)}
               drugClass={m.drug_class ?? undefined}
-              drugClassTone={CLASS_TONE[(m.drug_class ?? "").toLowerCase()] ?? "neutral"}
               summary={medicationSummary(m)}
               details={details(m, tab === "expired")}
               expired={tab === "expired"}

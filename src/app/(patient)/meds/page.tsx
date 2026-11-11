@@ -1,23 +1,18 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
 import { SessionReady } from "@/components/patient/PatientSession";
-import { Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { MedicationCard } from "@/components/patient/MedicationCard";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { ButtonLink } from "@/components/ui/Button";
-import { SectionLabel } from "@/components/ui/Card";
-import { FilterTabs, tabPanelProps } from "@/components/ui/FilterTabs";
-import { HintStrip } from "@/components/ui/HintStrip";
-import type { Tone } from "@/components/ui/Pill";
+import { SegmentedControl, tabPanelProps } from "@/components/ui/SegmentedControl";
+import { Notice } from "@/components/ui/Notice";
 import { addDays, dayKey, formatDay, yearOf } from "@/lib/dates";
 import { isCurrentMedication, medicationName, medicationSummary, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
 import { LoadStatus, TabScreen } from "../_components/Screens";
-
-/** Drug class tag colours in list order, as p-meds (indigo, teal, peach). */
-const CLASS_TONES: Tone[] = ["indigo", "teal", "peach"];
 
 async function loadMeds() {
   const supabase = createClient();
@@ -39,7 +34,7 @@ function MedsScreen() {
   const today = dayKey();
 
   return (
-    <TabScreen header={<ScreenHeader title="My medication" />}>
+    <TabScreen header={<PageHeader title="My medication" />}>
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : (
@@ -52,37 +47,36 @@ function MedsScreen() {
           const expiredThisYear = expired.filter((m) => m.ended_on! >= yearAgo).length;
           const list = tab === "current" ? current : expired;
           return (
-            <div className="flex flex-col gap-5 px-4 pb-8 pt-2">
-              <HintStrip tone="indigo">
+            <div className="flex flex-col gap-4 px-5 pb-8 pt-2">
+              <Notice tone="neutral">
                 {plural(current.length, "active prescription", "active prescriptions")} ·{" "}
                 {expiredThisYear} expired in the last 12 months
-              </HintStrip>
-              <FilterTabs
+              </Notice>
+              <SegmentedControl
+                mode="tabs"
                 idBase="meds"
                 label="Medication status"
-                fill
                 value={tab}
                 onChange={setTab}
-                items={[
+                options={[
                   { value: "current", label: "Current" },
                   { value: "expired", label: "Expired" },
                 ]}
               />
-              <div {...tabPanelProps("meds", tab)} className="flex flex-col gap-5 rounded-card">
-                <SectionLabel>{tab === "current" ? "Current" : "Expired"}</SectionLabel>
+              <div {...tabPanelProps("meds", tab)} className="flex flex-col gap-3 rounded-card">
+                <h2 className="sr-only">{tab === "current" ? "Current" : "Expired"}</h2>
                 {list.length === 0 && (
-                  <p className="text-body-sm text-text-tertiary">
+                  <p className="text-body text-ink-2">
                     {tab === "current" ? "No current medications." : "No expired medications."}
                   </p>
                 )}
                 {list.length > 0 && (
-                  <ul className="flex flex-col gap-5">
+                  <ul className="flex flex-col gap-3">
                     {list.map((m, i) => (
                       <li key={m.id}>
                         <MedicationCard
                           name={medicationName(m)}
                           drugClass={m.drug_class ?? undefined}
-                          drugClassTone={CLASS_TONES[i % CLASS_TONES.length]}
                           summary={medicationSummary(m) || undefined}
                           expired={tab === "expired"}
                           defaultExpanded={tab === "current" && i === 0}
@@ -90,10 +84,10 @@ function MedsScreen() {
                           footer={
                             <ButtonLink
                               href={`/meds/${m.id}/edit`}
-                              variant="ghost"
+                              variant="text"
                               size="sm"
-                              className="mt-3"
-                              iconLeft={<Pencil aria-hidden="true" className="size-4" />}
+                              className="mt-2"
+                              iconLeft={<Icon name="pencil" size={18} />}
                               aria-label={`Edit ${medicationName(m)}`}
                             >
                               Edit
@@ -106,10 +100,9 @@ function MedsScreen() {
                 )}
                 <ButtonLink
                   href="/add/medication"
-                  variant="secondary"
-                  size="lg"
-                  fullWidth
-                  iconLeft={<Plus aria-hidden="true" className="size-5" />}
+                  variant="text"
+                  className="w-fit"
+                  iconLeft={<Icon name="plus" size={20} strokeWidth={2.25} />}
                 >
                   Add a medication
                 </ButtonLink>

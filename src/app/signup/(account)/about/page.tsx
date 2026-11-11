@@ -6,7 +6,7 @@ import { PatientShell } from "@/components/layout/PatientShell";
 import { ProgressHeader } from "@/components/patient/ProgressHeader";
 import { StepIntro } from "@/components/patient/StepIntro";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { dayKey } from "@/lib/dates";
@@ -96,9 +96,9 @@ function AboutScreen() {
             onChange={(e) => setCountry(e.target.value)}
           />
           {error && (
-            <HintStrip tone="danger" live="assertive">
+            <Notice tone="critical" live="assertive">
               {error}
-            </HintStrip>
+            </Notice>
           )}
         </form>
       </div>

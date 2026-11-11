@@ -1,15 +1,14 @@
 "use client";
 
-import { Activity, ShieldCheck, UserRound } from "lucide-react";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { createClient } from "@/lib/supabase/client";
 import { demoErrorMessage, pathForStep } from "@/lib/patient/auth";
-import { cn } from "@/lib/cn";
 
 /**
  * The welcome screen at `/`: p-splash while the browser checks for a session,
@@ -75,19 +74,19 @@ export function Welcome() {
   return (
     <PatientShell>
       <div className="flex flex-1 flex-col gap-5 px-5 pb-8 pt-6">
-        <p className="text-[40px] font-bold leading-none tracking-[-0.03em] text-brand-indigo">trace</p>
-        <h1 className="text-h3 font-medium">Your health record, owned by you.</h1>
-        <p className="text-body-sm text-text-tertiary">
+        <p className="font-display text-display font-light">trace</p>
+        <h1 className="font-display text-title font-light">Your health record, owned by you.</h1>
+        <p className="text-body text-ink-2">
           Trace puts your medical history in one place and keeps you in control.
         </p>
         <ul className="flex flex-col">
-          <Feature tone="indigo" icon={<UserRound />} title="You decide who sees what">
+          <Feature icon="person" title="You decide who sees what">
             Share with any doctor, anywhere. Choose exactly what they can access.
           </Feature>
-          <Feature tone="teal" icon={<Activity />} title="Your complete history in one place">
+          <Feature icon="record" title="Your complete history in one place">
             Log visits, track medications and keep notes, all in one record.
           </Feature>
-          <Feature tone="neutral" icon={<ShieldCheck />} title="Private by design">
+          <Feature icon="shield" title="Private by design">
             Your data is yours. No advertising. No data sales. Ever.
           </Feature>
         </ul>
@@ -99,24 +98,24 @@ export function Welcome() {
             I already have an account
           </ButtonLink>
         </div>
-        <div className="flex flex-col items-center gap-2 border-t border-border-default pt-5">
-          <p className="text-center text-body-sm text-text-tertiary">Just looking? Try Trace with sample data.</p>
-          <Button variant="ghost" size="md" onClick={startDemo} loading={demoBusy}>
+        <div className="flex flex-col items-center gap-2 border-t border-border-card pt-5">
+          <p className="text-center text-caption text-ink-2">Just looking? Try Trace with sample data.</p>
+          <Button variant="text" size="md" onClick={startDemo} loading={demoBusy}>
             Try the demo
           </Button>
           {demoError && (
-            <HintStrip tone="danger" live="assertive" className="w-full">
+            <Notice tone="critical" live="assertive" className="w-full">
               {demoError}
-            </HintStrip>
+            </Notice>
           )}
         </div>
-        <p className="mt-auto text-center text-body-tiny text-text-tertiary">
+        <p className="mt-auto text-center text-caption text-ink-2">
           Trace is a portfolio project by Aoife Randles, not a medical service.{" "}
-          <a href="https://aoiferandles.com/trace/" className="text-indigo-text underline underline-offset-2">
+          <a href="https://aoiferandles.com/trace/" className="text-accent underline underline-offset-2">
             Read the case study
           </a>{" "}
           ·{" "}
-          <Link href="/terms" className="text-indigo-text underline underline-offset-2">
+          <Link href="/terms" className="text-accent underline underline-offset-2">
             Terms
           </Link>
         </p>
@@ -125,44 +124,31 @@ export function Welcome() {
   );
 }
 
-const tileTone = {
-  indigo: "bg-brand-indigo-tint text-indigo-text",
-  teal: "bg-brand-teal-tint text-teal-700",
-  neutral: "bg-surface-sunken text-text-tertiary",
-} as const;
-
 function Feature({
-  tone,
   icon,
   title,
   children,
 }: {
-  tone: keyof typeof tileTone;
-  icon: ReactNode;
+  icon: IconName;
   title: string;
   children: ReactNode;
 }) {
   return (
-    <li className="flex items-start gap-3.5 py-2 [&+&]:mt-3">
-      <span
-        aria-hidden="true"
-        className={cn("flex size-10 shrink-0 items-center justify-center rounded-sm [&_svg]:size-4", tileTone[tone])}
-      >
-        {icon}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1 text-body-tiny">
-        <span className="font-bold text-text-primary">{title}</span>
-        <span className="text-text-tertiary">{children}</span>
+    <li className="flex items-start gap-3.5 py-2">
+      <Icon name={icon} className="text-accent" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-row font-medium text-ink">{title}</span>
+        <span className="text-caption text-ink-2">{children}</span>
       </span>
     </li>
   );
 }
 
-/** p-splash: the wordmark on indigo, while the session is checked. */
+/** The splash: the wordmark on ground, while the session is checked. */
 function Splash() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-indigo-surface-dark">
-      <p className="text-[64px] font-bold leading-none tracking-[-0.03em] text-white">
+    <div className="flex min-h-dvh items-center justify-center bg-ground">
+      <p className="font-display text-display-xl font-light text-ink">
         trace<span className="sr-only">. Loading</span>
       </p>
     </div>

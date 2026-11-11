@@ -2,19 +2,21 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Page frame for the clinician portal (PLAN.md section 6, "Layout rules").
+ * Page frame for the clinician portal. It sets `.desk`, so every token
+ * inside takes its desktop value (12px card radius, 40px buttons, 26px
+ * titles).
  *
- * From 1024px: header across the top, then three columns, sidebar 256px,
- * the record (fluid), session notes 330px, then the footer. Sidebar and notes
- * stick while the record scrolls.
+ * From 1024px: the rail (232px, session indigo, full height), the record
+ * (white, fluid), and the notes column (300px, ground) on the right, with
+ * the rail and notes sticky. Below 1024px everything stacks: the rail
+ * becomes a row of section tabs above the record, and the notes follow it.
  *
- * Below 1024px everything stacks: header, the sidebar as a row of section
- * tabs, the record, the notes under it, the footer. A GP may well open it on
- * a tablet.
+ * Pages without a session (the code and waiting steps) pass no sidebar or
+ * notes and get one column; `tone="session"` gives the waiting screen's
+ * session indigo.
  *
- * Pages without a session (the name and code steps) pass no sidebar or notes
- * and get a single centred column; `tone="indigo"` gives c-code's indigo
- * background.
+ * Phase 7 rebuilds the live record shell against PortalRecordE (resizable
+ * notes, header facts row); this frame already wears the new tokens.
  */
 export function PortalShell({
   header,
@@ -22,15 +24,15 @@ export function PortalShell({
   notes,
   footer,
   children,
-  tone = "page",
+  tone = "ground",
   className,
 }: {
-  header: ReactNode;
+  header?: ReactNode;
   sidebar?: ReactNode;
   notes?: ReactNode;
-  footer: ReactNode;
+  footer?: ReactNode;
   children: ReactNode;
-  tone?: "page" | "indigo";
+  tone?: "ground" | "surface" | "session";
   className?: string;
 }) {
   const hasSidebar = Boolean(sidebar);
@@ -39,14 +41,16 @@ export function PortalShell({
   return (
     <div
       className={cn(
-        "flex min-h-dvh flex-col",
-        tone === "indigo" ? "on-dark bg-indigo-surface-dark text-white" : "bg-surface-page",
+        "desk flex min-h-dvh flex-col",
+        tone === "session" && "on-session bg-session text-white",
+        tone === "ground" && "bg-ground text-ink",
+        tone === "surface" && "bg-surface text-ink",
         className,
       )}
     >
       <a
         href="#main"
-        className="sr-only-focusable absolute left-4 top-4 z-50 rounded-md bg-surface-card px-4 py-2 text-body-sm font-medium text-indigo-text shadow-lg"
+        className="sr-only-focusable absolute left-4 top-4 z-50 rounded-button border border-border-control bg-surface px-4 py-2 text-caption font-semibold text-accent"
       >
         Skip to the record
       </a>
@@ -57,14 +61,14 @@ export function PortalShell({
           hasColumns &&
             cn(
               "lg:grid",
-              hasSidebar && hasNotes && "lg:grid-cols-[256px_minmax(0,1fr)_330px]",
-              hasSidebar && !hasNotes && "lg:grid-cols-[256px_minmax(0,1fr)]",
-              !hasSidebar && hasNotes && "lg:grid-cols-[minmax(0,1fr)_330px]",
+              hasSidebar && hasNotes && "lg:grid-cols-[232px_minmax(0,1fr)_300px]",
+              hasSidebar && !hasNotes && "lg:grid-cols-[232px_minmax(0,1fr)]",
+              !hasSidebar && hasNotes && "lg:grid-cols-[minmax(0,1fr)_300px]",
             ),
         )}
       >
         {sidebar && (
-          <div className="bg-indigo-surface-dark">
+          <div className="bg-session">
             <div className="lg:sticky lg:top-0 lg:max-h-dvh lg:overflow-y-auto">{sidebar}</div>
           </div>
         )}
@@ -72,7 +76,7 @@ export function PortalShell({
           {children}
         </main>
         {notes && (
-          <div className="border-t-[3px] border-brand-indigo bg-brand-indigo-tint lg:border-l-[3px] lg:border-t-0">
+          <div className="border-t border-border-card bg-ground lg:border-l lg:border-t-0">
             <div className="lg:sticky lg:top-0 lg:max-h-dvh lg:overflow-y-auto">{notes}</div>
           </div>
         )}

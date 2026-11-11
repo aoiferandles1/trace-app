@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PatientShell } from "@/components/layout/PatientShell";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 
 export const metadata: Metadata = { title: "Terms" };
 
@@ -11,15 +11,15 @@ export const metadata: Metadata = { title: "Terms" };
  */
 export default function TermsPage() {
   return (
-    <PatientShell header={<ScreenHeader title="Terms" backHref="/" backLabel="Back to Trace" />}>
-      <div className="flex flex-col gap-6 px-5 pb-10 pt-2 text-body-sm text-text-primary">
+    <PatientShell header={<PageHeader title="Terms" backHref="/" backLabel="Back to Trace" />}>
+      <div className="flex flex-col gap-6 px-5 pb-10 pt-2 text-caption text-ink">
         <Section title="What Trace is">
           <p>
             Trace is a portfolio project by Aoife Randles. It is not a medical service and it does not give medical
             advice. Do not rely on it in an emergency.
           </p>
           <p>
-            <a href="https://aoiferandles.com/trace/" className="text-indigo-text underline underline-offset-2">
+            <a href="https://aoiferandles.com/trace/" className="text-accent underline underline-offset-2">
               Read the case study
             </a>{" "}
             to see why it was made.
@@ -56,7 +56,7 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="text-h4 font-bold">{title}</h2>
+      <h2 className="text-row font-semibold">{title}</h2>
       {children}
     </section>
   );

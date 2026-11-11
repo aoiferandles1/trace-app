@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { SwitchRow } from "@/components/ui/Switch";
 
 /** Pieces every add and edit form shares. */
@@ -22,7 +22,7 @@ export function checkErrors(errors: FieldErrors, ids: Record<string, string>): b
 export function MentalHealthSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <SwitchRow
-      surface="sunken"
+      surface="tile"
       title="About mental health"
       description="Kept out of every share unless you include mental health for that share."
       checked={checked}
@@ -47,9 +47,9 @@ export function FormFrame({
     <form id={id} onSubmit={onSubmit} noValidate className="flex flex-col gap-5 px-5 pb-8 pt-2">
       {children}
       {error && (
-        <HintStrip tone="danger" live="assertive">
+        <Notice tone="critical" live="assertive">
           {error}
-        </HintStrip>
+        </Notice>
       )}
     </form>
   );
@@ -86,7 +86,7 @@ export function DeleteWithConfirm({
   const [failed, setFailed] = useState(false);
   return (
     <>
-      <Button variant="ghost" size="md" onClick={() => setOpen(true)} className="w-fit">
+      <Button variant="destructive" size="md" onClick={() => setOpen(true)} className="w-fit">
         {label}
       </Button>
       <BottomSheet
@@ -111,17 +111,17 @@ export function DeleteWithConfirm({
             >
               {label}
             </Button>
-            <Button variant="secondary" size="lg" fullWidth onClick={() => setOpen(false)}>
+            <Button variant="text" onClick={() => setOpen(false)}>
               Cancel
             </Button>
           </>
         }
       >
-        <p className="text-body-sm text-text-tertiary">{body}</p>
+        <p className="text-body text-ink-2">{body}</p>
         {failed && (
-          <HintStrip tone="danger" live="assertive">
+          <Notice tone="critical" live="assertive">
             This couldn&apos;t be deleted. Check your connection and try again.
-          </HintStrip>
+          </Notice>
         )}
       </BottomSheet>
     </>

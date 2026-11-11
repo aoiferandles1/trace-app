@@ -1,21 +1,22 @@
 "use client";
 
-import { Building2, Pill as PillIcon, Stethoscope } from "lucide-react";
-import { Pill } from "@/components/ui/Pill";
+import { Avatar } from "@/components/ui/Card";
+import { initialsOf } from "@/lib/format";
 import type { CareTeamMember } from "../../_lib/api";
 import { patientFirstName } from "../../_lib/format";
 import { useSectionRecord } from "./SessionContext";
 import { EmptyLine, LoadingRecord, PageTitle } from "./RecordBits";
 
 /**
- * Care team (new, no Figma frame; PLAN.md section 8 item 13). Composed from
- * the overview's list cards: one white card per person, GP first, then
- * specialists, then pharmacies (the database's order).
+ * Care team (BRIEF.md 6.8, after PortalRecordE's care team): a two-column
+ * grid of people, each a 52px tinted avatar, the name with their kind, and
+ * the role and organisation. GP first, then specialists, then pharmacies
+ * (the database's order).
  */
 const KIND = {
-  gp: { label: "GP", tone: "indigo", icon: <Stethoscope /> },
-  specialist: { label: "Specialist", tone: "teal", icon: <Stethoscope /> },
-  pharmacy: { label: "Pharmacy", tone: "peach", icon: <PillIcon /> },
+  gp: { label: "GP" },
+  specialist: { label: "Specialist" },
+  pharmacy: { label: "Pharmacy" },
 } as const;
 
 export function CareTeamView() {
@@ -31,7 +32,7 @@ export function CareTeamView() {
       ) : team.length === 0 ? (
         <EmptyLine>No care team recorded.</EmptyLine>
       ) : (
-        <ul className="grid gap-4 xl:grid-cols-2">
+        <ul className="grid gap-x-12 gap-y-8 xl:grid-cols-2">
           {team.map((m) => (
             <Member key={m.id} member={m} />
           ))}
@@ -44,23 +45,16 @@ export function CareTeamView() {
 function Member({ member }: { member: CareTeamMember }) {
   const k = KIND[member.kind] ?? KIND.gp;
   return (
-    <li className="flex items-center gap-4 rounded-pill-tight border border-border-default bg-surface-card px-6 py-5 shadow-card">
-      <span
-        aria-hidden="true"
-        className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-indigo-tint text-indigo-text [&_svg]:size-5"
-      >
-        {k.icon}
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[15px] font-bold leading-snug">{member.name}</span>
+    <li className="flex items-center gap-4">
+      <Avatar initials={initialsOf(member.name)} size={52} tone="tint" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-row-lg font-medium">
+          {member.name} <span className="text-caption font-normal text-ink-2">{k.label}</span>
+        </span>
         {(member.role || member.organisation) && (
-          <span className="flex items-center gap-1.5 text-body-sm text-text-tertiary">
-            {member.organisation && <Building2 aria-hidden="true" className="size-3.5 shrink-0" />}
-            {[member.role, member.organisation].filter(Boolean).join(" · ")}
-          </span>
+          <span className="text-caption text-ink-2">{[member.role, member.organisation].filter(Boolean).join(", ")}</span>
         )}
       </span>
-      <Pill tone={k.tone}>{k.label}</Pill>
     </li>
   );
 }

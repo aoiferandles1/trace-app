@@ -1,15 +1,10 @@
 "use client";
 
-import { EyeOff } from "lucide-react";
-import { conditionTone } from "@/components/patient/ConditionCard";
 import { CriticalSafetyStrip } from "@/components/patient/CriticalSafetyStrip";
-import { dotTone } from "@/components/patient/ListItemCard";
 import { TimelineItem, TimelineList, TimelineYear } from "@/components/patient/TimelineItem";
 import { ScopeSummary } from "@/components/portal/LiveBanner";
 import { PatientSummaryCard } from "@/components/portal/PatientSummaryCard";
-import { HintStrip } from "@/components/ui/HintStrip";
-import { Pill, type Tone } from "@/components/ui/Pill";
-import { cn } from "@/lib/cn";
+import { Notice } from "@/components/ui/Notice";
 import { initialsOf } from "@/lib/format";
 import type { Condition, Entry, Medication, PortalRecord, Vitals } from "../../_lib/api";
 import {
@@ -60,9 +55,9 @@ function OverviewBody({ record }: { record: PortalRecord }) {
           { value: String(current.length), label: "Medications" },
         ]}
       />
-      <HintStrip tone="neutral" icon={<EyeOff aria-hidden="true" className="size-4 shrink-0" />}>
+      <Notice tone="locked">
         <ScopeSummary shared={shared} notShared={notShared} />
-      </HintStrip>
+      </Notice>
       <CriticalSafetyStrip variant="portal" items={criticalItems(record.critical)} />
 
       <div className="grid gap-12 xl:grid-cols-2">
@@ -89,15 +84,14 @@ function OverviewBody({ record }: { record: PortalRecord }) {
   );
 }
 
-function Row({ tone, title, meta, tag }: { tone: Tone; title: string; meta?: string; tag: { label: string; tone: Tone } }) {
+function Row({ title, meta, tag }: { title: string; meta?: string; tag: string }) {
   return (
-    <li className="flex min-h-[68px] items-center gap-4 py-3">
-      <span aria-hidden="true" className={cn("size-2.5 shrink-0 rounded-full", dotTone[tone])} />
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[15px] font-bold leading-snug tracking-[-0.005em]">{title}</span>
-        {meta && <span className="text-body-sm text-text-tertiary">{meta}</span>}
+    <li className="flex min-h-15 items-center gap-4 border-b border-border-row py-2 last:border-b-0">
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-row-lg font-medium">{title}</span>
+        {meta && <span className="text-caption text-ink-2">{meta}</span>}
       </span>
-      <Pill tone={tag.tone}>{tag.label}</Pill>
+      <span className="shrink-0 text-caption text-ink-2">{tag}</span>
     </li>
   );
 }
@@ -116,18 +110,9 @@ function ConditionsBlock({ conditions, activeCount }: { conditions: Condition[];
           <EmptyLine>No conditions recorded.</EmptyLine>
         ) : (
           <ul>
-            {conditions.map((c, i) => {
-              const tone = conditionTone(i);
-              return (
-                <Row
-                  key={c.id}
-                  tone={tone}
-                  title={c.name}
-                  meta={conditionMeta(c)}
-                  tag={{ label: c.status, tone: c.status === "resolved" ? "neutral" : tone }}
-                />
-              );
-            })}
+            {conditions.map((c) => (
+              <Row key={c.id} title={c.name} meta={conditionMeta(c)} tag={c.status} />
+            ))}
           </ul>
         )}
       </ListCard>
@@ -149,12 +134,9 @@ function MedicationsBlock({ meds }: { meds: Medication[] }) {
           <EmptyLine>No current medications.</EmptyLine>
         ) : (
           <ul>
-            {meds.map((m, i) => {
-              const tone = conditionTone(i);
-              return (
-                <Row key={m.id} tone={tone} title={medicationName(m)} meta={medicationMeta(m)} tag={{ label: "ongoing", tone }} />
-              );
-            })}
+            {meds.map((m) => (
+              <Row key={m.id} title={medicationName(m)} meta={medicationMeta(m)} tag="ongoing" />
+            ))}
           </ul>
         )}
       </ListCard>
@@ -176,19 +158,19 @@ function VitalsBlock({ vitals }: { vitals: Vitals }) {
   return (
     <section aria-labelledby="ov-vitals" className="flex flex-col gap-4">
       <SectionHeading id="ov-vitals" title="Last recorded vitals" count={formatMonthYear(vitals.recorded_on)} />
-      <ListCard className="@container py-8 sm:px-11">
-        <dl className="grid grid-cols-2 gap-6 @md:grid-cols-4">
+      <div className="@container">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5.5 @md:grid-cols-4">
           {items.map((i) => (
-            <div key={i.label} className="flex flex-col-reverse gap-2">
-              <dd className="flex items-baseline gap-1.5">
-                <span className="font-display text-[34px] font-light leading-none">{i.value}</span>
-                <span className="text-body-sm text-text-tertiary">{i.unit}</span>
+            <div key={i.label} className="flex flex-col-reverse">
+              <dt className="text-meta leading-4 text-ink-2">{i.label}</dt>
+              <dd className="flex items-baseline gap-1">
+                <span className="font-display text-numeral-lg leading-9.5 font-light text-accent">{i.value}</span>
+                <span className="text-caption text-ink-2">{i.unit}</span>
               </dd>
-              <dt className="text-body-tiny font-medium uppercase tracking-[0.02em] text-text-tertiary">{i.label}</dt>
             </div>
           ))}
         </dl>
-      </ListCard>
+      </div>
     </section>
   );
 }

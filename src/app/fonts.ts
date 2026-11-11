@@ -1,17 +1,22 @@
-import { DM_Sans, Sora } from "next/font/google";
+import { Inter, Sora } from "next/font/google";
 
-/** DM Sans: body, labels, buttons, most headings. Variable, with the optical size axis. */
-export const dmSans = DM_Sans({
+/**
+ * The only two typefaces (BRIEF.md section 2), self-hosted by next/font.
+ *
+ * Inter 400 / 500 / 600: everything except display text. Labels 500,
+ * buttons and tab labels 600.
+ */
+export const inter = Inter({
   subsets: ["latin", "latin-ext"],
-  axes: ["opsz"],
-  variable: "--font-dm-sans",
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
   display: "swap",
 });
 
-/** Sora: display headings and code digits (Figma: Display, H1, Display/SM). */
+/** Sora 300 for titles, section headings and big numerals; 400 and 600 are loaded as the brief asks. */
 export const sora = Sora({
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "700"],
+  weight: ["300", "400", "600"],
   variable: "--font-sora",
   display: "swap",
 });

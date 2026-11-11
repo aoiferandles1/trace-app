@@ -3,71 +3,97 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Buttons, from Figma "Button" (Design System 21:89).
+ * Buttons (BRIEF.md section 3.7, boards ApproveA2, SessionA2, PortalEntryB).
  *
- * - primary: filled Indigo/Accessible, white text. One per screen.
- * - secondary: white with an indigo outline. Equal-weight pairs (Allow / Deny).
- * - tertiary: white fill for indigo or photographic surfaces ("Share your record now").
- * - ghost: text-only, for inline actions like "Didn't get it? Resend code".
- * - ghostOnDark: text-only in white, on the indigo screens ("Regenerate").
+ * Variants:
+ * - primary: accent fill, white 600 text. One per screen.
+ * - secondary: 1px border-control outline on surface, accent text (the
+ *   portal's "End session" on PortalRecordE).
+ * - text: accent 600 text, no border, 44px tall ("Deny", "Add a condition").
+ * - destructive: a text button in the critical colour ("Disconnect", "Delete").
  *
- * Sizes: sm 32px (dense desktop), md 40px, lg 48px (mobile primary CTA).
- * sm and md keep their look but get a 44px tall tap target.
+ * Tones change the colours for the surface underneath:
+ * - "session" (session indigo): primary is a white fill with ink text
+ *   ("End sharing now"), text and secondary become white underlined links
+ *   ("Regenerate", "Cancel request").
+ * - "onAccent" (inside an accent card, Home's today card): white fill with
+ *   accent text ("Share record").
+ *
+ * Sizes: lg 52px (the phone's main action, a pill), md 44px phone / 40px
+ * portal, sm 36px (dense portal actions, with a 44px tap area). The radius
+ * follows the context: a pill on the phone, 12px inside `.desk`.
  *
  * Use <Button> for actions and <ButtonLink> for navigation; both share styles.
  */
 
-export type ButtonVariant = "primary" | "secondary" | "tertiary" | "ghost" | "ghostOnDark";
+export type ButtonVariant = "primary" | "secondary" | "text" | "destructive";
 export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonTone = "default" | "session" | "onAccent";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-pill font-medium whitespace-nowrap " +
-  "transition-colors duration-150 select-none disabled:cursor-not-allowed aria-disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center gap-2 font-semibold whitespace-nowrap select-none " +
+  "transition-colors duration-150 ease-out disabled:cursor-not-allowed aria-disabled:cursor-not-allowed";
 
-const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-4 text-button-sm hit-area",
-  md: "h-10 px-5 text-button-md hit-area",
-  lg: "h-12 px-6 text-button-lg",
+const boxed: Record<ButtonSize, string> = {
+  lg: "h-(--h-button-lg) rounded-button px-6 text-row",
+  md: "h-(--h-button-md) rounded-button px-5 text-label",
+  sm: "hit-area h-(--h-button-sm) rounded-button px-4 text-caption",
 };
 
-const variants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-interactive-primary text-text-on-accent hovered:bg-interactive-primary-hover pressed:bg-interactive-primary-press " +
-    "disabled:bg-interactive-disabled-bg disabled:text-interactive-disabled-text " +
-    "aria-disabled:bg-interactive-disabled-bg aria-disabled:text-interactive-disabled-text",
-  secondary:
-    "bg-surface-card text-indigo-text border border-brand-indigo hovered:bg-brand-indigo-tint pressed:bg-indigo-100 " +
-    "disabled:border-interactive-disabled-bg disabled:text-interactive-disabled-text " +
-    "aria-disabled:border-interactive-disabled-bg aria-disabled:text-interactive-disabled-text",
-  tertiary:
-    "bg-white text-indigo-700 hovered:bg-indigo-50 pressed:bg-indigo-100 " +
-    "disabled:bg-white/40 disabled:text-white aria-disabled:bg-white/40 aria-disabled:text-white",
-  ghost:
-    "bg-transparent text-indigo-text hovered:bg-brand-indigo-tint pressed:bg-indigo-100 " +
-    "disabled:text-interactive-disabled-text aria-disabled:text-interactive-disabled-text",
-  ghostOnDark:
-    "bg-transparent text-white hovered:bg-white/10 pressed:bg-white/20 disabled:text-white/60 aria-disabled:text-white/60",
+const textSizes: Record<ButtonSize, string> = {
+  lg: "h-11 text-row",
+  md: "h-11 text-label",
+  sm: "hit-area h-9 text-caption",
 };
+
+function variantClasses(variant: ButtonVariant, tone: ButtonTone): string {
+  if (variant === "primary") {
+    if (tone === "session")
+      return "bg-white text-ink hovered:bg-ground pressed:bg-border-row disabled:bg-on-session-border disabled:text-on-session-2";
+    if (tone === "onAccent")
+      return "bg-white text-accent hovered:bg-ground pressed:bg-ground pressed:text-accent-alt disabled:text-ink-2";
+    return (
+      "bg-accent text-white hovered:bg-accent-alt pressed:bg-accent-alt " +
+      "disabled:bg-border-control disabled:text-ink-2 aria-disabled:bg-border-control aria-disabled:text-ink-2"
+    );
+  }
+  if (tone === "session" && (variant === "secondary" || variant === "text"))
+    return "bg-transparent text-white underline underline-offset-2 hovered:decoration-2 disabled:text-on-session-2";
+  if (variant === "secondary")
+    return "border border-border-control bg-surface text-accent hovered:bg-ground pressed:border-accent pressed:bg-ground pressed:text-accent-alt disabled:text-ink-2";
+  if (variant === "destructive") return "bg-transparent text-critical hovered:underline disabled:text-ink-2";
+  return "bg-transparent text-accent hovered:text-accent-alt hovered:underline disabled:text-ink-2";
+}
 
 export function buttonClasses({
   variant = "primary",
   size = "md",
+  tone = "default",
   fullWidth = false,
   className,
 }: {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  tone?: ButtonTone;
   fullWidth?: boolean;
   className?: string;
 } = {}) {
-  return cn(base, sizes[size], variants[variant], fullWidth && "w-full", className);
+  const isText = variant === "text" || variant === "destructive" || (tone === "session" && variant === "secondary");
+  return cn(
+    base,
+    isText ? textSizes[size] : boxed[size],
+    variantClasses(variant, tone),
+    fullWidth && "w-full",
+    className,
+  );
 }
 
 type CommonProps = {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  tone?: ButtonTone;
   fullWidth?: boolean;
-  /** Icon before the label. Decorative: give it aria-hidden (lucide icons do this by default). */
+  /** Icon before the label (an <Icon />; decorative). */
   iconLeft?: ReactNode;
   iconRight?: ReactNode;
 };
@@ -81,6 +107,7 @@ export type ButtonProps = CommonProps &
 export function Button({
   variant,
   size,
+  tone,
   fullWidth,
   iconLeft,
   iconRight,
@@ -95,7 +122,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={buttonClasses({ variant, size, fullWidth, className })}
+      className={buttonClasses({ variant, size, tone, fullWidth, className })}
       disabled={disabled}
       aria-busy={loading || undefined}
       aria-disabled={loading || undefined}
@@ -115,6 +142,7 @@ export type ButtonLinkProps = CommonProps & ComponentProps<typeof Link>;
 export function ButtonLink({
   variant,
   size,
+  tone,
   fullWidth,
   iconLeft,
   iconRight,
@@ -123,7 +151,7 @@ export function ButtonLink({
   ...rest
 }: ButtonLinkProps) {
   return (
-    <Link className={buttonClasses({ variant, size, fullWidth, className })} {...rest}>
+    <Link className={buttonClasses({ variant, size, tone, fullWidth, className })} {...rest}>
       {iconLeft}
       {children}
       {iconRight}

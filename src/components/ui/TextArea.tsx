@@ -2,17 +2,16 @@
 
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { describedBy, Field, fieldIds, type FieldLabelStyle } from "./Field";
+import { describedBy, Field, fieldIds } from "./Field";
 import { controlBase, controlBorder } from "./TextField";
 
 /**
- * Multi-line text, from Figma "Note Field" (902:1746) and the portal's session
- * notes fields. `density="compact"` is the portal notes panel (12px radius,
- * 14px text); the default matches the patient forms.
+ * Multi-line text. `density="compact"` is the portal notes panel
+ * (PortalRecordE: 72px tall, 14px text, radius 12); the default matches the
+ * patient forms (16px text, radius 16).
  */
 export type TextAreaProps = ComponentProps<"textarea"> & {
   label: ReactNode;
-  labelStyle?: FieldLabelStyle;
   labelHidden?: boolean;
   hint?: ReactNode;
   error?: ReactNode;
@@ -25,7 +24,6 @@ export type TextAreaProps = ComponentProps<"textarea"> & {
 export function TextArea({
   id: idProp,
   label,
-  labelStyle,
   labelHidden,
   hint,
   error,
@@ -43,7 +41,6 @@ export function TextArea({
     <Field
       id={id}
       label={label}
-      labelStyle={labelStyle}
       labelHidden={labelHidden}
       hint={hint}
       error={error}
@@ -59,7 +56,7 @@ export function TextArea({
           controlBase,
           controlBorder(Boolean(error)),
           "block resize-y",
-          density === "default" ? "min-h-[130px] px-4 py-3" : "min-h-24 rounded-md px-3.5 py-3 text-body-sm",
+          density === "default" ? "min-h-32 px-4 py-3" : "min-h-18 px-3 py-2.5 text-caption",
           textareaClassName,
         )}
         {...rest}

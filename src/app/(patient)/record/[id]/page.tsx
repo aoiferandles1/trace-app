@@ -1,14 +1,13 @@
 "use client";
 
+import { Icon } from "@/components/ui/Icon";
 import { SessionReady } from "@/components/patient/PatientSession";
-import { Pencil } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { ENTRY_KINDS } from "@/components/patient/TimelineItem";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { HintStrip } from "@/components/ui/HintStrip";
-import { Pill } from "@/components/ui/Pill";
+import { Notice } from "@/components/ui/Notice";
 import { SwitchRow } from "@/components/ui/Switch";
 import { formatLongDateTime } from "@/lib/dates";
 import { isUuid, type Entry } from "@/lib/patient/types";
@@ -52,19 +51,13 @@ function EntryDetailScreen() {
       ) : !entry || !kind ? (
         <NotFound what="entry" />
       ) : (
-        <div className="flex flex-col gap-5 px-4 pb-8 pt-2">
+        <div className="flex flex-col gap-5 px-5 pb-8 pt-2">
           <Card padding="lg" className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              <Pill tone={kind.tone} size="md">
-                {kind.label}
-              </Pill>
-              {entry.occurs_at > new Date().toISOString() && (
-                <Pill tone="neutral" size="md">
-                  Upcoming
-                </Pill>
-              )}
-            </div>
-            <h2 className="text-h3 font-medium">{entry.title}</h2>
+            <p className="text-caption text-ink-2">
+              {kind.label}
+              {entry.occurs_at > new Date().toISOString() && <span className="font-semibold text-accent">, Upcoming</span>}
+            </p>
+            <h2 className="font-display text-title-sm font-light">{entry.title}</h2>
             <DetailList
               rows={[
                 { label: "When", value: formatLongDateTime(entry.occurs_at) },
@@ -75,18 +68,18 @@ function EntryDetailScreen() {
             />
           </Card>
           {entry.kind === "note" && (
-            <HintStrip tone="neutral">Personal note. Only you can see it; it is never shared with a doctor.</HintStrip>
+            <Notice tone="neutral">Personal note. Only you can see it; it is never shared with a doctor.</Notice>
           )}
           {entry.kind === "session_notes" ? (
             <MentalHealthToggle entry={entry} />
           ) : (
             entry.is_mental_health && (
-              <HintStrip tone="indigo">About mental health. Left out of a share unless you include mental health.</HintStrip>
+              <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
             )
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
             {entry.kind !== "session_notes" && (
-              <ButtonLink href={`/record/${entry.id}/edit`} variant="secondary" iconLeft={<Pencil aria-hidden="true" className="size-4" />}>
+              <ButtonLink href={`/record/${entry.id}/edit`} variant="secondary" iconLeft={<Icon name="pencil" size={16} />}>
                 Edit
               </ButtonLink>
             )}
@@ -121,7 +114,7 @@ function MentalHealthToggle({ entry }: { entry: Entry }) {
   return (
     <div className="flex flex-col gap-2">
       <SwitchRow
-        surface="sunken"
+        surface="tile"
         title="About mental health"
         description="Kept out of every share unless you include mental health for that share."
         checked={on}
@@ -136,9 +129,9 @@ function MentalHealthToggle({ entry }: { entry: Entry }) {
         }}
       />
       {failed && (
-        <HintStrip tone="danger" live="assertive">
+        <Notice tone="critical" live="assertive">
           This couldn&apos;t be saved. Check your connection and try again.
-        </HintStrip>
+        </Notice>
       )}
     </div>
   );

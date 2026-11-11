@@ -23,7 +23,7 @@ export default function SignupEmailPage() {
             router.push("/signup/verify");
           }}
         />
-        <p className="text-center text-body-sm text-text-tertiary">We&apos;ll never share your email address</p>
+        <p className="text-center text-caption text-ink-2">We&apos;ll never share your email address</p>
       </div>
     </PatientShell>
   );

@@ -1,15 +1,17 @@
 "use client";
 
-import { Clock, RefreshCw } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
-import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { PageHeader } from "@/components/patient/PageHeader";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { CodeDisplay } from "@/components/ui/CodeDisplay";
+import { Notice } from "@/components/ui/Notice";
+import { ThemeColor } from "@/components/ui/ThemeColor";
 import { siteUrl } from "@/lib/env";
 import { formatCountdown, formatCountdownSpoken } from "@/lib/format";
 import {
@@ -84,13 +86,15 @@ function CodeScreen() {
 
   return (
     <PatientShell
-      tone="indigo"
+      tone="session"
+      demo={<DemoMarker tone="session" />}
       header={
         <>
-          <DemoMarker tone="indigo" />
-          <ScreenHeader
+          <ThemeColor tone="session" />
+          <PageHeader
             title="Share your record"
-            tone="onDark"
+            size="md"
+            tone="session"
             backHref={
               session?.appointment_entry_id ? `/share?appointment=${session.appointment_entry_id}` : "/share"
             }
@@ -100,7 +104,7 @@ function CodeScreen() {
       }
     >
       {!showable ? (
-        <LoadStatus tone="indigo" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
+        <LoadStatus tone="session" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
       ) : (
         <CodeBody
           session={session}
@@ -150,84 +154,62 @@ function CodeBody({
           : null;
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-10 pt-2">
-      <div className="flex flex-col gap-3">
-        <h2 className="font-display text-[36px] font-light leading-[1.15] tracking-[-0.02em]">
-          {finished ?? "Your code is ready."}
-        </h2>
-        <p className="text-body-lg">
-          {finished
-            ? "Make a new code when your doctor is ready."
-            : `Show this to your doctor to enter it at ${portalAddress()}`}
+    <div className="flex flex-col gap-5 px-5 pb-10 pt-1">
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-heading font-light">{finished ?? "Your code is ready."}</h2>
+        <p className="text-caption text-on-session-2">
+          {finished ? "Make a new code when your doctor is ready." : `Show this to your doctor to enter it at ${portalAddress()}`}
         </p>
       </div>
 
-      <div>
-        <p className="sr-only">Your code: {session.code.split("").join(" ")}</p>
-        <div aria-hidden="true" className={finished ? "grid grid-cols-4 gap-2.5 opacity-50" : "grid grid-cols-4 gap-2.5"}>
-          {session.code.split("").map((d, i) => (
-            <span
-              key={i}
-              className="flex aspect-[82/96] items-center justify-center rounded-card-tight bg-white font-display text-[56px] font-light text-indigo-700"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-      </div>
+      <CodeDisplay code={session.code} className={finished ? "opacity-50" : undefined} />
 
-      <div className="flex min-h-[62px] items-center gap-3 rounded-md bg-indigo-accessible px-4 py-3">
-        <Clock aria-hidden="true" className="size-6 shrink-0" />
-        <p className="flex min-w-0 flex-1 flex-col text-body-tiny">
+      <div className="flex min-h-11 items-center justify-between gap-3 border-y border-on-session-border py-1">
+        <p className="text-body">
           {session.status === "requested" ? (
             <>
-              <span>Code entered</span>
-              <span className="font-bold">{clinicianName(session)} is asking</span>
+              Code entered. <span className="font-semibold">{clinicianName(session)} is asking</span>
             </>
           ) : usable ? (
             <>
-              <span>Expires in</span>
-              <span aria-hidden="true" className="font-bold">
+              Expires in{" "}
+              <b aria-hidden="true" className="font-semibold tabular-nums">
                 {formatCountdown(left)}
-              </span>
+              </b>
               <span className="sr-only">{formatCountdownSpoken(left)}</span>
             </>
           ) : (
-            <span className="font-bold">No longer works</span>
+            <span className="font-semibold">No longer works</span>
           )}
         </p>
         {finished ? null : (
-          <Button
-            variant="ghostOnDark"
-            size="sm"
-            onClick={onRegenerate}
-            loading={busy}
-          >
+          <Button variant="text" tone="session" size="md" onClick={onRegenerate} loading={busy}>
             Regenerate
           </Button>
         )}
       </div>
 
       {finished && (
-        <Button variant="tertiary" size="lg" fullWidth onClick={onRegenerate} loading={busy} iconLeft={<RefreshCw aria-hidden="true" className="size-4" />}>
+        <Button variant="primary" tone="session" size="lg" fullWidth onClick={onRegenerate} loading={busy} iconLeft={<Icon name="refresh" size={18} />}>
           Make a new code
         </Button>
       )}
 
       {error && (
-        <HintStrip tone="danger" live="assertive">
+        <Notice tone="critical" live="assertive" surface="session">
           {error}
-        </HintStrip>
+        </Notice>
       )}
 
       <SharedSummaryCard
         heading="Sharing preferences"
+        headingStyle="heading"
         rows={rows}
-        notIncluded={notIncludedList(prefsOf(session)).join(" · ")}
+        notIncluded={notIncludedList(prefsOf(session))}
       />
 
       {finished && (
-        <ButtonLink href="/home" variant="ghostOnDark" size="md" className="self-center">
+        <ButtonLink href="/home" variant="text" tone="session" size="md" className="self-center">
           Back to home
         </ButtonLink>
       )}

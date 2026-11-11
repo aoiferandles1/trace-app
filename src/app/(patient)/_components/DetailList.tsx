@@ -1,23 +1,26 @@
 import type { ReactNode } from "react";
+import { DetailBlock } from "@/components/ui/DetailBlock";
 
-/** Label and value rows for detail screens, as in the medication card's expanded panel. */
+/**
+ * Labelled blocks for detail screens (BRIEF.md 5.9): each label 13px ink-2
+ * above its value at 16px ink, as in the boards' "Seen by / Outcome" blocks.
+ */
 export function DetailList({ rows }: { rows: { label: string; value: ReactNode }[] }) {
   return (
-    <dl className="divide-y divide-border-default">
+    <div className="flex flex-col gap-4">
       {rows.map((r) => (
-        <div key={r.label} className="flex gap-4 py-4 text-body-sm">
-          <dt className="w-[110px] shrink-0 text-text-tertiary">{r.label}</dt>
-          <dd className="min-w-0 flex-1 whitespace-pre-wrap break-words text-text-primary">{r.value}</dd>
-        </div>
+        <DetailBlock key={r.label} label={r.label}>
+          {r.value}
+        </DetailBlock>
       ))}
-    </dl>
+    </div>
   );
 }
 
 /** The "not in your record" state for a detail screen. */
 export function NotFound({ what }: { what: string }) {
   return (
-    <p role="alert" className="px-5 py-10 text-center text-body-sm text-text-primary">
+    <p role="alert" className="px-5 py-10 text-center text-body text-ink-2">
       This {what} isn&apos;t in your record. It may have been deleted.
     </p>
   );

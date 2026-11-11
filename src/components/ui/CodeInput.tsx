@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { describedBy, Field, fieldIds } from "./Field";
 
 /**
- * Digit code entry, from Figma "Session Code Box" (38:273). Two uses:
+ * Digit code entry (BRIEF.md section 7, board PortalEntryB). Two uses:
  * - the portal's 4-digit share code (`length={4}`)
  * - the sign-in email code (`length={6}`; Supabase codes are 6 digits, PLAN.md section 6)
  *
@@ -14,8 +14,13 @@ import { describedBy, Field, fieldIds } from "./Field";
  * Non-digits are stripped and the value is cut to `length`, so pasting
  * "72-94" or " 7294 " works (there is deliberately no maxLength).
  *
- * States: empty, filled, active (focused, next digit), error, disabled.
- * Pass `error` as words; the boxes also turn red.
+ * Boxes are white with a 1px border-control edge and Sora 300 digits; the
+ * active box (focused, next digit) has a 2px accent border and the focus
+ * ring. Radius 18 on the phone, 12 in the portal. `size="lg"` is the
+ * portal's 112px boxes (48px digits inside `.desk`).
+ *
+ * States: empty, filled, active, error, disabled. Pass `error` as words;
+ * the boxes also turn critical.
  */
 
 export type CodeInputProps = {
@@ -36,6 +41,8 @@ export type CodeInputProps = {
   autoComplete?: string;
   /** Pin the focused look for the /kit page. */
   forceFocus?: boolean;
+  /** "lg": 112px square boxes (the portal's code entry). Default: boxes share the width, up to 80px. */
+  size?: "md" | "lg";
   className?: string;
 };
 
@@ -54,6 +61,7 @@ export function CodeInput({
   id: idProp,
   autoComplete,
   forceFocus = false,
+  size = "md",
   className,
 }: CodeInputProps) {
   const autoId = useId();
@@ -87,17 +95,17 @@ export function CodeInput({
               <div
                 key={i}
                 className={cn(
-                  "flex aspect-square max-w-20 min-w-0 flex-1 items-center justify-center rounded-card border",
-                  "font-display text-display-sm font-light text-text-primary shadow-sm transition-colors duration-100",
+                  "flex aspect-square min-w-0 flex-1 items-center justify-center rounded-code bg-surface",
+                  "font-display font-light text-ink transition-colors duration-150 ease-out",
+                  length === 6 ? "text-title" : "text-code",
+                  size === "lg" ? "max-w-28" : "max-w-20",
                   disabled
-                    ? "border-border-default bg-neutral-100 text-interactive-disabled-text"
+                    ? "border border-border-control bg-ground text-ink-2"
                     : error
-                      ? "border-2 border-status-danger bg-status-danger-tint"
+                      ? "border-2 border-critical"
                       : isActive
-                        ? "border-2 border-brand-indigo bg-brand-indigo-tint outline-2 outline-offset-2 outline-[var(--focus-ring)]"
-                        : digit
-                          ? "border-brand-indigo-tint bg-brand-indigo-tint"
-                          : "border-border-control bg-surface-sunken",
+                        ? "border-2 border-accent outline-2 outline-offset-2 outline-(--focus-ring)"
+                        : "border border-border-control",
                 )}
               >
                 {digit}

@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import Link from "next/link";
 import { useEffect } from "react";
 import { PortalHero } from "@/components/portal/AccessCard";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonClasses } from "@/components/ui/Button";
 import { portalApi } from "../../_lib/api";
 import { formatClock, formatDuration, patientFirstName, patientFullName, scopeLists } from "../../_lib/format";
 import { useNow } from "../../_lib/hooks";
@@ -54,35 +54,32 @@ export function EndView() {
         title={name ? `End session with ${name}` : "End session"}
         subtitle="Access closes immediately. Review your notes before saving."
       />
-      <dl className="mx-auto mt-8 flex max-w-[600px] flex-wrap justify-center gap-y-4 px-4 text-center">
+      <dl className="mt-8 flex flex-wrap gap-x-16 gap-y-4 px-5 sm:px-14">
         {[
           { label: "Duration", value: started ? formatDuration(now - Date.parse(started)) : "" },
           { label: "Started", value: formatClock(started) },
           { label: "Visit type", value: "GP" },
           { label: "Sections shared", value: String(sections) },
-        ].map((s, i) => (
-          <div
-            key={s.label}
-            className={i > 0 ? "flex flex-col-reverse border-l border-white/30 px-6 sm:px-8" : "flex flex-col-reverse px-6 sm:px-8"}
-          >
-            <dt className="mt-1 text-label font-medium uppercase">{s.label}</dt>
-            <dd className="font-display text-[28px] font-bold leading-none">{s.value}</dd>
+        ].map((s) => (
+          <div key={s.label} className="flex flex-col-reverse gap-0.5">
+            <dt className="text-meta leading-4 text-ink-2">{s.label}</dt>
+            <dd className="font-display text-numeral-lg font-light">{s.value}</dd>
           </div>
         ))}
       </dl>
 
       <section
         aria-labelledby="end-notes"
-        className="mx-auto mt-10 w-[calc(100%-2rem)] max-w-[880px] rounded-pill-tight bg-surface-card p-6 text-text-primary sm:w-[calc(100%-4rem)] sm:p-8"
+        className="mx-5 mt-10 max-w-[880px] rounded-card border border-border-card bg-surface p-5 text-ink sm:mx-14 sm:p-6"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-border-default pb-4">
-          <h2 id="end-notes" className="text-body-sm font-bold">
+        <div className="flex items-center justify-between gap-4 border-b border-border-card pb-4">
+          <h2 id="end-notes" className="font-display text-heading font-light">
             Session notes
           </h2>
           {status.allow_notes && (
             <Link
               href="/view/session#notes"
-              className="hit-area inline-flex h-8 items-center rounded-pill border border-brand-indigo px-4 text-button-sm font-medium text-indigo-text hovered:bg-brand-indigo-tint"
+              className={buttonClasses({ variant: "secondary", size: "sm" })}
             >
               Edit notes
             </Link>
@@ -92,40 +89,37 @@ export function EndView() {
           <>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
               {fields.map((f) => (
-                <div key={f.label} className={f.wide ? "flex flex-col gap-2 sm:col-span-2" : "flex flex-col gap-2"}>
-                  <h3 className="text-body-sm text-text-tertiary">{f.label}</h3>
-                  <p className="min-h-12 whitespace-pre-line rounded-md border border-border-default bg-brand-indigo-tint px-4 py-3 text-body-lg">
-                    {f.value.trim() || <span className="text-text-tertiary">Nothing written</span>}
+                <div key={f.label} className={f.wide ? "flex flex-col gap-0.5 sm:col-span-2" : "flex flex-col gap-0.5"}>
+                  <h3 className="text-meta leading-4 text-ink-2">{f.label}</h3>
+                  <p className="whitespace-pre-line text-body-lg">
+                    {f.value.trim() || <span className="text-ink-2">Nothing written</span>}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="mt-6 text-body-sm text-text-tertiary">
+            <p className="mt-6 text-caption text-ink-2">
               These notes will be written to {first ? `${first}'s` : "the patient's"} Trace record when you end the
               session. {first ?? "They"} can read everything you write.
             </p>
             {saveState === "error" && (
-              <p role="alert" className="mt-3 text-body-sm text-red-700">
+              <p role="alert" className="mt-3 text-caption text-critical">
                 Your latest notes could not be saved. Ending the session will try again.
               </p>
             )}
           </>
         ) : (
-          <p className="mt-6 text-body-sm text-text-tertiary">
+          <p className="mt-6 text-caption text-ink-2">
             The patient did not allow notes for this session, so nothing is added to their record.
           </p>
         )}
       </section>
 
-      <div className="mx-auto mt-8 flex w-[calc(100%-2rem)] max-w-[880px] flex-col-reverse gap-3 sm:w-[calc(100%-4rem)] sm:flex-row sm:justify-between">
-        <Link
-          href="/view/session"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-pill border border-white px-6 text-button-lg font-medium text-white hovered:bg-white/10"
-        >
-          <ChevronLeft aria-hidden="true" className="size-5" />
+      <div className="mx-5 mt-8 flex max-w-[880px] flex-col-reverse gap-3 sm:mx-14 sm:flex-row sm:justify-between">
+        <Link href="/view/session" className={buttonClasses({ variant: "secondary", size: "lg" })}>
+          <Icon name="chevron-left" size={20} />
           Back to record
         </Link>
-        <Button variant="tertiary" size="lg" onClick={() => void endSession()} loading={ending}>
+        <Button variant="primary" size="lg" onClick={() => void endSession()} loading={ending}>
           End session
         </Button>
       </div>

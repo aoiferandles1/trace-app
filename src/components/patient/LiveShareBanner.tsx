@@ -1,16 +1,16 @@
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
 /**
- * Banner across the top of patient screens while a share is live, from
- * p-home-live ("Live share banner"): Indigo/Text bar, teal live dot,
- * "Dr Hennessy can see your record", "24:12 left", chevron. Links to /session.
+ * Strip across the top of patient screens while a share is open: session
+ * indigo (sharing's colour), "Dr Hennessy can see your record", the time
+ * left, a chevron. Links to /session. No dot and no "Live" stamp (BRIEF.md
+ * section 1).
  *
  * Pass the countdown already formatted. Do not put this inside an
- * aria-live region: the time changes every second. Announce milestones
- * (5 minutes left, 1 minute left, ended) separately.
- * Render it through PatientShell's `banner` slot.
+ * aria-live region: the time changes every second. Milestones are announced
+ * separately. Render it through PatientShell's `banner` slot.
  */
 export function LiveShareBanner({
   clinicianName,
@@ -31,23 +31,19 @@ export function LiveShareBanner({
     <Link
       href={href}
       className={cn(
-        "on-dark flex min-h-11 items-center gap-2 bg-indigo-text pl-4 pr-3 text-white hovered:bg-indigo-700",
+        "on-session flex min-h-11 items-center gap-2 bg-session pl-5 pr-3 text-white hovered:bg-accent-alt",
         className,
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn("size-2 shrink-0 rounded-full", paused ? "bg-brand-peach" : "bg-teal-400")}
-      />
-      <span className="min-w-0 flex-1 text-button-sm font-medium">
+      <span className="min-w-0 flex-1 text-caption font-medium">
         {paused ? `${clinicianName}'s access is paused` : `${clinicianName} can see your record`}
       </span>
       {paused ? (
-        <span className="shrink-0 text-label font-medium">Time&apos;s up</span>
+        <span className="shrink-0 text-caption font-semibold">Time&apos;s up</span>
       ) : (
-        timeLeft && <span className="shrink-0 text-label font-medium">{timeLeft} left</span>
+        timeLeft && <span className="shrink-0 text-caption font-semibold tabular-nums">{timeLeft} left</span>
       )}
-      <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+      <Icon name="chevron-right" size={18} />
       <span className="sr-only">. View session</span>
     </Link>
   );

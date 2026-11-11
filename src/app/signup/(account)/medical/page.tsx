@@ -1,13 +1,12 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { CircleAlert } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { ProgressHeader } from "@/components/patient/ProgressHeader";
 import { StepIntro } from "@/components/patient/StepIntro";
 import { Button } from "@/components/ui/Button";
-import { HintStrip } from "@/components/ui/HintStrip";
+import { Notice } from "@/components/ui/Notice";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { BLOOD_TYPE_OPTIONS } from "@/lib/patient/options";
@@ -59,14 +58,14 @@ function MedicalScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="Medical Basics" tone="red" title="Critical safety information.">
+        <StepIntro eyebrow="Medical Basics" title="Critical safety information.">
           This is always shown to any doctor you share with. It can never be hidden. Adding it now means every doctor
           you share with sees it first.
         </StepIntro>
-        <HintStrip tone="danger" icon={<CircleAlert aria-hidden="true" className="size-5 shrink-0" />} >
+        <Notice tone="critical" icon="warning">
           This section is pinned to the top of your shared record. Every doctor who views your record will always see
           it, before anything else.
-        </HintStrip>
+        </Notice>
         <form id="medical-form" onSubmit={submit} noValidate className="flex flex-col gap-5">
           <SelectField
             label="Blood type"
@@ -89,9 +88,9 @@ function MedicalScreen() {
             placeholder="e.g. pacemaker, stent"
           />
           {error && (
-            <HintStrip tone="danger" live="assertive">
+            <Notice tone="critical" live="assertive">
               {error}
-            </HintStrip>
+            </Notice>
           )}
         </form>
       </div>
