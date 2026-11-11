@@ -44,7 +44,18 @@ Pages the brief lists that do not exist (Notifications, a separate Mental health
 
 Recorded as Aoife answers them. If a point you need is not here, pick the option that shares less with the doctor and stores less, and list it under "Decisions I made".
 
-(none yet)
+**Documents: build upload now** (Aoife, 11 Nov 2026). A real feature: upload a PDF or a photo, list, open and delete; a Documents share tile, off by default; a Documents section in the portal when shared; a Documents row in Profile.
+- Files are stored in the database, not in Supabase Storage. The portal has no Supabase identity and the app has no secret key, so a private storage bucket could not be read for a doctor without opening a second, weaker gate. Keeping the bytes behind the same functions as the rest of the record means one gate.
+- Allowed types: PDF, JPEG, PNG only, checked by the file's leading bytes as well as its declared type. At most 3 MB per file (Vercel caps a function's response at 4.5 MB). A per-account total cap, lower for demo accounts.
+- The doctor gets the list through `portal_get_record` and one file at a time through its own portal function, both only while the session is active and the Documents scope was granted. A document flagged as mental health also needs the Mental health scope.
+- When the app serves a file to a browser it sends the stored content type, `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox`, `Cache-Control: no-store`, and never renders it into the page as HTML.
+- There is no Documents board. Build the screens from the brief's section 7 and the rules in sections 2 and 3.
+
+**Insurance: mock everywhere** (Aoife, 11 Nov 2026). Every account, real or demo, can choose a provider and go through the mocked sign-in, and gets the sample plan details shown on the canvas. Manual entry stays as the fallback. The mock adapter is marked clearly in code as a stand-in for a real provider integration. Trace still never asks for or stores a provider password, mock or not.
+
+**Mental health** has no page of its own on the canvas. It stays a flag on conditions, visits, timeline events and documents, hidden from the doctor unless the Mental health scope is granted. In the portal it is one rail item: a view collecting the flagged items when granted, "Not shared" otherwise. Do not add mental health sample data that the boards do not show.
+
+**Demo data.** The demo record must match the boards exactly (medications, visits, timeline events, relatives, vitals). The old app's demo seed stays as it is until the redesign ships; the new data goes in a new seed function that the redesigned app calls.
 
 ## Rules for database work
 
