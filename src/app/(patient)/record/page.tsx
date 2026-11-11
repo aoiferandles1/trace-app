@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { CriticalSafetyStrip } from "@/components/patient/CriticalSafetyStrip";
 import { PageHeader } from "@/components/patient/PageHeader";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
@@ -35,8 +35,6 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "conditions", label: "Conditions" },
   { value: "family", label: "Family" },
 ];
-
-const TAB_IDS = "record-tabs";
 
 async function loadRecord() {
   const r = await loadSections("recent_visits", "full_timeline", "conditions", "family_history");
@@ -75,6 +73,8 @@ function RecordScreen() {
   const asked = params.get("tab");
   const [tab, setTab] = useState<Tab>(asked === "conditions" || asked === "family" ? asked : "timeline");
   const data = useLoad(loadRecord);
+  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
+  const tabIds = useId();
   const facts = safetyFacts(profile);
 
   function choose(next: Tab) {
@@ -105,13 +105,13 @@ function RecordScreen() {
         <SegmentedControl<Tab>
           label="Record sections"
           mode="tabs"
-          idBase={TAB_IDS}
+          idBase={tabIds}
           options={TABS}
           value={tab}
           onChange={choose}
         />
 
-        <div {...tabPanelProps(TAB_IDS, tab)} className="flex flex-col">
+        <div {...tabPanelProps(tabIds, tab)} className="flex flex-col">
           {data.status !== "ready" ? (
             <LoadStatus status={data.status} onRetry={data.reload} />
           ) : tab === "timeline" ? (

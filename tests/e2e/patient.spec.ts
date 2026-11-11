@@ -35,50 +35,99 @@ async function gotoScreen(page: Page, path: string, heading: string | RegExp) {
 
 test("home shows Jane's record", async ({ page }) => {
   await gotoScreen(page, "/home", /^Good (morning|afternoon|evening), Jane$/);
-  await expect(page.getByText("3 medications")).toBeAttached();
-  await expect(page.getByText("8 days until refill")).toBeVisible();
-  // The seed puts a GP visit on today, so Home is in its appointment-day state
-  // (p-apptday): the share card instead of the Upcoming card.
-  await expect(page.getByRole("link", { name: "Share your record now" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Upcoming.*INR blood test/ })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /Refill due soon.*Warfarin 5mg · 8 days left/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recently added" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Blood test, full blood count and INR/ })).toBeVisible();
-  // Out of scope (PLAN.md section 11): no Upload doc, no bell.
+  // The seed puts a GP visit on today, so Home is in its appointment-day state:
+  // the today card with "Share record" (MainA2).
+  const today = page.getByRole("region", { name: "GP visit today" });
+  await expect(today.getByText("9:30")).toBeVisible();
+  await expect(today.getByText("Dr Hennessy", { exact: true })).toBeVisible();
+  await expect(today.getByText("Rathmines Medical Centre")).toBeVisible();
+  await expect(today.getByRole("link", { name: "Share record" })).toHaveAttribute("href", /\/share\?appointment=/);
+  // Coming up: the refill (urgent, in words), then the upcoming visits, soonest first.
+  const coming = page.getByRole("list", { name: "Coming up" });
+  await expect(coming.getByRole("link")).toHaveText([/8 days.*Warfarin refill/, /INR blood test/, /Cardiology follow-up/]);
+  await expect(coming.getByRole("link", { name: /Warfarin refill/ })).toHaveAttribute("href", /\/meds\//);
+  // Recent: the three latest past entries, not today's visit (it is on the card).
+  const recent = page.getByRole("region", { name: "Recent" });
+  await expect(recent.getByRole("link")).toHaveText([
+    /Blood count and INR.*Result/,
+    /Fatigue symptoms.*Note/,
+    /Warfarin renewed.*Prescription/,
+  ]);
   await expect(page.getByText("Upload doc")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 });
 
-test("record: critical strip, conditions, timeline and details", async ({ page }) => {
+test("record: safety facts and the three tabs", async ({ page }) => {
   await gotoScreen(page, "/record", "Record");
   const strip = page.getByRole("region", { name: "Critical safety information" });
   await expect(strip.getByText("Penicillin allergy")).toBeVisible();
-  await expect(strip.getByText("A+ Blood Type")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Atrial fibrillation.*managed/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Mild asthma.*since childhood/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Personal note added.*Fatigue symptoms/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Upcoming, .*Cardiology follow-up/ })).toBeVisible();
+  await expect(strip.getByText("Blood type A+")).toBeVisible();
+
+  // Timeline: upcoming first (dates in accent, "upcoming" in words), then the past.
+  const tabs = page.getByRole("tablist", { name: "Record sections" });
+  await expect(tabs.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel", { name: "Timeline" });
+  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" })).toHaveText([
+    /Cardiology follow-up.*Visit.*upcoming/,
+    /INR blood test.*Visit.*upcoming/,
+    /GP visit.*Visit/,
+    /Blood count and INR.*Result/,
+    /Fatigue symptoms.*Note/,
+    /Warfarin renewed.*Prescription/,
+  ]);
+  await expect(panel.getByRole("link", { name: "View full timeline" })).toHaveAttribute("href", "/record/timeline");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
-  await page.getByRole("link", { name: /Atrial fibrillation/ }).click();
+  // The tabs are a tablist: arrow keys move between them.
+  await tabs.getByRole("tab", { name: "Timeline" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.getByRole("tab", { name: "Conditions" })).toBeFocused();
+  const conditions = page.getByRole("tabpanel", { name: "Conditions" });
+  await expect(conditions.getByRole("link", { name: /Atrial fibrillation.*Dr O'Mahony, since 2019.*Managed/ })).toBeVisible();
+  await expect(conditions.getByRole("link", { name: /Hypothyroidism.*Dr Walsh, since 2022.*Ongoing/ })).toBeVisible();
+  await expect(conditions.getByRole("link", { name: /Mild asthma.*Dr Hennessy, since childhood.*Managed/ })).toBeVisible();
+  await expect(conditions.getByRole("link", { name: "Add a condition" })).toBeVisible();
+  await expect(page).toHaveURL(/\/record\?tab=conditions$/);
+  await page.waitForTimeout(300); // let the tab's colour transition finish before axe measures contrast
+  await expectNoAxeViolations(page);
+
+  await page.keyboard.press("End");
+  await expect(tabs.getByRole("tab", { name: "Family" })).toHaveAttribute("aria-selected", "true");
+  const family = page.getByRole("tabpanel", { name: "Family" });
+  await expect(family.getByRole("link", { name: /Family tree.*7 relatives/ })).toHaveAttribute("href", "/record/family");
+  await expect(family.getByRole("link", { name: /^Mum Type 2 diabetes/ })).toBeVisible();
+  await expect(family.getByRole("link", { name: /^Dad Atrial fibrillation/ })).toBeVisible();
+  await expect(family.getByRole("link", { name: "Add a relative" })).toBeVisible();
+  await page.waitForTimeout(300);
+  await expectNoAxeViolations(page);
+  await expectNoSideScroll(page);
+
+  // A condition's detail goes back to the Conditions tab.
+  await tabs.getByRole("tab", { name: "Conditions" }).click();
+  await conditions.getByRole("link", { name: /Atrial fibrillation/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Condition" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Atrial fibrillation" })).toBeVisible();
   await expectNoAxeViolations(page);
-
   await page.getByRole("link", { name: "Back to Record" }).click();
-  await page.getByRole("link", { name: /Blood test, full blood count and INR/ }).click();
+  await expect(page.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
+
+  await page.getByRole("tab", { name: "Timeline" }).click();
+  await page.getByRole("link", { name: /Blood count and INR/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Result" })).toBeVisible();
   await expect(page.getByText("Mater Hospital").filter({ visible: true }).first()).toBeVisible();
   await expectNoAxeViolations(page);
 });
 
 test("meds: current and expired", async ({ page }) => {
+  // The medications screen is rebuilt in Phase 4; this checks the current one against the new demo data.
   await gotoScreen(page, "/meds", "My medication");
-  await expect(page.getByText("3 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Warfarin 5mg/ })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByText("4 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
+  const warfarin = page.getByRole("button", { name: /Warfarin 5mg/ });
+  if ((await warfarin.getAttribute("aria-expanded")) !== "true") await warfarin.click();
   await expect(page.getByText("Take at the same time each evening. Needs regular INR blood tests.")).toBeVisible();
   await expect(page.getByText("Anticoagulant")).toBeVisible();
   await expect(page.getByText("Bronchodilator")).toBeVisible();
@@ -88,8 +137,8 @@ test("meds: current and expired", async ({ page }) => {
   await page.getByRole("tab", { name: "Expired" }).click();
   await expect(page.getByRole("tab", { name: "Expired" })).toHaveAttribute("aria-selected", "true");
   await page.waitForTimeout(300); // let the tab's colour transition finish before axe measures contrast
-  await expect(page.getByRole("button", { name: /Clarithromycin 500mg/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Prednisolone 5mg/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Doxycycline 100mg/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Cetirizine 10mg/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /Warfarin/ })).toHaveCount(0);
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
@@ -140,8 +189,8 @@ test("add: only the working tiles, then a note from start to delete", async ({ p
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
 });
 
-test("add: an upcoming appointment becomes Home's Upcoming card", async ({ page }) => {
-  // On a day with no appointment (the Upcoming card gives way to the share card on one).
+test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) => {
+  // On a day with no appointment (no today card).
   const db = clientFor(file);
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
   const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
@@ -162,8 +211,11 @@ test("add: an upcoming appointment becomes Home's Upcoming card", async ({ page 
   await page.getByRole("button", { name: "Save to my record" }).click();
   await page.waitForURL(/\/record$/);
   await gotoScreen(page, "/home", /^Good/);
-  await expect(page.getByRole("link", { name: /Upcoming.*Dental check-up · Dr Byrne/ })).toBeVisible();
-  await expect(page.getByText(/10:15am · Ranelagh Dental/)).toBeVisible();
+  await expect(page.getByRole("region", { name: /today$/ })).toHaveCount(0);
+  const coming = page.getByRole("list", { name: "Coming up" });
+  await expect(coming.getByRole("link").first()).toHaveText(/Dental check-up/);
+  await coming.getByRole("link", { name: /Dental check-up/ }).click();
+  await expect(page.getByText("Ranelagh Dental").filter({ visible: true }).first()).toBeVisible();
 });
 
 test("add, edit and delete a medication", async ({ page }) => {
@@ -175,7 +227,7 @@ test("add, edit and delete a medication", async ({ page }) => {
   await page.getByRole("textbox", { name: /How often/ }).fill("once daily");
   await page.getByRole("button", { name: "Save medication" }).click();
   await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("4 active prescriptions", { exact: false })).toBeVisible();
+  await expect(page.getByText("5 active prescriptions", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: /Vitamin D 1000IU/ }).click();
   await page.getByRole("link", { name: "Edit Vitamin D 1000IU" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Edit medication" })).toBeVisible();
@@ -184,18 +236,18 @@ test("add, edit and delete a medication", async ({ page }) => {
   await page.getByLabel(/Ends or ended/).filter({ visible: true }).fill(yesterday);
   await page.getByRole("button", { name: "Save changes" }).click();
   await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("3 active prescriptions · 3 expired in the last 12 months")).toBeVisible();
+  await expect(page.getByText("4 active prescriptions · 3 expired in the last 12 months")).toBeVisible();
   await page.getByRole("tab", { name: "Expired" }).click();
   await page.getByRole("button", { name: /Vitamin D/ }).click();
   await page.getByRole("link", { name: "Edit Vitamin D 1000IU" }).click();
   await page.getByRole("button", { name: "Delete medication" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete medication" }).click();
   await page.waitForURL(/\/meds$/);
-  await expect(page.getByText("3 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
+  await expect(page.getByText("4 active prescriptions · 2 expired in the last 12 months")).toBeVisible();
 });
 
 test("add and edit a condition with the mental health switch", async ({ page }) => {
-  await gotoScreen(page, "/record", "Record");
+  await gotoScreen(page, "/record?tab=conditions", "Record");
   await page.getByRole("link", { name: "Add a condition" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Add a condition" })).toBeVisible();
   await expectNoAxeViolations(page);
@@ -203,7 +255,7 @@ test("add and edit a condition with the mental health switch", async ({ page }) 
   await page.getByRole("textbox", { name: /Year diagnosed/ }).fill("2021");
   await page.getByRole("switch", { name: "About mental health" }).click();
   await page.getByRole("button", { name: "Save condition" }).click();
-  await page.waitForURL(/\/record$/);
+  await page.waitForURL(/\/record\?tab=conditions$/);
   await page.getByRole("link", { name: /Anxiety/ }).click();
   await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
   await page.getByRole("link", { name: "Edit" }).click();
@@ -211,39 +263,63 @@ test("add and edit a condition with the mental health switch", async ({ page }) 
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("resolved", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Back to Record" }).click();
-  await expect(page.getByRole("heading", { name: "Resolved conditions" })).toBeVisible();
+  await expect(page.getByRole("tabpanel", { name: "Conditions" }).getByRole("link", { name: /Anxiety.*since 2021.*Resolved/ })).toBeVisible();
 });
 
-test("profile: details, edit with critical safety, care team, export", async ({ page }) => {
-  await gotoScreen(page, "/profile", "My profile");
+test("profile: the list, details, edit with critical safety, care team, export", async ({ page }) => {
+  await gotoScreen(page, "/profile", "Profile");
   await expect(page.getByRole("heading", { level: 2, name: "Jane Doe" })).toBeVisible();
-  await expect(page.getByText("12 March 1991")).toBeVisible();
+  const list = page.getByRole("list", { name: "Your record and settings" });
+  await expect(list.getByRole("link")).toHaveText([
+    "Your details",
+    "Share my record",
+    "Insurance",
+    "Documents",
+    "Care team",
+    "Share history",
+    "Privacy and security",
+  ]);
+  await expect(list.getByRole("button", { name: "Reset demo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.getByText("Verified")).toHaveCount(0);
   await expect(page.getByText("PPS number")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /Dr Hennessy.*GP/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Profile", exact: true })).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
+  // Privacy and security: export (every table, version 2).
+  await list.getByRole("link", { name: "Privacy and security" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy and security" })).toBeVisible();
+  await expectNoAxeViolations(page);
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export my data" }).click();
+  await page.getByRole("button", { name: /Export my data/ }).click();
   const file = await (await download).path();
   const exported = JSON.parse(readFileSync(file, "utf8"));
+  expect(exported.version).toBe(2);
   expect(exported.profile.first_name).toBe("Jane");
-  expect(exported.medications).toHaveLength(5);
+  expect(exported.medications).toHaveLength(8);
+  expect(exported.relatives).toHaveLength(7);
 
-  await page.getByRole("link", { name: "Edit profile" }).click();
+  // Your details, then edit with critical safety.
+  await gotoScreen(page, "/profile/details", "Your details");
+  await expect(page.getByText("12 March 1991")).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("link", { name: "Edit details" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Edit profile" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: /Known allergies/ }).fill("Penicillin, Latex");
   await page.getByRole("textbox", { name: /Implants or devices/ }).fill("Pacemaker");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await page.waitForURL(/\/profile$/);
+  await page.waitForURL(/\/profile\/details$/);
   await gotoScreen(page, "/record", "Record");
   const strip = page.getByRole("region", { name: "Critical safety information" });
   await expect(strip.getByText("Latex allergy")).toBeVisible();
   await expect(strip.getByText("Pacemaker")).toBeVisible();
 
-  await gotoScreen(page, "/profile", "My profile");
+  // Care team.
+  await gotoScreen(page, "/profile/care-team", "Care team");
+  await expect(page.getByRole("link", { name: /Dr Hennessy.*GP/ })).toBeVisible();
+  await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "Add to your care team" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Add to care team" })).toBeVisible();
   await expectNoAxeViolations(page);
@@ -251,37 +327,39 @@ test("profile: details, edit with critical safety, care team, export", async ({ 
   await page.getByRole("combobox", { name: "Type" }).selectOption("specialist");
   await page.getByRole("textbox", { name: /Role or specialty/ }).fill("Dentist");
   await page.getByRole("button", { name: "Save" }).click();
-  await page.waitForURL(/\/profile$/);
+  await page.waitForURL(/\/profile\/care-team$/);
   await page.getByRole("link", { name: /Dr Byrne.*Dentist/ }).click();
   await page.getByRole("textbox", { name: /Practice, clinic or shop/ }).fill("Ranelagh Dental");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await page.waitForURL(/\/profile$/);
+  await page.waitForURL(/\/profile\/care-team$/);
   await expect(page.getByRole("link", { name: /Dr Byrne.*Ranelagh Dental/ })).toBeVisible();
   await page.getByRole("link", { name: /Dr Byrne/ }).click();
   await page.getByRole("button", { name: "Remove from care team" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove from care team" }).click();
-  await page.waitForURL(/\/profile$/);
+  await page.waitForURL(/\/profile\/care-team$/);
   await expect(page.getByRole("link", { name: /Dr Byrne/ })).toHaveCount(0);
 });
 
 test("a brand-new record shows empty states", async ({ page }) => {
   await emptyRecord(clientFor(file));
   await gotoScreen(page, "/home", /^Good/);
-  await expect(page.getByRole("heading", { name: "Your record is empty" })).toBeVisible();
-  await expect(page.getByText("until refill")).toHaveCount(0);
+  await expect(page.getByText("Your record is empty.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Add to my record" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coming up" })).toHaveCount(0);
   await expectNoAxeViolations(page);
 
   await gotoScreen(page, "/record", "Record");
   await expect(page.getByText("No allergies or blood type recorded")).toBeVisible();
-  await expect(page.getByText("No ongoing conditions.")).toBeVisible();
   await expect(page.getByText(/Nothing on your timeline yet/)).toBeVisible();
   await expectNoAxeViolations(page);
+  await page.getByRole("tab", { name: "Conditions" }).click();
+  await expect(page.getByText("No conditions yet.")).toBeVisible();
 
   await gotoScreen(page, "/meds", "My medication");
   await expect(page.getByText("No current medications.")).toBeVisible();
   await expectNoAxeViolations(page);
 
-  await gotoScreen(page, "/profile", "My profile");
+  await gotoScreen(page, "/profile/care-team", "Care team");
   await expect(page.getByText("No one on your care team yet.")).toBeVisible();
   await expectNoAxeViolations(page);
 });
@@ -380,7 +458,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await page.getByRole("combobox", { name: "Blood type" }).selectOption("A+");
   await page.getByRole("textbox", { name: /Known allergies/ }).fill("Penicillin");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await page.waitForURL(/\/profile$/);
+  await page.waitForURL(/\/profile\/details$/);
 
   // Conditions.
   const conditions: [string, string, string, string, string, string][] = [
@@ -397,7 +475,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     if (year) await page.getByRole("textbox", { name: /Year diagnosed/ }).fill(year);
     if (note) await page.getByRole("textbox", { name: /Or when it started/ }).fill(note);
     await page.getByRole("button", { name: "Save condition" }).click();
-    await page.waitForURL(/\/record$/);
+    await page.waitForURL(/\/record\?tab=conditions$/);
   }
 
   // Medications: three current, two expired.
@@ -459,27 +537,29 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("textbox", { name: /Role or specialty/ }).fill(role);
     if (org) await page.getByRole("textbox", { name: /Practice, clinic or shop/ }).fill(org);
     await page.getByRole("button", { name: "Save" }).click();
-    await page.waitForURL(/\/profile$/);
+    await page.waitForURL(/\/profile\/care-team$/);
   }
 
   // Every screen shows it.
   await gotoScreen(page, "/home", /^Good .*, Jane$/);
-  await expect(page.getByText("3 medications")).toBeVisible();
-  await expect(page.getByText("8 days until refill")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Refill due soon.*Warfarin 5mg · 8 days left/i })).toBeVisible();
   // Today's hand-entered GP visit puts Home in its appointment-day state.
-  await expect(page.getByRole("heading", { name: "GP visit · Dr Hennessy" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Share your record now" })).toBeVisible();
+  const today = page.getByRole("region", { name: "GP visit today" });
+  await expect(today.getByRole("link", { name: "Share record" })).toBeVisible();
+  const coming = page.getByRole("list", { name: "Coming up" });
+  await expect(coming.getByRole("link", { name: /8 days.*Warfarin refill/ })).toBeVisible();
+  await expect(coming.getByRole("link", { name: /INR blood test/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Recent" }).getByRole("link", { name: /Blood test, full blood count and INR.*Result/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-home.png"), fullPage: true });
 
   await gotoScreen(page, "/record", "Record");
   const strip = page.getByRole("region", { name: "Critical safety information" });
   await expect(strip.getByText("Penicillin allergy")).toBeVisible();
-  await expect(strip.getByText("A+ Blood Type")).toBeVisible();
-  await expect(page.getByRole("link", { name: /Atrial fibrillation.*Dr O'Mahony · Cardiology · Dx 2019/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Mild asthma.*Dr Hennessy · GP · since childhood/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Blood test, full blood count and INR.*Mater Hospital · Ordered by Dr Hennessy/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Personal note added.*Fatigue symptoms/ })).toBeVisible();
+  await expect(strip.getByText("Blood type A+")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Blood test, full blood count and INR.*Result/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Personal note added.*Note/ })).toBeVisible();
+  await page.getByRole("tab", { name: "Conditions" }).click();
+  await expect(page.getByRole("link", { name: /Atrial fibrillation.*Dr O'Mahony, since 2019.*Managed/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Mild asthma.*Dr Hennessy, since childhood/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-record.png"), fullPage: true });
 
   await gotoScreen(page, "/meds", "My medication");
@@ -487,16 +567,18 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await expect(page.getByText("Dr O'Mahony, Mater Private · Cardiology").filter({ visible: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-meds.png"), fullPage: true });
 
-  await gotoScreen(page, "/profile", "My profile");
+  await gotoScreen(page, "/profile", "Profile");
   await expect(page.getByText("Patient · Dublin, IE")).toBeVisible();
+  await gotoScreen(page, "/profile/details", "Your details");
   await expect(page.getByText("+353 86 123 4567")).toBeVisible();
+  await gotoScreen(page, "/profile/care-team", "Care team");
   await expect(page.getByRole("link", { name: /Dr Walsh.*Endocrinology.*Specialist/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Boots, Rathmines.*Pharmacy.*Boots/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-profile.png"), fullPage: true });
 });
 
 test("delete my account signs out and removes the user", async ({ page }) => {
-  await gotoScreen(page, "/profile", "My profile");
+  await gotoScreen(page, "/profile/privacy", "Privacy and security");
   await page.getByRole("button", { name: "Delete my account" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");

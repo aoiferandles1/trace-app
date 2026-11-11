@@ -63,13 +63,15 @@ export function PageHeader({
       <header className={cn("flex h-12 shrink-0 items-center justify-between gap-3 px-5", className)}>
         {/* One heading, read as "Good afternoon, Jane". */}
         <h1 className="flex min-w-0 flex-col">
+          <span className="sr-only">{subtitle ? <>{subtitle}, {title}</> : title}</span>
           {subtitle && (
-            <span className={cn("text-caption", tone === "session" ? "text-on-session-2" : "text-ink-2")}>
+            <span aria-hidden="true" className={cn("text-caption", tone === "session" ? "text-on-session-2" : "text-ink-2")}>
               {subtitle}
-              <span className="sr-only">, </span>
             </span>
           )}
-          <span className="truncate font-display text-numeral font-light">{title}</span>
+          <span aria-hidden="true" className="truncate font-display text-numeral font-light">
+            {title}
+          </span>
         </h1>
         {action}
       </header>

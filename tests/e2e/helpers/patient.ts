@@ -75,7 +75,17 @@ export async function reseed(db: SupabaseClient<Database>) {
 export async function emptyRecord(db: SupabaseClient<Database>) {
   const { data: user } = await db.auth.getUser();
   const uid = user.user!.id;
-  for (const table of ["entries", "medications", "conditions", "care_team", "vitals"] as const) {
+  for (const table of [
+    "entries",
+    "medications",
+    "conditions",
+    "care_team",
+    "vitals",
+    "health_events",
+    "relatives",
+    "documents",
+    "insurance_connections",
+  ] as const) {
     const { error } = await db.from(table).delete().eq("user_id", uid);
     expect(error, error?.message).toBeNull();
   }

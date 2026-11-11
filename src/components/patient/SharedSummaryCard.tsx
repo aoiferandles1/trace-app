@@ -1,6 +1,3 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Icon } from "@/components/ui/Icon";
 import { SectionLabel } from "@/components/ui/Card";
 import { SharedMark } from "@/components/ui/Toggle";
 import { cn } from "@/lib/cn";
@@ -73,55 +70,4 @@ export function SharedSummaryCard({
       )}
     </div>
   );
-}
-
-/**
- * The session's status row at the top of the session screens: an optional
- * minimise link, the state in words, and the time on the right. No dot and
- * no "Live" stamp. The time is not a live region (it ticks); milestones are
- * announced elsewhere.
- */
-export function SessionStatusRow({
-  label,
-  time,
-  timeLabel,
-  minimiseHref,
-  tone = "session",
-}: {
-  label: string;
-  time?: string;
-  /** Spoken form of the time ("24 minutes 31 seconds left"). */
-  timeLabel?: string;
-  minimiseHref?: string;
-  tone?: "session" | "ground";
-}) {
-  return (
-    <div className={cn("flex min-h-11 items-center gap-2", tone === "session" ? "text-white" : "text-ink")}>
-      {minimiseHref && (
-        <Link
-          href={minimiseHref}
-          aria-label="Minimise. Back to Home"
-          className={cn(
-            "-ml-1.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full hit-area-square",
-            tone === "session" ? "hovered:bg-on-session-border" : "hovered:bg-border-row",
-          )}
-        >
-          <Icon name="chevron-down" />
-        </Link>
-      )}
-      <p className="text-caption font-semibold">{label}</p>
-      <span className="flex-1" />
-      {time !== undefined && (
-        <p className="text-caption font-semibold tabular-nums">
-          <span aria-hidden={timeLabel ? true : undefined}>{time}</span>
-          {timeLabel && <span className="sr-only">{timeLabel}</span>}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** A short centred line on session indigo, under the main action ("Access ends at 3:37pm"). */
-export function OnSessionNote({ children }: { children: ReactNode }) {
-  return <p className="text-center text-caption text-on-session-2">{children}</p>;
 }

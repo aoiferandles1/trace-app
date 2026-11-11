@@ -5,20 +5,16 @@ import { AccessRequestDetails } from "@/components/patient/AccessRequestDetails"
 import { CriticalSafetyStrip } from "@/components/patient/CriticalSafetyStrip";
 import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { MedicationCard } from "@/components/patient/MedicationCard";
-import { QuickActionTile } from "@/components/patient/QuickActionTile";
-import { SessionStatusRow, SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
+import { SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
 import { TodayCard } from "@/components/patient/TodayCard";
-import { StatTile } from "@/components/patient/StatTile";
 import { TimelineItem, TimelineList, TimelineYear } from "@/components/patient/TimelineItem";
 import { AccessCard, StepList } from "@/components/portal/AccessCard";
 import { LiveBanner } from "@/components/portal/LiveBanner";
 import { PatientSummaryCard } from "@/components/portal/PatientSummaryCard";
 import { RailDivider, RailItem, RailNotShared } from "@/components/portal/Rail";
 import { SessionNotesPanel, type SessionNotes } from "@/components/portal/SessionNotesPanel";
-import { BannerCard } from "@/components/ui/BannerCard";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
-import { Avatar } from "@/components/ui/Card";
 import { DetailBlocks } from "./DetailBlocks";
 import { KitSection, Specimen } from "./Specimen";
 
@@ -105,28 +101,9 @@ export function PatientPiecesSection() {
             action={{ href: "#patient", label: "Share record" }}
           />
         </Specimen>
-        <Specimen title="Banner cards, stat and shortcut tiles" width="phone">
-          <div className="flex flex-col gap-3">
-            <BannerCard icon="calendar" eyebrow="Upcoming" title="INR blood test" meta="Tuesday 25 Nov, 9:00am" badge="14d" badgeLabel="in 14 days" href="#patient" />
-            <BannerCard tone="urgent" icon="pill" eyebrow="Refill due soon" title="Warfarin 5mg, 8 days left" badge="8d" badgeLabel="in 8 days" href="#patient" />
-            <div className="grid grid-cols-3 gap-3">
-              <StatTile value={4} label="added this month" />
-              <StatTile value={4} label="medications" />
-              <StatTile value="8 days" label="until refill" urgent />
-            </div>
-            <ul className="grid grid-cols-2 gap-3">
-              <li>
-                <QuickActionTile href="#patient" label="Add note" icon="pencil" />
-              </li>
-              <li>
-                <QuickActionTile href="#patient" label="My record" icon="record" />
-              </li>
-            </ul>
-          </div>
-        </Specimen>
         <Specimen title="Safety strip and timeline (RecordA2)" width="phone">
           <div className="flex flex-col gap-3">
-            <CriticalSafetyStrip items={["Penicillin allergy", "Blood type A+"]} />
+            <CriticalSafetyStrip items={["Penicillin allergy", "Blood type A+"]} allergyIcon={false} />
             <TimelineYear>2026</TimelineYear>
             <TimelineList>
               <TimelineItem kind="visit" date="29 Dec" title="Cardiology follow-up" upcoming />
@@ -155,16 +132,15 @@ export function PatientPiecesSection() {
         </Specimen>
         <Specimen title="Session screens (CodeA2, SessionA2)" surface="session" width="phone">
           <div className="flex flex-col gap-5">
-            <SessionStatusRow label="Session active" time="29:58" timeLabel="29 minutes 58 seconds left" minimiseHref="#patient" />
             <SharedSummaryCard
               heading="Sharing"
               headingStyle="heading"
               rows={[
                 { label: "Safety info", detail: "Allergies, blood type" },
-                { label: "Medications", detail: "3 active" },
+                { label: "Medications", detail: "4 active" },
                 { label: "Conditions", detail: "3 items" },
               ]}
-              notIncluded={["Full timeline", "Documents", "Family history", "Insurance", "Mental health"]}
+              notIncluded={["Full timeline", "Documents", "Family history", "Insurance", "Medication notes", "Mental health"]}
             />
           </div>
         </Specimen>
