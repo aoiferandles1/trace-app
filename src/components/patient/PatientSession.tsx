@@ -141,7 +141,7 @@ export function PatientSessionGate({
 
     void check();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT") router.replace("/");
+      if (event === "SIGNED_OUT") leaveForWelcome();
     });
     return () => {
       cancelled = true;
@@ -193,6 +193,17 @@ export function PatientSessionGate({
     );
   }
   return <Ctx value={value}>{children}</Ctx>;
+}
+
+/**
+ * After signing out or deleting the account: a full page load of the welcome
+ * screen, not a client navigation. Next.js keeps visited screens in memory
+ * (hidden), and they hold the record that was on them; a full load drops
+ * every one of them, the share session state and its Realtime channel, so
+ * nothing of this person's is left in the tab for whoever uses it next.
+ */
+export function leaveForWelcome() {
+  window.location.replace("/");
 }
 
 /** Renders its children once the session is checked, and the loading state until then. */

@@ -134,6 +134,10 @@ test("add: only the working tiles, then a note from start to delete", async ({ p
   await sheet.getByRole("button", { name: "Delete entry" }).click();
   await page.waitForURL(/\/record$/);
   await expect(page.getByRole("link", { name: /Headaches after lunch/ })).toHaveCount(0);
+  // Back to the deleted entry's screen (kept in memory by Next.js): the confirm sheet must not reopen.
+  await page.goBack();
+  await expect(page.getByText(/isn't in your record/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
 });
 
 test("add: an upcoming appointment becomes Home's Upcoming card", async ({ page }) => {

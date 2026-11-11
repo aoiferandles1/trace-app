@@ -104,7 +104,9 @@ export function DeleteWithConfirm({
                 setFailed(false);
                 const ok = await onConfirm();
                 setBusy(false);
-                if (!ok) setFailed(true);
+                // Closed on success, so going back to this screen does not reopen it.
+                if (ok) setOpen(false);
+                else setFailed(true);
               }}
             >
               {label}

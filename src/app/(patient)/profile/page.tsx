@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ListItemCard } from "@/components/patient/ListItemCard";
-import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
+import { leaveForWelcome, SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { ScreenHeader } from "@/components/patient/ScreenHeader";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { StatTile } from "@/components/patient/StatTile";
@@ -214,8 +214,11 @@ function YourData() {
 
   async function signOut() {
     setSigningOut(true);
-    await createClient().auth.signOut();
-    router.replace("/");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+    // Offline, the global sign-out fails and keeps the session: forget it on this device anyway.
+    if (error) await supabase.auth.signOut({ scope: "local" });
+    leaveForWelcome();
   }
 
   async function deleteAccount() {
@@ -229,7 +232,7 @@ function YourData() {
       return;
     }
     await supabase.auth.signOut({ scope: "local" });
-    router.replace("/");
+    leaveForWelcome();
   }
 
   return (
