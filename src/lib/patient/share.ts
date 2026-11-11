@@ -1,3 +1,4 @@
+import type { IconName } from "@/components/ui/Icon";
 import type { Tables } from "@/lib/supabase/database.types";
 
 /**
@@ -28,26 +29,98 @@ export type ShareSession = Omit<Tables<"share_sessions">, "portal_token_hash" | 
   closes_at?: string | null;
 };
 
-export type SharePrefs = {
-  share_conditions: boolean;
-  share_recent_visits: boolean;
-  share_full_timeline: boolean;
-  share_care_team: boolean;
-  share_mental_health: boolean;
+/** The switches on Share confirm (supabase/README.md, the new create_share_code). */
+export type ScopeKey =
+  | "share_conditions"
+  | "share_recent_visits"
+  | "share_full_timeline"
+  | "share_care_team"
+  | "share_documents"
+  | "share_family_history"
+  | "share_insurance"
+  | "share_medication_notes"
+  | "share_mental_health";
+
+export type SharePrefs = Record<ScopeKey, boolean> & {
   allow_notes: boolean;
   duration_kind: DurationKind;
 };
 
-/** The GP visit profile (PLAN.md section 7): what every share starts from. */
+/**
+ * The GP visit profile (PLAN.md section 7, BRIEF.md section 4.5): what every
+ * share starts from. The original five on; Full timeline, Documents, Family
+ * history, Insurance, Medication notes and Mental health off.
+ */
 export const GP_VISIT_DEFAULTS: SharePrefs = {
   share_conditions: true,
   share_recent_visits: true,
   share_full_timeline: false,
   share_care_team: true,
+  share_documents: false,
+  share_family_history: false,
+  share_insurance: false,
+  share_medication_notes: false,
   share_mental_health: false,
   allow_notes: true,
   duration_kind: "30m",
 };
+
+export type ScopeDef = {
+  /** null for the two that are always shared. */
+  key: ScopeKey | null;
+  /** "safety" and "medications" for the locked ones, else the key without "share_". */
+  id: string;
+  label: string;
+  icon: IconName;
+};
+
+/**
+ * Every section of a share, in the order the screens list them (ShareA2's
+ * tiles, then the four new ones in the same style, Mental health last).
+ * "Sharing" and "Not shared" on every share screen come from this and the
+ * session's own switches, never from a fixed list.
+ */
+export const SCOPES: ScopeDef[] = [
+  { key: null, id: "safety", label: "Safety info", icon: "shield-alert" },
+  { key: null, id: "medications", label: "Medications", icon: "pill" },
+  { key: "share_conditions", id: "conditions", label: "Conditions", icon: "heart-pulse" },
+  { key: "share_recent_visits", id: "recent_visits", label: "Recent visits", icon: "calendar" },
+  { key: "share_full_timeline", id: "full_timeline", label: "Full timeline", icon: "clock" },
+  { key: "share_care_team", id: "care_team", label: "Care team", icon: "people" },
+  { key: "share_documents", id: "documents", label: "Documents", icon: "document" },
+  { key: "share_family_history", id: "family_history", label: "Family history", icon: "tree" },
+  { key: "share_insurance", id: "insurance", label: "Insurance", icon: "shield" },
+  { key: "share_medication_notes", id: "medication_notes", label: "Medication notes", icon: "pencil" },
+  { key: "share_mental_health", id: "mental_health", label: "Mental health", icon: "smile" },
+];
+
+/** The sections a share includes, in order (the two locked ones first). */
+export function sharedScopes(p: Pick<SharePrefs, ScopeKey>): ScopeDef[] {
+  return SCOPES.filter((s) => s.key === null || p[s.key]);
+}
+
+/** The sections a share leaves out, in order. */
+export function notSharedScopes(p: Pick<SharePrefs, ScopeKey>): ScopeDef[] {
+  return SCOPES.filter((s) => s.key !== null && !p[s.key]);
+}
+
+/** The arguments for the new create_share_code: every scope named, so the call reaches the new version. */
+export function createCodeArgs(p: SharePrefs, appointmentId: string | null) {
+  return {
+    share_conditions: p.share_conditions,
+    share_recent_visits: p.share_recent_visits,
+    share_full_timeline: p.share_full_timeline,
+    share_care_team: p.share_care_team,
+    share_documents: p.share_documents,
+    share_family_history: p.share_family_history,
+    share_insurance: p.share_insurance,
+    share_medication_notes: p.share_medication_notes,
+    share_mental_health: p.share_mental_health,
+    allow_notes: p.allow_notes,
+    duration_kind: p.duration_kind,
+    ...(appointmentId ? { appointment_entry_id: appointmentId } : {}),
+  };
+}
 
 export const LIVE_STATUSES: ShareStatus[] = ["code_issued", "requested", "active", "paused"];
 
@@ -81,6 +154,11 @@ export function prefsOf(s: ShareSession): SharePrefs {
     share_recent_visits: s.share_recent_visits,
     share_full_timeline: s.share_full_timeline,
     share_care_team: s.share_care_team,
+    // Sessions the old create_share_code made have none of the new switches.
+    share_documents: Boolean(s.share_documents),
+    share_family_history: Boolean(s.share_family_history),
+    share_insurance: Boolean(s.share_insurance),
+    share_medication_notes: Boolean(s.share_medication_notes),
     share_mental_health: s.share_mental_health,
     allow_notes: s.allow_notes,
     duration_kind: s.duration_kind,
@@ -118,41 +196,9 @@ export function clinicianWithRole(s: Pick<ShareSession, "clinician_name" | "clin
   return [clinicianName(s), s.clinician_role].filter(Boolean).join(" · ");
 }
 
-/** What the doctor sees, for the request sheet (p-request), in the frame's words. */
-export function sharedList(p: SharePrefs): string[] {
-  const out = ["Critical safety", "Medications"];
-  if (p.share_conditions) out.push("Active conditions");
-  if (p.share_full_timeline) out.push("Full timeline");
-  else if (p.share_recent_visits) out.push("Recent visits (last 3)");
-  if (p.share_care_team) out.push("Care team");
-  if (p.share_mental_health) out.push("Mental health history");
-  if (p.allow_notes) out.push("Can add session notes to your record");
-  return out;
-}
-
-/** What is left out, in plain words: ["full timeline", "documents", "insurance", "mental health"]. */
-export function notIncludedList(p: SharePrefs): string[] {
-  const out: string[] = [];
-  if (!p.share_conditions) out.push("conditions");
-  if (!p.share_full_timeline) out.push(p.share_recent_visits ? "full timeline" : "visits and timeline");
-  if (!p.share_care_team) out.push("care team");
-  out.push("documents", "insurance");
-  if (!p.share_mental_health) out.push("mental health");
-  return out;
-}
-
-/** "Full timeline, documents, insurance and mental health". */
-export function joinAnd(items: string[]): string {
-  if (items.length === 0) return "";
-  const text = items.length === 1 ? items[0] : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-/** The request sheet's line under the doctor. A share from Profile has no appointment. */
-export function shareContext(s: Pick<ShareSession, "appointment_entry_id">): string {
-  return s.appointment_entry_id
-    ? "Sharing your GP visit profile for this appointment."
-    : "Sharing your GP visit profile. This share is not linked to an appointment.";
+/** "Full timeline, Documents, Family history, Insurance, Mental health" (ApproveA2's "Not shared" line). */
+export function joinLabels(items: ScopeDef[]): string {
+  return items.map((s) => s.label).join(", ");
 }
 
 /** Milliseconds left on a timestamp (never below 0). */

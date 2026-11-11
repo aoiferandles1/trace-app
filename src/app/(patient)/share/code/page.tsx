@@ -16,14 +16,15 @@ import { siteUrl } from "@/lib/env";
 import { formatCountdown, formatCountdownSpoken } from "@/lib/format";
 import {
   clinicianName,
+  createCodeArgs,
   msUntil,
   normaliseSession,
-  notIncludedList,
+  notSharedScopes,
   prefsOf,
   shareErrorMessage,
   type ShareSession,
 } from "@/lib/patient/share";
-import { useShareSummary } from "@/lib/patient/useShareSummary";
+import { useShareSummary, type SummaryRow } from "@/lib/patient/useShareSummary";
 import { createClient } from "@/lib/supabase/client";
 import { useNow } from "@/lib/useNow";
 import { DemoMarker, LoadStatus } from "../../_components/Screens";
@@ -59,19 +60,19 @@ function CodeScreen() {
     if (!loaded) return;
     if (!session) router.replace("/share");
     else if (session.status === "active" || session.status === "paused") router.replace("/session");
-    else if (session.status === "ended") router.replace(`/session/ended?id=${session.id}`);
+    else if (session.status === "ended") router.replace(`/home?ended=${session.id}`);
   }, [loaded, session, router]);
 
   const prefs = session ? prefsOf(session) : null;
-  const rows = useShareSummary(prefs, profile, "items");
+  const rows = useShareSummary(prefs, profile);
 
   async function regenerate(current: ShareSession) {
     setBusy(true);
     setError(null);
-    const { data, error: rpcError } = await createClient().rpc("create_share_code", {
-      ...prefsOf(current),
-      ...(current.appointment_entry_id ? { appointment_entry_id: current.appointment_entry_id } : {}),
-    });
+    const { data, error: rpcError } = await createClient().rpc(
+      "create_share_code",
+      createCodeArgs(prefsOf(current), current.appointment_entry_id),
+    );
     setBusy(false);
     if (rpcError || !data) {
       setError(shareErrorMessage(rpcError?.message));
@@ -98,7 +99,7 @@ function CodeScreen() {
             backHref={
               session?.appointment_entry_id ? `/share?appointment=${session.appointment_entry_id}` : "/share"
             }
-            backLabel="Back to Confirm preferences"
+            backLabel="Back to Share confirm"
           />
         </>
       }
@@ -128,7 +129,7 @@ function CodeBody({
   onExpire,
 }: {
   session: ShareSession;
-  rows: { label: string; detail: string }[] | null;
+  rows: SummaryRow[] | null;
   busy: boolean;
   error: string | null;
   onRegenerate: () => void;
@@ -154,39 +155,43 @@ function CodeBody({
           : null;
 
   return (
-    <div className="flex flex-col gap-5 px-5 pb-10 pt-1">
-      <div className="flex flex-col gap-1">
-        <h2 className="font-display text-heading font-light">{finished ?? "Your code is ready."}</h2>
-        <p className="text-caption text-on-session-2">
-          {finished ? "Make a new code when your doctor is ready." : `Show this to your doctor to enter it at ${portalAddress()}`}
-        </p>
-      </div>
-
-      <CodeDisplay code={session.code} className={finished ? "opacity-50" : undefined} />
-
-      <div className="flex min-h-11 items-center justify-between gap-3 border-y border-on-session-border py-1">
-        <p className="text-body">
-          {session.status === "requested" ? (
-            <>
-              Code entered. <span className="font-semibold">{clinicianName(session)} is asking</span>
-            </>
-          ) : usable ? (
-            <>
-              Expires in{" "}
-              <b aria-hidden="true" className="font-semibold tabular-nums">
-                {formatCountdown(left)}
-              </b>
-              <span className="sr-only">{formatCountdownSpoken(left)}</span>
-            </>
-          ) : (
-            <span className="font-semibold">No longer works</span>
-          )}
-        </p>
-        {finished ? null : (
-          <Button variant="text" tone="session" size="md" onClick={onRegenerate} loading={busy}>
-            Regenerate
-          </Button>
+    <div className="flex flex-col gap-4.5 px-5 pb-8">
+      <div className="flex flex-col gap-3.5">
+        {finished ? (
+          <div className="flex flex-col gap-1">
+            <h2 className="font-display text-heading font-light">{finished}</h2>
+            <p className="text-caption text-on-session-2">Make a new code when your doctor is ready.</p>
+          </div>
+        ) : (
+          <p className="text-caption text-on-session-2">Enter this at {portalAddress()}</p>
         )}
+
+        <CodeDisplay code={session.code} className={finished ? "opacity-50" : undefined} />
+
+        <div className="flex min-h-11 items-center justify-between gap-3 border-y border-on-session-border">
+          <p className="text-label font-normal">
+            {session.status === "requested" ? (
+              <>
+                Code entered. <span className="font-semibold">{clinicianName(session)} is asking</span>
+              </>
+            ) : usable ? (
+              <>
+                Expires in{" "}
+                <b aria-hidden="true" className="font-semibold tabular-nums">
+                  {formatCountdown(left)}
+                </b>
+                <span className="sr-only">{formatCountdownSpoken(left)}</span>
+              </>
+            ) : (
+              <span className="font-semibold">No longer works</span>
+            )}
+          </p>
+          {finished ? null : (
+            <Button variant="text" tone="session" size="md" onClick={onRegenerate} loading={busy}>
+              Regenerate
+            </Button>
+          )}
+        </div>
       </div>
 
       {finished && (
@@ -202,10 +207,10 @@ function CodeBody({
       )}
 
       <SharedSummaryCard
-        heading="Sharing preferences"
+        heading="Sharing"
         headingStyle="heading"
         rows={rows}
-        notIncluded={notIncludedList(prefsOf(session))}
+        notIncluded={notSharedScopes(prefsOf(session)).map((s) => s.label)}
       />
 
       {finished && (

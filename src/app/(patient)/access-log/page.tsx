@@ -11,7 +11,7 @@ import {
   minutesBetween,
   normaliseSession,
   prefsOf,
-  sharedList,
+  sharedScopes,
   type ShareSession,
 } from "@/lib/patient/share";
 import type { Tables } from "@/lib/supabase/database.types";
@@ -55,6 +55,12 @@ const SECTION_NAMES: Record<string, string> = {
   timeline: "the timeline",
   medications: "medications",
   care_team: "the care team",
+  recent_visits: "recent visits",
+  full_timeline: "the full timeline",
+  family_history: "family history",
+  insurance: "insurance",
+  documents: "documents",
+  mental_health: "mental health",
 };
 
 /** One line per access event, in plain words. */
@@ -82,6 +88,8 @@ function describe(e: AccessEvent, s: ShareSession): string {
       return "Time ran out, access paused";
     case "extended":
       return `You added ${String(d.minutes)} minutes`;
+    case "document_viewed":
+      return "Opened a document";
     case "notes_saved":
       return "Session notes added to your record";
     case "ended":
@@ -96,7 +104,7 @@ function describe(e: AccessEvent, s: ShareSession): string {
 }
 
 /**
- * Access log (no Figma frame; PLAN.md section 8, item 7): every share,
+ * Share history (the access log; no board, PLAN.md section 8, item 7): every share,
  * newest first, with who asked, when, how long they had access, what was
  * shared, and the events inside it (from access_events, which only the
  * database writes).
@@ -158,7 +166,7 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
           </>
         )}
         <dt className="text-ink-2">Shared</dt>
-        <dd>{sharedList({ ...prefsOf(s), allow_notes: false }).join(", ")}</dd>
+        <dd>{sharedScopes(prefsOf(s)).map((x) => x.label).join(", ")}</dd>
         {s.notes_entry_id && (
           <>
             <dt className="text-ink-2">Notes</dt>

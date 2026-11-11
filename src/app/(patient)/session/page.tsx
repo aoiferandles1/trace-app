@@ -4,9 +4,10 @@ import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
-import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
+import { SessionReady } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
-import { SessionStatusRow, SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
+import { SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
+import { IconLink } from "@/components/ui/IconButton";
 import { Avatar } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Countdown } from "@/components/ui/Countdown";
@@ -21,13 +22,13 @@ import {
   minutesBetween,
   msUntil,
   normaliseSession,
-  notIncludedList,
   prefsOf,
   shareErrorMessage,
+  sharedScopes,
   type ShareSession,
 } from "@/lib/patient/share";
-import { useShareSummary } from "@/lib/patient/useShareSummary";
 import { createClient } from "@/lib/supabase/client";
+import { useLoad } from "@/lib/useLoad";
 import { useNow } from "@/lib/useNow";
 import { DemoMarker, LoadStatus } from "../_components/Screens";
 
@@ -47,7 +48,8 @@ function SessionScreen() {
 
   useEffect(() => {
     if (!loaded) return;
-    if (session?.status === "ended") router.replace(`/session/ended?id=${session.id}`);
+    // Back to the bright app, with one line saying the share ended (BRIEF.md section 5.5).
+    if (session?.status === "ended") router.replace(`/home?ended=${session.id}`);
     else if (session?.status === "code_issued" || session?.status === "requested") router.replace("/share/code");
     else if (!session || !["active", "paused"].includes(session.status)) router.replace("/home");
   }, [loaded, session, router]);
@@ -108,64 +110,83 @@ function Active({
   onEnd: () => void;
   onExpire: () => unknown;
 }) {
-  const { profile } = usePatientSession();
   const name = clinicianName(session);
   const manual = session.duration_kind === "manual";
   const now = useNow(!manual);
   const left = msUntil(session.expires_at, now);
   const total = Math.max(1, Date.parse(session.expires_at ?? "") - Date.parse(session.approved_at ?? ""));
-  const rows = useShareSummary(prefsOf(session), profile, "diagnoses");
   const endsAt = manual ? hardEndOf(session) : session.expires_at;
+  const visit = useAppointmentTitle(session.appointment_entry_id);
 
   useEffect(() => {
     if (!manual && left === 0) onExpire();
   }, [manual, left, onExpire]);
 
   return (
-    <>
-      <div className="flex flex-1 flex-col gap-4 px-5 pb-6 pt-1">
-        {/* The time shows once, in the countdown below (SessionA2). */}
-        <SessionStatusRow label="Session active" minimiseHref="/home" />
-        <div className="flex flex-col items-center gap-2.5 text-center">
-          <Avatar initials={initialsOf(name)} size={88} tone="session" display />
-          <h1 className="font-display text-title font-light">
-            {name}
-            <br />
-            has access
-          </h1>
-          <p className="text-caption text-on-session-2">
-            {[session.clinician_practice, "GP visit"].filter(Boolean).join(", ")}
-          </p>
-        </div>
-
-        {manual ? (
-          <p className="flex items-baseline justify-between text-caption">
-            <span className="text-on-session-2">Time left</span>
-            <span className="font-semibold">Until you end it</span>
-          </p>
-        ) : (
-          <Countdown msLeft={left} msTotal={total} tone="session" label="Time left" />
-        )}
-
-        <SharedSummaryCard
-          heading={`${name} can see`}
-          rows={rows}
-          notIncluded={notIncludedList(prefsOf(session)).join(", ")}
-        />
-        {error && (
-          <Notice tone="critical" live="assertive" surface="session">
-            {error}
-          </Notice>
-        )}
+    <div className="flex flex-1 flex-col gap-4 px-5 pb-5">
+      <BackToHome />
+      <div className="flex flex-col items-center gap-2.5 text-center">
+        <Avatar initials={initialsOf(name)} size={88} tone="session" display />
+        <h1 className="font-display text-title font-light">
+          {name}
+          <br />
+          has access
+        </h1>
+        <p className="text-caption text-on-session-2">
+          {[session.clinician_practice, visit].filter(Boolean).join(", ")}
+        </p>
       </div>
-      <div className="flex flex-col items-center gap-2 px-5 pb-6 pt-3">
+
+      {manual ? (
+        <p className="flex items-baseline justify-between text-caption">
+          <span className="text-on-session-2">Time left</span>
+          <span className="font-semibold">Until you end it</span>
+        </p>
+      ) : (
+        <Countdown msLeft={left} msTotal={total} tone="session" label="Time left" />
+      )}
+
+      <SharedSummaryCard
+        heading={`${name} can see`}
+        rows={sharedScopes(prefsOf(session)).map((s) => ({ label: s.label }))}
+      />
+      {error && (
+        <Notice tone="critical" live="assertive" surface="session">
+          {error}
+        </Notice>
+      )}
+      <div className="flex-1" />
+      <div className="flex flex-col items-center gap-2">
         <Button variant="primary" tone="session" size="lg" fullWidth onClick={onEnd} loading={busy}>
           End sharing now
         </Button>
-        {endsAt && <p className="text-center text-caption text-on-session-2">Access ends automatically at {formatTime(endsAt)}</p>}
+        {endsAt && <p className="text-center text-caption text-on-session-2">Access ends at {formatTime(endsAt)}</p>}
       </div>
-    </>
+    </div>
   );
+}
+
+/**
+ * The way back to the app while a share runs: a 32px chevron in the board's
+ * 24px top gap (SessionA2 draws none; the tab bar is hidden here, so without
+ * it the only way out would be the browser's Back).
+ */
+function BackToHome() {
+  return (
+    <div className="flex h-11 items-center">
+      <IconLink href="/home" icon="chevron-down" label="Back to Home" size={32} tone="session" className="-ml-1.5" />
+    </div>
+  );
+}
+
+/** "GP visit": the title of the visit the share was started from, if any. */
+function useAppointmentTitle(id: string | null): string | null {
+  const data = useLoad(async () => {
+    if (!id) return null;
+    const { data } = await createClient().from("entries").select("title").eq("id", id).maybeSingle();
+    return data?.title ?? null;
+  }, [id]);
+  return data.status === "ready" ? data.data : null;
 }
 
 function Paused({
@@ -186,8 +207,8 @@ function Paused({
   const notes = session.allow_notes && hasNotes(session);
   return (
     <div className="flex flex-1 flex-col gap-5 px-5 pb-10 pt-1">
-      <SessionStatusRow label="Session paused" time="0:00" timeLabel="No time left" minimiseHref="/home" />
-      <div className="flex flex-col items-center gap-3 pt-6 text-center">
+      <BackToHome />
+      <div className="flex flex-col items-center gap-3 pt-2 text-center">
         <Icon name="clock" size={40} strokeWidth={1.5} />
         <h1 className="font-display text-display font-light">Time&apos;s up.</h1>
         <p className="text-body-lg text-on-session-2">

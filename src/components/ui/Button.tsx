@@ -19,7 +19,8 @@ import { cn } from "@/lib/cn";
  * - "onAccent" (inside an accent card, Home's today card): white fill with
  *   accent text ("Share record").
  *
- * Sizes: lg 52px (the phone's main action, a pill), md 44px phone / 40px
+ * Sizes: xl 56px with radius 18 (ShareA2's "Create share code"), lg 52px
+ * (the phone's main action, a pill), md 44px phone / 40px
  * portal, sm 36px (dense portal actions, with a 44px tap area). The radius
  * follows the context: a pill on the phone, 12px inside `.desk`.
  *
@@ -27,7 +28,7 @@ import { cn } from "@/lib/cn";
  */
 
 export type ButtonVariant = "primary" | "secondary" | "text" | "destructive";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "xl";
 export type ButtonTone = "default" | "session" | "onAccent";
 
 const base =
@@ -35,12 +36,15 @@ const base =
   "transition-colors duration-150 ease-out disabled:cursor-not-allowed aria-disabled:cursor-not-allowed";
 
 const boxed: Record<ButtonSize, string> = {
+  // ShareA2's "Create share code": 56px, radius 18 (the segmented control's radius).
+  xl: "h-14 rounded-control px-6 text-row",
   lg: "h-(--h-button-lg) rounded-button px-6 text-row",
   md: "h-(--h-button-md) rounded-button px-5 text-label",
   sm: "hit-area h-(--h-button-sm) rounded-button px-4 text-caption",
 };
 
 const textSizes: Record<ButtonSize, string> = {
+  xl: "h-11 text-row",
   lg: "h-11 text-row",
   md: "h-11 text-label",
   sm: "hit-area h-9 text-caption",

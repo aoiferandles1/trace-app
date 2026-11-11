@@ -7,7 +7,6 @@ import type { IconName } from "@/components/ui/Icon";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
-import { SessionStatusRow } from "@/components/patient/SharedSummaryCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { ListRow } from "@/components/ui/ListRow";
@@ -26,7 +25,7 @@ import { useLoad } from "@/lib/useLoad";
 import { DemoMarker, LoadStatus } from "../../_components/Screens";
 
 /**
- * Session ended (p-ended): who had access, for how long, and the doctor's
+ * Session ended (no board; reached from Home's "View summary" after a share ends): who had access, for how long, and the doctor's
  * notes if they wrote any. Reads the session named by `?id=` (falling back
  * to the latest one), so it still makes sense after a reload.
  */
@@ -81,8 +80,8 @@ function EndedScreen() {
       ) : !session || session.status !== "ended" ? (
         <PageState
           title="No ended session to show"
-          message="Your access log has every share you have made."
-          action={{ label: "View access log", href: "/access-log" }}
+          message="Your share history has every share you have made."
+          action={{ label: "View share history", href: "/access-log" }}
         />
       ) : (
         <EndedBody session={session} />
@@ -102,8 +101,7 @@ function EndedBody({ session }: { session: ShareSession }) {
   const minutes = minutesBetween(session.approved_at, session.ended_at);
   return (
     <div className="flex flex-col gap-6 px-5 pb-8 pt-1">
-      <SessionStatusRow label="Session ended" time="0:00" timeLabel="No time left" tone="ground" />
-      <div className="flex flex-col items-center gap-2 pt-2 text-center">
+      <div className="flex flex-col items-center gap-2 pt-6 text-center">
         <h1 className="font-display text-title font-light">Session ended</h1>
         <p className="text-body-lg text-ink-2">{endedLine(session)}</p>
       </div>
@@ -135,10 +133,10 @@ function EndedBody({ session }: { session: ShareSession }) {
         <SectionHeading id="next-label">What would you like to do?</SectionHeading>
         <Card as="ul">
           <li>
-            <Action href="/add" icon="document-plus" title="Add notes or receipts" detail="While the appointment is fresh" />
+            <Action href="/add" icon="document-plus" title="Add to your record" detail="While the appointment is fresh" />
           </li>
           <li>
-            <Action href="/access-log" icon="history" title="View access log" detail="Full session history" />
+            <Action href="/access-log" icon="history" title="View share history" detail="Every share you have made" />
           </li>
         </Card>
       </section>

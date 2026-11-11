@@ -9,19 +9,18 @@ import { createClient } from "@/lib/supabase/client";
 import {
   clinicianName,
   durationLabel,
-  joinAnd,
+  joinLabels,
   normaliseSession,
-  notIncludedList,
+  notSharedScopes,
   prefsOf,
-  shareContext,
   shareErrorMessage,
-  sharedList,
+  sharedScopes,
 } from "@/lib/patient/share";
 import { AccessRequestDetails } from "./AccessRequestDetails";
 import { useShareSession } from "./ShareSession";
 
 /**
- * The access request (p-request): a modal bottom sheet over whatever screen
+ * The access request (board ApproveA2): a modal bottom sheet over whatever screen
  * is open when a doctor types the code. It opens whenever the share session
  * is `requested` and closes by itself when that stops being true (the doctor
  * cancelled, or 5 minutes passed).
@@ -117,9 +116,8 @@ export function AccessRequestSheet() {
             practice: session.clinician_practice ?? undefined,
           }}
           duration={durationLabel(session.duration_kind)}
-          context={shareContext(session)}
-          shared={sharedList(prefs)}
-          notIncluded={joinAnd(notIncludedList(prefs))}
+          shared={[...sharedScopes(prefs).map((s) => s.label), ...(prefs.allow_notes ? ["Can add session notes"] : [])]}
+          notIncluded={joinLabels(notSharedScopes(prefs))}
         />
         <p className="text-caption text-ink-2">Name and practice are as typed. Trace does not check them.</p>
         {error && (
