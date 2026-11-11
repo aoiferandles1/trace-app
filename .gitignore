@@ -10,3 +10,6 @@ playwright-report/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Agent worktrees (local only)
+.claude/worktrees/
