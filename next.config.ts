@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
         ],
       },
+      {
+        // A patient's document, served as itself to the doctor (supabase/README.md,
+        // documents): sandboxed, so no file can run script or act as this site.
+        // These rules override the ones above for this path, so the route's own
+        // policy is repeated here with frame-ancestors.
+        source: "/api/portal/document",
+        headers: [{ key: "Content-Security-Policy", value: "sandbox; frame-ancestors 'self'" }],
+      },
     ];
   },
   partialPrefetching: true,

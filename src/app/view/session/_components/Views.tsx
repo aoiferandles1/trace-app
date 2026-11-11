@@ -118,10 +118,12 @@ function TwoPane({
       >
         {list}
       </div>
+      {/* Focusable: side by side it scrolls on its own, and keyboard users must be able to scroll it. */}
       <section
         aria-live="polite"
         aria-label="Details"
-        className="flex min-w-0 flex-1 flex-col gap-4.5 border-t border-border-row pt-6 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0"
+        tabIndex={0}
+        className="flex min-w-0 focus-visible:-outline-offset-2 flex-1 flex-col gap-4.5 border-t border-border-row pt-6 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0"
       >
         {detail}
       </section>

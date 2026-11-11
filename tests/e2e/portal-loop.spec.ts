@@ -116,6 +116,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(main.getByText("18 µg/L, low").filter({ visible: true })).toBeVisible();
   await expect(main.getByRole("img", { name: /Ferritin 18 µg\/L, low/ })).toBeVisible();
   await expect(main.getByText("Older visits are in the full timeline.").filter({ visible: true })).toBeVisible();
+  await page.waitForTimeout(250);
   await expectNoAxeViolations(page);
 
   // Medications: the step chart's values in order, prescriber, no notes (Medication notes is off).
@@ -147,6 +148,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(page.getByRole("heading", { level: 2, name: "Care team" })).toBeVisible();
   await expect(main.getByText("Dr O'Mahony").filter({ visible: true })).toBeVisible();
   await expect(main.getByText("Pharmacy, Rathmines").filter({ visible: true })).toBeVisible();
+  await page.waitForTimeout(250);
   await expectNoAxeViolations(page);
 
   // The views this share left out are dimmed rows, not links.

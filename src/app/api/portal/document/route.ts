@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       "Content-Length": String(bytes.byteLength),
       "Content-Disposition": `inline; filename="${safeName(title, type)}"`,
       "X-Content-Type-Options": "nosniff",
-      "Content-Security-Policy": "sandbox",
+      "Content-Security-Policy": "sandbox; frame-ancestors 'self'",
       "Cache-Control": "no-store",
       "Referrer-Policy": "no-referrer",
     },
