@@ -18,7 +18,10 @@ The heart of the product is one loop, shown on the case study as "One GP visit, 
 - **Scope:** the share loop plus the record. Sign up, home, record and timeline, medications, profile, adding notes, appointments and medications by hand, the full share flow on both sides, the access log, and the doctor's notes saved back to the record. Document upload, scanning and automatic reading are a later phase.
 - **Accounts:** a private account for Aoife (email code sign-in, invite-only so strangers cannot create accounts), plus a demo with a seeded Jane Doe record.
 - **Doctor side:** no doctor login. The doctor types their name and practice, then the code. The patient sees that name on the access request. In the demo it is pre-filled as Dr Hennessy, Rathmines Medical Centre.
-- **Hosting:** Vercel for the app, Supabase for the database and auth.
+- **Sharing on any day:** the appointment-day card stays as designed, and there is also a "Share my record" row in Profile that works on any day, so she can share without logging an appointment first.
+- **Personal notes are private:** entries of kind `note` are never shared with a doctor.
+- **Hosting:** Vercel for the app, Supabase for the database and auth. For the first pass, use the address Vercel gives the project. No custom domain yet.
+- **The portfolio stays as it is:** linking the live app from `/trace/` changes her case study copy, so nothing in `aoife-portfolio` changes until she supplies the words.
 
 ## 2. Sources of truth
 
@@ -39,7 +42,7 @@ These come from user research and testing, and they are the reason the project i
 - **Nothing opens until the patient taps Allow.** The code alone grants nothing. Deny sits directly under Allow with equal weight.
 - **Critical safety information is always shared and always first.** Allergies and blood type sit in a red strip above everything else, on the patient's record and in the portal. It cannot be toggled off.
 - **Medications always travel.** The mental health toggle hides diagnoses, notes and history flagged as mental health. It never hides a medication.
-- **The share card only appears on the day of an appointment.** On other days the home screen shows the upcoming visit, not a share button.
+- **The share card only appears on the day of an appointment.** On other days the home screen shows the upcoming visit, not a share button. Sharing on other days is possible, but from Profile, so home stays quiet (she tried 11 placements for this button and chose the card that stays out of the way).
 - **The patient can always see and stop access.** A timer and "End sharing now" on the session screen, and a banner on home while a session is live.
 - **The portal is read-only**, works in any browser with nothing to install, and shows only what the patient chose.
 - **The patient gets a log** of what was viewed, and the doctor's notes go back to their record.
@@ -111,8 +114,8 @@ Patient app (phone-first, designed at 390 wide):
 | `/record/[id]` | none | Entry detail. See gaps. |
 | `/meds` | `p-meds`, `p-meds-expired` | Current and Expired tabs, expandable cards. |
 | `/add`, `/add/note`, `/add/appointment`, `/add/medication` | `p-add` (tiles only) | Forms have no Figma frames. See gaps. |
-| `/profile` | `p-profile` | Details, care team, edit, sign out, export, delete. |
-| `/share` | `p-prefs` | Confirm preferences. |
+| `/profile` | `p-profile` | Details, care team, edit, "Share my record", sign out, export, delete. |
+| `/share` | `p-prefs` | Confirm preferences. Reached from the appointment-day card, or from "Share my record" in Profile on any day. |
 | `/share/code` | `p-code` | The code and its 5-minute countdown. |
 | (overlay) | `p-request` | Bottom sheet over whatever screen is open when a request arrives. |
 | `/session` | `p-active`, `p-paused` | Live session, and "Time's up". |
@@ -145,7 +148,7 @@ All tables live in `public` with row-level security on. Patient-owned tables car
 - **`entries`** (the timeline, and appointments): `kind` (`visit`, `result`, `prescription`, `note`, `letter`, `imaging`, `vaccination`, `session_notes`), `title`, `occurs_at timestamptz`, `clinician`, `place`, `body`, `is_mental_health`, `source` (`patient`, `clinician_session`), `session_id` nullable. A `visit` with `occurs_at` in the future is an upcoming appointment; one dated today drives the share card.
 - **`care_team`**: `name`, `role`, `organisation`, `kind` (`gp`, `specialist`, `pharmacy`).
 - **`vitals`**: `recorded_on`, `systolic`, `diastolic`, `heart_rate`, `weight_kg`, `spo2`. Seeded for the demo so the portal's "Last recorded vitals" matches Figma. There is no patient screen for entering vitals, so for a real account the portal hides that block when the table is empty.
-- **`share_sessions`**: one row per share attempt. `patient_id`, `status`, `code`, `code_expires_at`, the preferences chosen (`share_conditions`, `share_recent_visits`, `share_full_timeline`, `share_care_team`, `share_mental_health`, `allow_notes`), `duration_kind` (`30m`, `1h`, `all_day`, `manual`), `clinician_name`, `clinician_role`, `clinician_practice`, `portal_token_hash`, `requested_at`, `request_expires_at`, `approved_at`, `expires_at`, `ended_at`, `ended_by` (`patient`, `clinician`, `timeout`), `appointment_entry_id`, and the notes draft (`chief_complaint`, `assessment`, `plan`, `follow_up`).
+- **`share_sessions`**: one row per share attempt. `patient_id`, `status`, `code`, `code_expires_at`, the preferences chosen (`share_conditions`, `share_recent_visits`, `share_full_timeline`, `share_care_team`, `share_mental_health`, `allow_notes`), `duration_kind` (`30m`, `1h`, `all_day`, `manual`), `clinician_name`, `clinician_role`, `clinician_practice`, `portal_token_hash`, `requested_at`, `request_expires_at`, `approved_at`, `expires_at`, `ended_at`, `ended_by` (`patient`, `clinician`, `timeout`), `appointment_entry_id` (null when the share was started from Profile), and the notes draft (`chief_complaint`, `assessment`, `plan`, `follow_up`).
 - **`access_events`**: `session_id`, `patient_id`, `at`, `actor` (`patient`, `clinician`, `system`), `event`, `detail jsonb`. Events: `code_generated`, `requested`, `approved`, `denied`, `section_viewed` (with the section name), `notes_saved`, `extended`, `paused`, `ended`. This is the patient's access log. Insert-only; the patient can read their own.
 - **`portal_attempts`**: `portal_token_hash`, `ip_hash`, `at`, `ok`. For rate limiting code guesses. No policies (server only).
 - **`allowed_emails`**: `email`. The invite list. No policies (server only). Aoife's address is inserted at setup, not committed.
@@ -223,7 +226,7 @@ Guessing codes: a correct guess only produces an access request on the patient's
 
 **Home, three states.** Normal (`p-home`): an "Upcoming" card for the next visit with days to go. Appointment day (`p-apptday`): the indigo card with "Share your record now", shown when a `visit` entry falls on today's date in the browser's time zone and no session for it has ended. Live (`p-home-live`): a banner across the top and a "Sharing in progress" card, both with the time left, both leading to `/session`. The stat tiles are real counts: entries added this calendar month, current medications, days until the nearest `refill_due_on` (hide that tile when there is none). The greeting follows the local hour and the date is today's.
 
-**Share flow.** `/share` opens from the appointment-day card with the GP visit defaults: Critical safety and Medications locked on, Active conditions on, Recent visits (last 3) on, Full timeline off, Care team on, Mental health off, 30 min, Doctor can add session notes on. "Generate share code" calls `create_share_code` and moves to `/share/code`. When the doctor submits the code, the request sheet shows the name, role and practice they typed, the duration, and exactly which sections they will see, built from this session's preferences. Allow goes to `/session`; Deny returns home.
+**Share flow.** `/share` opens from the appointment-day card, or from "Share my record" in Profile on any other day, with the GP visit defaults: Critical safety and Medications locked on, Active conditions on, Recent visits (last 3) on, Full timeline off, Care team on, Mental health off, 30 min, Doctor can add session notes on. "Generate share code" calls `create_share_code` and moves to `/share/code`. When the doctor submits the code, the request sheet shows the name, role and practice they typed, the duration, and exactly which sections they will see, built from this session's preferences. Allow goes to `/session`; Deny returns home. Everything after `/share` is identical whichever way the patient came in. The only difference is wording: the request sheet says "Sharing your GP visit profile for this appointment.", which is wrong when there is no appointment, so a share started from Profile needs a stand-in line (list it in `docs/REVIEW.md`). "Share my record" is hidden while a session is already live.
 
 **Record.** Conditions and timeline entries open a detail view. Timeline grouped by year, newest first, with the dot colour and tag by kind as in Figma.
 
@@ -245,18 +248,19 @@ Patient app:
 7. Access log: sessions newest first, each with who, when, how long, what was shared, and the events inside it.
 8. Session notes view (from "Session notes · View" on the ended screen, and as a timeline entry).
 9. Sign out, Export my data (a JSON download of every row the user owns), Delete my account (confirm, then delete the auth user so everything cascades). The sign-up privacy screen promises all three, so they are part of the MVP.
-10. Empty states for a brand-new record: home, record, meds.
+10. "Share my record" on Profile: one row, styled like the other Profile rows, that opens `/share`. Do not add a share button to home, the header or the tab bar.
+11. Empty states for a brand-new record: home, record, meds.
 
 Portal:
-11. The name step: name, role, practice, before the code. Remember them in the browser for next time.
-12. Care team view.
-13. Access paused (the patient's timer ran out and they have not decided yet).
-14. Session ended by the patient. Any saved notes still go to the record.
-15. Request timed out (the patient did not answer in 5 minutes).
-16. Layout below 1024px.
+12. The name step: name, role, practice, before the code. Remember them in the browser for next time.
+13. Care team view.
+14. Access paused (the patient's timer ran out and they have not decided yet).
+15. Session ended by the patient. Any saved notes still go to the record.
+16. Request timed out (the patient did not answer in 5 minutes).
+17. Layout below 1024px.
 
 Demo:
-17. The "Try the demo" entry on the welcome screen, the `/demo` two-device page, the "Demo · sample data" marker, and "Reset demo".
+18. The "Try the demo" entry on the welcome screen, the `/demo` two-device page, the "Demo · sample data" marker, and "Reset demo".
 
 ## 9. Demo mode
 
@@ -323,7 +327,7 @@ Work in this order. Each phase ends with something that can be checked, and the 
 
 **Phase 8: Hardening.** The Playwright suite (below), the axe pass, export and delete, error and offline states, a review on real phones (iOS Safari and Android Chrome), and `docs/REVIEW.md` complete. *Done when:* everything in section 13 is true.
 
-**Phase 9: Launch.** Hand `docs/REVIEW.md` to Aoife. Custom domain if she wants one (suggestion: `trace.aoiferandles.com`, which needs a DNS record on her domain; the copy on the code screen should show whatever the real portal address is). Linking the live app from the portfolio's `/trace/` page is a change to her case study copy, so it waits for her words and her go-ahead; do not edit the portfolio repo before then.
+**Phase 9: Launch.** Hand `docs/REVIEW.md` to Aoife. Launch on the address Vercel gives the project; the code screen's "enter it at trace.health/view" line should show that real address with `/view`, read from `NEXT_PUBLIC_SITE_URL` so a custom domain later is a one-line change. Linking the live app from the portfolio's `/trace/` page is a change to her case study copy, so it waits for her words and her go-ahead; do not edit the portfolio repo before then.
 
 ### End-to-end tests (Playwright, two browser contexts: patient and doctor)
 
@@ -335,10 +339,12 @@ Work in this order. Each phase ends with something that can be checked, and the 
 6. Time's up: the portal loses the record, the patient adds 15 minutes, and the portal gets it back.
 7. A second signed-in user cannot read the first user's data by any route.
 8. Demo: two anonymous visitors get separate records.
+9. Sharing from Profile on a day with no appointment: the home screen shows no share card, "Share my record" in Profile starts the same loop, and it completes.
+10. A personal note is never returned to the portal, including with Full timeline on.
 
 ## 13. Definition of done
 
-- Aoife can sign in with her own email, build her real record, log an appointment for today, and share it with a GP's browser. Nobody else can create a real account.
+- Aoife can sign in with her own email, build her real record, and share it with a GP's browser on any day: from the home card on the day of an appointment, or from Profile otherwise. Nobody else can create a real account.
 - A visitor can run the whole loop in the demo, alone on one laptop or across a phone and a laptop.
 - A doctor's browser can never read anything outside an active, approved session, or outside what the patient switched on. This is proven by tests, not assumed.
 - Both sides see the session end within seconds of either ending it, and when the timer runs out.
@@ -354,15 +360,11 @@ In rough order of value: document upload and review (`p-upload`, `p-review`, `p-
 
 ## 15. Open questions for Aoife
 
-None of these block the build. Each has a default the builder should use until she says otherwise.
+None of these block the build. Each has a default the builder should use until she says otherwise. (Sharing on other days, personal notes, the domain and the portfolio link have been answered; see section 1.)
 
 | Question | Default |
 |---|---|
 | The email code has to be 6 digits (a Supabase limit). OK to show six boxes where Figma shows four? | Six boxes, same style. |
-| Sharing only starts from the appointment-day card. For personal use, is logging an appointment for today (two taps) an acceptable way in, or should there be a second route from Profile? | Appointment-day card only, as designed. |
-| Are personal notes ever shared with a doctor? The portal frames leave them out. | Never shared in the MVP. |
 | Out-of-scope features: hidden, or shown as "coming later"? | Hidden. |
 | Wording for the claims in section 11, and all new copy. | The stand-ins in `docs/REVIEW.md`. |
 | How long can "Time's up" wait before the session closes itself, and how long can a Manual session run? | 30 minutes, and 12 hours. |
-| Custom domain? | The Vercel URL until she chooses. |
-| When, and in what words, the portfolio links to the live app. | No change to the portfolio. |
