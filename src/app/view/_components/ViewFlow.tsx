@@ -115,19 +115,25 @@ export function ViewFlow() {
         default:
           if (!initial) go({ kind: "code" }, "code");
           // No session yet: the name step, or straight to the code if this
-          // browser remembers the doctor (and this is not the demo).
-          else if (readClinician() && !new URLSearchParams(window.location.search).has("demo")) go({ kind: "code" }, "none");
+          // browser remembers the doctor (and this is not the demo), with focus
+          // in the boxes as on the board: the page has one job.
+          else if (readClinician() && !new URLSearchParams(window.location.search).has("demo")) go({ kind: "code" }, "code");
           else go({ kind: "name" }, "none");
       }
     },
     [go, router],
   );
 
-  // First load: the status call also sets the portal cookie.
+  // First load: the status call also sets the portal cookie. Exactly one
+  // call: a second one without the cookie would mint a second token, and
+  // whichever answer lands last would replace the cookie, so a code typed
+  // meanwhile would belong to a token this browser no longer holds. (React
+  // runs effects twice in development; the ref keeps the one request.)
+  const firstStatus = useRef<Promise<PortalStatus> | null>(null);
   useEffect(() => {
     let cancelled = false;
-    portalApi
-      .status()
+    firstStatus.current ??= portalApi.status();
+    firstStatus.current
       .then((s) => {
         if (cancelled) return;
         setDemo(new URLSearchParams(window.location.search).has("demo"));

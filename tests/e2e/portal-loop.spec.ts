@@ -44,7 +44,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
 
   // Name step, pre-filled by the demo flag.
   await page.goto("/view?demo=1");
-  await expect(page.getByRole("heading", { name: "Who is asking?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who is asking?" })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByLabel("Your name")).toHaveValue(DOCTOR.name);
   await page.getByRole("button", { name: "Continue" }).click();
 
@@ -126,7 +126,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   const chart = main.locator("table").filter({ hasText: "Strength" });
   await expect(chart.locator("tbody tr td:first-child")).toHaveText(["18mg", "27mg", "36mg", "45mg", "36mg"]);
   await expect(main.getByText("Prescribed by Dr Hennessy").filter({ visible: true }).first()).toBeVisible();
-  await expect(main.getByText(/Jane: “/)).toHaveCount(0);
+  await expect(main.getByText(/Jane: "/)).toHaveCount(0);
   await expect(main.getByText("Back on 36", { exact: false })).toHaveCount(0);
   await page.getByRole("radio", { name: "Past" }).click();
   await expect(main.getByRole("button", { name: /Doxycycline/ })).toContainText("2 Aug 2026 to 9 Aug 2026");

@@ -102,17 +102,22 @@ function LoadFailed() {
 function TwoPane({
   list,
   listWidth = 272,
+  gap = 18,
   detail,
 }: {
   list: ReactNode;
   listWidth?: 272 | 292;
+  /** Between the pieces of each pane: 18px for Recent visits, 16px for Medications and Full timeline (the board). */
+  gap?: 16 | 18;
   detail: ReactNode;
 }) {
+  const gapClass = gap === 16 ? "gap-4" : "gap-4.5";
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-7 pt-8.5 @min-[600px]:flex-row">
       <div
         className={cn(
-          "flex flex-col gap-4.5 @min-[600px]:min-h-0 @min-[600px]:shrink-0 @min-[600px]:overflow-y-auto",
+          "flex flex-col @min-[600px]:min-h-0 @min-[600px]:shrink-0 @min-[600px]:overflow-y-auto",
+          gapClass,
           listWidth === 292 ? "@min-[600px]:w-73" : "@min-[600px]:w-68",
         )}
       >
@@ -123,7 +128,11 @@ function TwoPane({
         aria-live="polite"
         aria-label="Details"
         tabIndex={0}
-        className="flex min-w-0 focus-visible:-outline-offset-2 flex-1 flex-col gap-4.5 border-t border-border-row pt-6 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0"
+        className={cn(
+          "flex min-w-0 flex-1 flex-col border-t border-border-row pt-6 focus-visible:-outline-offset-2 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0",
+          // Full timeline's detail keeps 18px; Medications' is 16px.
+          listWidth === 292 ? "gap-4.5" : gapClass,
+        )}
       >
         {detail}
       </section>
@@ -439,7 +448,7 @@ function MedicationDetail({ m, firstName }: { m: Medication; firstName: string }
                 {p.prescribed_by && <span className="text-meta text-ink-2">Prescribed by {p.prescribed_by}</span>}
                 {p.note !== null && p.note !== undefined && (
                   <span className="mt-1 text-caption">
-                    {firstName === "the patient" ? "Patient" : firstName}: &ldquo;{p.note}&rdquo;
+                    {firstName === "the patient" ? "Patient" : firstName}: &quot;{p.note}&quot;
                   </span>
                 )}
               </span>
@@ -476,6 +485,7 @@ export function MedicationsView() {
 
   return (
     <TwoPane
+      gap={16}
       list={
         <>
           <PaneTitle>Medications</PaneTitle>
@@ -570,6 +580,7 @@ export function TimelineView() {
   return (
     <TwoPane
       listWidth={292}
+      gap={16}
       list={
         <>
           <PaneTitle>Full timeline</PaneTitle>

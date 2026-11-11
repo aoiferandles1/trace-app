@@ -158,15 +158,15 @@ test("medication notes appear only when the contract returns them", async ({ bro
   expect(JSON.stringify(meds)).not.toContain("note_shared");
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
   await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
-  await expect(s.page.getByText(/Jane: “/)).toHaveCount(0);
+  await expect(s.page.getByText(/Jane: "/)).toHaveCount(0);
   await patient.end();
   await s.context.close();
 
   // With it: Jane's own words under each period that has them.
   s = await openSession(browser, patient, { share_medication_notes: true });
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
-  await expect(s.page.getByText("Jane: “Back on 36. Smoother and sleeping better.”")).toBeVisible();
-  await expect(s.page.getByText("Jane: “Too much. Racing heart and trouble sleeping.”")).toBeVisible();
+  await expect(s.page.getByText('Jane: "Back on 36. Smoother and sleeping better."')).toBeVisible();
+  await expect(s.page.getByText('Jane: "Too much. Racing heart and trouble sleeping."')).toBeVisible();
   await s.page.waitForTimeout(250);
   await expectNoAxeViolations(s.page);
   await patient.end();
@@ -178,9 +178,9 @@ test("medication notes appear only when the contract returns them", async ({ bro
   s = await openSession(browser, patient, { share_medication_notes: true });
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
   await expect(s.page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
-  await expect(s.page.getByText(/Jane: “/)).toHaveCount(0);
+  await expect(s.page.getByText(/Jane: "/)).toHaveCount(0);
   await s.page.getByRole("button", { name: /^Levothyroxine/ }).click();
-  await expect(s.page.getByText("Jane: “Energy back to normal.”")).toBeVisible();
+  await expect(s.page.getByText('Jane: "Energy back to normal."')).toBeVisible();
   const concerta = (await section(s.page, "medications")).body.record.data.current.find((m: { name: string }) => m.name === "Concerta");
   expect(concerta.periods.every((p: { note: string | null }) => p.note === null)).toBe(true);
   await patient.end();

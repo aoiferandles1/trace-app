@@ -129,11 +129,22 @@ export function SessionFrame({ children }: { children: ReactNode }) {
     }
   }, [applyStatus]);
 
+  // One first status call, even when React runs the effect twice in
+  // development (a second cookie-less call could mint a second token).
+  const firstStatus = useRef<Promise<PortalStatus> | null>(null);
   useEffect(() => {
-    portalApi
-      .status()
-      .then(applyStatus)
-      .catch(() => setLoadError(true));
+    let cancelled = false;
+    firstStatus.current ??= portalApi.status();
+    firstStatus.current
+      .then((s) => {
+        if (!cancelled) applyStatus(s);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [applyStatus]);
 
   const live = status?.status === "active" || status?.status === "paused";
