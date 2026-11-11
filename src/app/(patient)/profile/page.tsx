@@ -1,12 +1,13 @@
 "use client";
 
-import { ChevronRight, Download, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Download, FileText, History, Plus, RotateCcw, Share2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ListItemCard } from "@/components/patient/ListItemCard";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { ScreenHeader } from "@/components/patient/ScreenHeader";
+import { useShareSession } from "@/components/patient/ShareSession";
 import { StatTile } from "@/components/patient/StatTile";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import { HintStrip } from "@/components/ui/HintStrip";
 import type { Tone } from "@/components/ui/Pill";
 import { dayKey, formatDay } from "@/lib/dates";
 import { initialsOf } from "@/lib/format";
+import { isOpen } from "@/lib/patient/share";
 import { fullName, isCurrentMedication, type CareMember } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
@@ -48,8 +50,10 @@ async function loadProfile() {
 /**
  * My profile (p-profile). Left out from the frame (PLAN.md section 11, and
  * docs/REVIEW.md): the Verified badge, the PPS number, the documents count
- * (now conditions), the Settings switches and the Help action. Phase 5 adds
- * a "Share my record" row at the top of Your data.
+ * (now conditions), the Settings switches and the Help action. "Share my
+ * record" (any day, PLAN.md section 1) is the first row of Your data, hidden
+ * while a doctor has access; "Access log" follows it. Demo accounts also get
+ * "Reset demo".
  */
 function ProfileScreen() {
   const { profile, email } = usePatientSession();
@@ -160,6 +164,11 @@ const rowClasses =
 
 function YourData() {
   const router = useRouter();
+  const { isAnonymous, reloadProfile } = usePatientSession();
+  const share = useShareSession();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -187,6 +196,20 @@ function YourData() {
     URL.revokeObjectURL(url);
   }
 
+  async function resetDemo() {
+    setResetting(true);
+    setResetError(false);
+    const { error } = await createClient().rpc("seed_demo_record");
+    if (error) {
+      setResetting(false);
+      setResetError(true);
+      return;
+    }
+    await Promise.all([share.refresh(), reloadProfile()]);
+    share.announce("The demo is reset. Jane's record is back to how it started.");
+    router.push("/home");
+  }
+
   async function signOut() {
     setSigningOut(true);
     await createClient().auth.signOut();
@@ -211,8 +234,23 @@ function YourData() {
     <>
       <section aria-labelledby="data-label" className="flex flex-col gap-3">
         <SectionLabel id="data-label">Your data</SectionLabel>
-        {/* Phase 5: a "Share my record" row (links to /share) goes first here, hidden while a session is live. */}
         <ul className="divide-y divide-border-default overflow-hidden rounded-card border border-border-default bg-surface-card">
+          {share.loaded && !isOpen(share.session) && (
+            <li>
+              <Link href="/share" className={rowClasses}>
+                <Share2 aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+                <span className="flex-1">Share my record</span>
+                <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
+              </Link>
+            </li>
+          )}
+          <li>
+            <Link href="/access-log" className={rowClasses}>
+              <History aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+              <span className="flex-1">Access log</span>
+              <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
+            </Link>
+          </li>
           <li>
             <button type="button" className={rowClasses} onClick={exportData} aria-busy={exporting || undefined}>
               <Download aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
@@ -226,6 +264,14 @@ function YourData() {
               <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-text-tertiary" />
             </Link>
           </li>
+          {isAnonymous && (
+            <li>
+              <button type="button" className={rowClasses} onClick={() => setConfirmReset(true)}>
+                <RotateCcw aria-hidden="true" className="size-5 shrink-0 text-indigo-text" />
+                <span className="flex-1">Reset demo</span>
+              </button>
+            </li>
+          )}
           <li>
             <button type="button" className={rowClasses} onClick={() => setConfirmDelete(true)}>
               <Trash2 aria-hidden="true" className="size-5 shrink-0 text-red-700" />
@@ -244,6 +290,30 @@ function YourData() {
         Sign out
       </Button>
 
+      <BottomSheet
+        open={confirmReset}
+        onClose={() => setConfirmReset(false)}
+        title="Reset the demo?"
+        actions={
+          <>
+            <Button size="lg" fullWidth onClick={resetDemo} loading={resetting}>
+              Reset demo
+            </Button>
+            <Button variant="secondary" size="lg" fullWidth onClick={() => setConfirmReset(false)}>
+              Cancel
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body-sm text-text-tertiary">
+          Jane&apos;s record goes back to how it started. Anything you added, and any share, is cleared.
+        </p>
+        {resetError && (
+          <HintStrip tone="danger" live="assertive">
+            The demo couldn&apos;t be reset. Check your connection and try again.
+          </HintStrip>
+        )}
+      </BottomSheet>
       <BottomSheet
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}

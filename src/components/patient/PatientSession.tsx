@@ -5,6 +5,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { createClient } from "@/lib/supabase/client";
 import { pathForStep, stepIndex, STEPS } from "@/lib/patient/auth";
 import type { Profile } from "@/lib/patient/types";
+import { normaliseSession, type ShareSession } from "@/lib/patient/share";
+import { ShareSessionProvider } from "./ShareSession";
 
 /**
  * Who is signed in, and their profile, for the signed-in patient screens.
@@ -21,8 +23,16 @@ import type { Profile } from "@/lib/patient/types";
  * The check runs in the browser: every read goes through row-level security
  * anyway, so the gate is about routing, not protection.
  *
- * Phase 5 seam: the realtime subscription to share_sessions and the access
- * request sheet belong here, inside `record`, so the sheet can open over
+ * Speed: the session is read from the cookie in the browser (no network
+ * call unless the token needs refreshing), then three things run at once:
+ * `getClaims()` verifies the token's signature locally against the project's
+ * published key (one small cached fetch, no Auth server round trip), the
+ * profile is read, and, in the record area, my_share_session() is read for
+ * <ShareSessionProvider>. Before this, getUser() (a round trip to Auth) ran
+ * first and the profile only after it.
+ *
+ * The record area also wraps everything in <ShareSessionProvider>: Realtime
+ * on share_sessions and the access request sheet, so the sheet can open over
  * whatever screen is showing.
  */
 
@@ -48,7 +58,14 @@ export function usePatientSession(): PatientSessionValue {
 type State =
   | { status: "checking" }
   | { status: "error" }
-  | { status: "ready"; userId: string; email: string | null; isAnonymous: boolean; profile: Profile };
+  | {
+      status: "ready";
+      userId: string;
+      email: string | null;
+      isAnonymous: boolean;
+      profile: Profile;
+      share: ShareSession | null | undefined;
+    };
 
 export function PatientSessionGate({
   gate,
@@ -72,15 +89,26 @@ export function PatientSessionGate({
     const supabase = createClient();
 
     async function check() {
-      const { data, error } = await supabase.auth.getUser();
+      // Local: reads the cookie session (refreshing the token only if it has expired).
+      const { data: local } = await supabase.auth.getSession();
       if (cancelled) return;
-      const user = data.user;
-      if (!user || error) {
+      const user = local.session?.user;
+      if (!user) {
         router.replace(gate === "record" ? "/" : "/signup");
         return;
       }
-      const profile = await loadProfile(user.id);
+      const [claims, profile, share] = await Promise.all([
+        supabase.auth.getClaims(),
+        loadProfile(user.id),
+        gate === "record"
+          ? supabase.rpc("my_share_session").then(({ data, error }) => (error ? undefined : normaliseSession(data)))
+          : Promise.resolve(undefined),
+      ]);
       if (cancelled) return;
+      if (claims.error || !claims.data || claims.data.claims.sub !== user.id) {
+        router.replace(gate === "record" ? "/" : "/signup");
+        return;
+      }
       if (!profile) {
         setState({ status: "error" });
         return;
@@ -107,6 +135,7 @@ export function PatientSessionGate({
         email: user.email ?? null,
         isAnonymous: Boolean(user.is_anonymous),
         profile,
+        share,
       });
     }
 
@@ -151,6 +180,18 @@ export function PatientSessionGate({
   // Children always render (each page wraps its content in <SessionReady>),
   // so Next.js can validate the page segments; they show the loading state
   // until the check above has finished.
+  if (gate === "record") {
+    return (
+      <Ctx value={value}>
+        <ShareSessionProvider
+          userId={state.status === "ready" ? state.userId : null}
+          initial={state.status === "ready" ? state.share : undefined}
+        >
+          {children}
+        </ShareSessionProvider>
+      </Ctx>
+    );
+  }
   return <Ctx value={value}>{children}</Ctx>;
 }
 

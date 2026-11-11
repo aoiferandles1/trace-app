@@ -2,9 +2,15 @@
 
 import type { ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
+import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
+import { usePatientSession } from "@/components/patient/PatientSession";
+import { useShareSession } from "@/components/patient/ShareSession";
 import { ScreenHeader } from "@/components/patient/ScreenHeader";
 import { TabBar } from "@/components/patient/TabBar";
 import { Button } from "@/components/ui/Button";
+import { formatCountdown } from "@/lib/format";
+import { clinicianName, isOpen, msUntil } from "@/lib/patient/share";
+import { useNow } from "@/lib/useNow";
 
 /**
  * Frames for the signed-in patient screens.
@@ -13,21 +19,58 @@ import { Button } from "@/components/ui/Button";
  *   with the tab bar.
  * - SubScreen: details and forms, with a back link and no tab bar.
  *
- * Both render <LiveBannerSlot />, the seam for the share flow (Phase 5): it
- * renders nothing today; while a session is live it should render
- * <LiveShareBanner> on every screen.
+ * Both render <LiveBannerSlot /> (the banner across the top while a doctor
+ * has access) and <DemoMarker /> (demo accounts only).
  */
 
+/** The live share banner (p-home-live), on every screen while a session is active or paused. */
 export function LiveBannerSlot(): ReactNode {
-  // Phase 5: read the live share session (realtime, from PatientSessionGate)
-  // and return <LiveShareBanner clinicianName=... timeLeft=... /> while it is
-  // active or paused.
-  return null;
+  const { session } = useShareSession();
+  const open = isOpen(session);
+  const ticking = open && session.status === "active" && session.duration_kind !== "manual";
+  const now = useNow(ticking);
+  if (!open) return null;
+  return (
+    <LiveShareBanner
+      clinicianName={clinicianName(session)}
+      paused={session.status === "paused"}
+      timeLeft={ticking ? formatCountdown(msUntil(session.expires_at, now)) : undefined}
+    />
+  );
+}
+
+/**
+ * "Demo · sample data" (PLAN.md section 9): a slim strip at the top of every
+ * signed-in screen of a demo (anonymous) account. Real accounts never see it.
+ */
+export function DemoMarker({ tone = "page" }: { tone?: "page" | "indigo" }): ReactNode {
+  const { isAnonymous } = usePatientSession();
+  if (!isAnonymous) return null;
+  return (
+    <p
+      className={
+        tone === "indigo"
+          ? "bg-indigo-700 py-1 text-center text-label font-medium text-white"
+          : "bg-brand-peach-tint py-1 text-center text-label font-medium text-peach-700"
+      }
+    >
+      Demo · sample data
+    </p>
+  );
 }
 
 export function TabScreen({ header, children }: { header: ReactNode; children: ReactNode }) {
   return (
-    <PatientShell banner={<LiveBannerSlot />} header={header} tabBar={<TabBar />}>
+    <PatientShell
+      banner={<LiveBannerSlot />}
+      header={
+        <>
+          <DemoMarker />
+          {header}
+        </>
+      }
+      tabBar={<TabBar />}
+    >
       {children}
     </PatientShell>
   );
@@ -49,7 +92,12 @@ export function SubScreen({
   return (
     <PatientShell
       banner={<LiveBannerSlot />}
-      header={<ScreenHeader title={title} backHref={backHref} backLabel={backLabel} />}
+      header={
+        <>
+          <DemoMarker />
+          <ScreenHeader title={title} backHref={backHref} backLabel={backLabel} />
+        </>
+      }
       footer={footer}
     >
       {children}

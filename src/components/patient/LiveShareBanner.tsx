@@ -15,12 +15,15 @@ import { cn } from "@/lib/cn";
 export function LiveShareBanner({
   clinicianName,
   timeLeft,
+  paused = false,
   href = "/session",
   className,
 }: {
   clinicianName: string;
   /** "24:12". Omit for a manual (no timer) session. */
   timeLeft?: string;
+  /** Time's up: the record is hidden until the patient decides. */
+  paused?: boolean;
   href?: string;
   className?: string;
 }) {
@@ -32,11 +35,18 @@ export function LiveShareBanner({
         className,
       )}
     >
-      <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-teal-400" />
+      <span
+        aria-hidden="true"
+        className={cn("size-2 shrink-0 rounded-full", paused ? "bg-brand-peach" : "bg-teal-400")}
+      />
       <span className="min-w-0 flex-1 text-button-sm font-medium">
-        {clinicianName} can see your record
+        {paused ? `${clinicianName}'s access is paused` : `${clinicianName} can see your record`}
       </span>
-      {timeLeft && <span className="shrink-0 text-label font-medium">{timeLeft} left</span>}
+      {paused ? (
+        <span className="shrink-0 text-label font-medium">Time&rsquo;s up</span>
+      ) : (
+        timeLeft && <span className="shrink-0 text-label font-medium">{timeLeft} left</span>
+      )}
       <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
       <span className="sr-only">. View session</span>
     </Link>

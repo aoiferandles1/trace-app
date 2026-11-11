@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
  * - secondary: white with an indigo outline. Equal-weight pairs (Allow / Deny).
  * - tertiary: white fill for indigo or photographic surfaces ("Share your record now").
  * - ghost: text-only, for inline actions like "Didn't get it? Resend code".
+ * - ghostOnDark: text-only in white, on the indigo screens ("Regenerate").
  *
  * Sizes: sm 32px (dense desktop), md 40px, lg 48px (mobile primary CTA).
  * sm and md keep their look but get a 44px tall tap target.
@@ -16,7 +17,7 @@ import { cn } from "@/lib/cn";
  * Use <Button> for actions and <ButtonLink> for navigation; both share styles.
  */
 
-export type ButtonVariant = "primary" | "secondary" | "tertiary" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "tertiary" | "ghost" | "ghostOnDark";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
@@ -44,6 +45,8 @@ const variants: Record<ButtonVariant, string> = {
   ghost:
     "bg-transparent text-indigo-text hovered:bg-brand-indigo-tint pressed:bg-indigo-100 " +
     "disabled:text-interactive-disabled-text aria-disabled:text-interactive-disabled-text",
+  ghostOnDark:
+    "bg-transparent text-white hovered:bg-white/10 pressed:bg-white/20 disabled:text-white/60 aria-disabled:text-white/60",
 };
 
 export function buttonClasses({

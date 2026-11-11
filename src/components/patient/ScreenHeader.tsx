@@ -25,6 +25,8 @@ export type ScreenHeaderProps = {
   backLabel?: string;
   /** Right-hand slot, e.g. an IconButton or a small Button. */
   action?: ReactNode;
+  /** "onDark" on the full-bleed indigo screens (white back arrow). */
+  tone?: "default" | "onDark";
   className?: string;
 };
 
@@ -36,12 +38,13 @@ export function ScreenHeader({
   onBack,
   backLabel = "Back",
   action,
+  tone = "default",
   className,
 }: ScreenHeaderProps) {
   const back = backHref ? (
-    <IconLink href={backHref} label={backLabel} icon={<ChevronLeft />} className="-ml-2.5" />
+    <IconLink href={backHref} label={backLabel} icon={<ChevronLeft />} tone={tone} className="-ml-2.5" />
   ) : onBack ? (
-    <IconButton onClick={onBack} label={backLabel} icon={<ChevronLeft />} className="-ml-2.5" />
+    <IconButton onClick={onBack} label={backLabel} icon={<ChevronLeft />} tone={tone} className="-ml-2.5" />
   ) : null;
 
   if (variant === "greeting") {
