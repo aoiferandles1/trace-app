@@ -57,6 +57,13 @@ Recorded as Aoife answers them. If a point you need is not here, pick the option
 
 **Demo data.** The demo record must match the boards exactly (medications, visits, timeline events, relatives, vitals). The old app's demo seed stays as it is until the redesign ships; the new data goes in a new seed function that the redesigned app calls.
 
+## Where things stand
+
+- **Phase 1 is done and merged**: tokens, fonts, icons, base components and `/kit`. `CLAUDE.md` describes the design system; use only what it describes.
+- **The database work is done and merged.** `supabase/README.md` is the contract. The redesigned app calls the functions marked **[new]** there: `my_record(section)`, `seed_demo_record_v2()`, the `create_share_code` form that names all the new scopes, `portal_get_record` with `version: 2`, `portal_get_document`, `log_strength_change`, `save_insurance`, `upload_document` and the rest. The functions marked **[old app]** exist only so the live site keeps working; new code must not call them.
+- **Field outlines.** The boards draw text fields and code boxes with `border-control`, which is 1.3:1 on white. The brief requires 3:1 for controls, so fields use `border-field` (already wired into `TextField` and `CodeInput`). Cards, rows, the tab bar and the segmented control's container keep their hairlines. Do not put `border-control` back on a field.
+- **Sample data on the boards that disagrees with itself**: the share code board says "Medications, 3 active" but Jane has 4 current medications; the Medications board says Concerta has "5 strength changes" but 5 periods are 4 changes. Show what the data says (4 active; 4 strength changes) and list it for Aoife.
+
 ## Rules for database work
 
 - **The live site keeps running the old code against this same database until the redesign ships.** Every migration must leave the old app working: add tables, columns and functions; do not drop, rename or change the meaning of what the old code uses. Old function calls (same names, same arguments) must keep returning what they return today. Where a value moves (a medication's strength into periods), keep the old column filled as well. List what can be removed after the redesign ships.

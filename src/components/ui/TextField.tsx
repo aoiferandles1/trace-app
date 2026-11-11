@@ -20,7 +20,7 @@ export const controlBase =
   "transition-colors duration-150 ease-out focus:border-accent data-[force~=focus]:border-accent " +
   "disabled:cursor-not-allowed disabled:bg-ground disabled:text-ink-2";
 
-export const controlBorder = (invalid: boolean) => (invalid ? "border-critical" : "border-border-control");
+export const controlBorder = (invalid: boolean) => (invalid ? "border-critical" : "border-border-field");
 
 export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   label: ReactNode;

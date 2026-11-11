@@ -36,6 +36,9 @@
   --border-card: #e1e4f2;
   --border-row: #eceef8;
   --border-control: #dcdff0;
+  /* Outline of a text field or code box. The boards draw these in border-control (1.3:1 on white);
+     the brief requires 3:1 for UI components, so fields use this instead (3.24 on white, 3.03 on ground). */
+  --border-field: #878db3;
   --border-tabbar: #e4e6f2;
   /* Brief #9096BE is 2.9:1 on white and 2.7:1 on ground; darkened to 3:1 on ground (see docs/REVIEW.md). */
   --ring-off: #878db3;
@@ -156,6 +159,7 @@
   --color-border-card: var(--border-card);
   --color-border-row: var(--border-row);
   --color-border-control: var(--border-control);
+  --color-border-field: var(--border-field);
   --color-border-tabbar: var(--border-tabbar);
   --color-ring-off: var(--ring-off);
   --color-switch-off: var(--switch-off);

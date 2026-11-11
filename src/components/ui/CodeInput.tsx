@@ -105,7 +105,7 @@ export function CodeInput({
                       ? "border-2 border-critical"
                       : isActive
                         ? "border-2 border-accent outline-2 outline-offset-2 outline-(--focus-ring)"
-                        : "border border-border-control",
+                        : "border border-border-field",
                 )}
               >
                 {digit}
