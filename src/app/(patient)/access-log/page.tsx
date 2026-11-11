@@ -66,7 +66,7 @@ function describe(e: AccessEvent, s: ShareSession): string {
     case "requested":
       return `${doctor} typed the code and asked for access`;
     case "request_cancelled":
-      return "The doctor cancelled their request";
+      return `${clinicianName(s)} cancelled their request`;
     case "approved":
       return "You allowed access";
     case "denied":
@@ -85,7 +85,7 @@ function describe(e: AccessEvent, s: ShareSession): string {
       return "Session notes added to your record";
     case "ended":
       return d.by === "clinician"
-        ? "The doctor ended the session"
+        ? `${clinicianName(s)} ended the session`
         : d.by === "timeout"
           ? "The session closed after Time's up"
           : "You ended the session";
