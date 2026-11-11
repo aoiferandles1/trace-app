@@ -258,3 +258,13 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
   expect(running).toBe(0);
   await page.getByRole("button", { name: "Keep my account" }).click();
 });
+
+test("signed out: welcome, sign in, sign up and the link-expired page at 320px with the keyboard", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: NARROW, storageState: { cookies: [], origins: [] } });
+  const page = await context.newPage();
+  await checkScreen(page, "/", "Your health record, owned by you.");
+  await checkScreen(page, "/login", /Welcome back/);
+  await checkScreen(page, "/signup", /./);
+  await checkScreen(page, "/auth/link-expired", /That link didn.t work/);
+  await context.close();
+});
