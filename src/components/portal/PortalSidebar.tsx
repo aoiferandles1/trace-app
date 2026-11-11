@@ -45,8 +45,8 @@ export function PortalSidebar({
       )}
     >
       <p className="px-3.5 font-display text-wordmark font-light lg:pb-7">trace</p>
-      {/* Below 1024px a scrolling row, which clips: pt-2 and pb-3 leave room for the focus ring. */}
-      <ul className="-mx-3.5 flex scroll-px-3.5 gap-1 overflow-x-auto px-3.5 pb-3 pt-2 [scrollbar-width:thin] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0 lg:pt-0">
+      {/* Below 1024px a scrolling row, which clips: pt-2 and pb-3 leave room for the focus ring. From 1024px, 4px under the wordmark (PortalRecordE's rail gap). */}
+      <ul className="-mx-3.5 flex scroll-px-3.5 gap-1 overflow-x-auto px-3.5 pb-3 pt-2 [scrollbar-width:thin] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0 lg:pt-1">
         {shared.map((v) => (
           <li key={v.key} className="shrink-0">
             <RailItem icon={v.icon} label={v.label} href={v.href} current={v.key === active} />

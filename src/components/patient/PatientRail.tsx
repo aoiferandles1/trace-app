@@ -27,7 +27,7 @@ export function PatientRail({ active, className }: { active?: TabKey; className?
       className={cn("flex w-58 shrink-0 flex-col overflow-y-auto border-r border-border-tabbar bg-surface px-3.5 pb-6 pt-7", className)}
     >
       <p className="px-3.5 pb-7 font-display text-wordmark font-light">trace</p>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1 pt-1">
         {TABS.map((tab) => {
           const current = tab.key === activeKey;
           return (

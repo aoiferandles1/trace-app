@@ -258,7 +258,8 @@ export function SelectableRow({
       {leading !== undefined && <span>{leading}</span>}
       <span className="flex min-w-0 flex-col">
         <span className={titleSize === "lg" ? "text-row font-medium" : "text-label font-medium"}>{title}</span>
-        {caption && <span className="text-meta text-ink-2">{caption}</span>}
+        {/* PortalRecordE: 13/16 under the visits and timeline titles, 13/18 in the medication list. */}
+        {caption && <span className={cn("text-meta text-ink-2", titleSize === "md" && "leading-4")}>{caption}</span>}
       </span>
       {value !== undefined ? (
         <span className="font-display text-numeral font-light">{value}</span>
