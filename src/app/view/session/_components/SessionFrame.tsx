@@ -12,6 +12,7 @@ import { PortalSidebar, portalNavItems, type PortalSection } from "@/components/
 import { SessionNotesPanel, type SaveState, type SessionNotes } from "@/components/portal/SessionNotesPanel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { HintStrip } from "@/components/ui/HintStrip";
+import { TextArea } from "@/components/ui/TextArea";
 import { formatCountdown, initialsOf } from "@/lib/format";
 import { clockOffset, portalApi, PortalApiError, type Patient, type PortalStatus } from "../../_lib/api";
 import { formatClock, patientDetails, patientFirstName, patientFullName } from "../../_lib/format";
@@ -67,6 +68,8 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   const [ending, setEnding] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [loadError, setLoadError] = useState(false);
+  // Notes typed but not saved when the session ended: kept on screen so the doctor can copy them.
+  const [unsaved, setUnsaved] = useState<SessionNotes | null>(null);
 
   const notesLoaded = useRef(false);
   const lastSaved = useRef(JSON.stringify(EMPTY_NOTES));
@@ -99,6 +102,10 @@ export function SessionFrame({ children }: { children: ReactNode }) {
         lastSaved.current = JSON.stringify(n);
         notesRef.current = n;
         setNotesState(n);
+      }
+      if (s.status === "ended" && notesLoaded.current && JSON.stringify(notesRef.current) !== lastSaved.current) {
+        window.clearTimeout(autosave.current);
+        setUnsaved(notesRef.current);
       }
       if (s.status !== "active") setPatientState(null);
       if (!["active", "paused", "ended"].includes(s.status)) router.replace("/view");
@@ -135,6 +142,8 @@ export function SessionFrame({ children }: { children: ReactNode }) {
       await portalApi.saveNotes(toApi(current));
       lastSaved.current = json;
       setSaveState("saved");
+      // A save that was still on its way when the session ended did reach it.
+      if (JSON.stringify(notesRef.current) === json) setUnsaved(null);
       return true;
     } catch (e) {
       setSaveState("error");
@@ -247,7 +256,7 @@ export function SessionFrame({ children }: { children: ReactNode }) {
       <SessionContext.Provider value={ctx}>
         <PortalShell tone="indigo" header={header} footer={footer}>
           {liveRegion}
-          <EndedScreen status={status} />
+          <EndedScreen status={status} unsaved={unsaved} />
         </PortalShell>
       </SessionContext.Provider>
     );
@@ -389,7 +398,30 @@ function PausedScreen({ status, offset }: { status: PortalStatus; offset: number
   );
 }
 
-function EndedScreen({ status }: { status: PortalStatus }) {
+/** The doctor's last changes that never reached the record, to copy elsewhere. */
+function UnsavedNotes({ notes }: { notes: SessionNotes }) {
+  const text = [
+    ["Chief complaint", notes.chiefComplaint],
+    ["Assessment", notes.assessment],
+    ["Plan", notes.plan],
+    ["Follow-up", notes.followUp],
+  ]
+    .filter(([, v]) => v.trim())
+    .map(([k, v]) => `${k}: ${v.trim()}`)
+    .join("\n\n");
+  if (!text) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      <HintStrip tone="peach" live="assertive">
+        Your last changes to the notes were not saved before the session ended, so they are not in the record. Copy
+        them now if you need them: they are gone when you leave this page.
+      </HintStrip>
+      <TextArea label="Notes not saved" labelStyle="eyebrow" density="compact" rows={6} readOnly value={text} />
+    </div>
+  );
+}
+
+function EndedScreen({ status, unsaved }: { status: PortalStatus; unsaved: SessionNotes | null }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
   const by = status.ended_by;
@@ -416,6 +448,7 @@ function EndedScreen({ status }: { status: PortalStatus }) {
       <div className="px-4 pt-12 pb-16 sm:pt-[60px]">
         <AccessCard headingRef={heading} eyebrow="Session ended" tone="neutral" title={title} body={body}>
           {notesLine && <HintStrip tone={status.notes_saved_to_record ? "teal" : "neutral"}>{notesLine}</HintStrip>}
+          {unsaved && <UnsavedNotes notes={unsaved} />}
           <ButtonLink href="/view" size="lg" fullWidth>
             Start a new session
           </ButtonLink>

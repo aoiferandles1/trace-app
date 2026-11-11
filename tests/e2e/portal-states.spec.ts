@@ -193,3 +193,23 @@ test("mocked: no session on /view/session goes back to /view", async ({ browser,
   await expect(page.getByRole("banner")).toContainText(DOCTOR.name);
   await context.close();
 });
+
+test("mocked: notes typed but not saved when the patient ends stay on screen to copy", async ({ browser, viewport }) => {
+  const { context, page } = await newDoctor(browser, { viewport: viewport ?? undefined });
+  const set = await mockPortal(page, { status: () => statusOf("active"), record: () => fakeRecord() });
+  // The connection drops: every notes save fails.
+  await page.route("**/api/portal/notes", (route) => route.abort("internetdisconnected"));
+  await page.goto("/view/session");
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+  await page.getByLabel("Chief complaint").fill("Chest pain on exertion");
+  await expect(page.getByText("Notes could not be saved. Check your connection and try Save notes again.")).toBeVisible({ timeout: 6_000 });
+  // The typed text is still in the field.
+  await expect(page.getByLabel("Chief complaint")).toHaveValue("Chest pain on exertion");
+
+  set({ status: () => statusOf("ended", { ended_by: "patient", notes_saved_to_record: false }) });
+  await expect(page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 7_000 });
+  await expect(page.getByText(/were not saved before the session ended/)).toBeVisible();
+  await expect(page.getByLabel("Notes not saved")).toHaveValue("Chief complaint: Chest pain on exertion");
+  await expectNoAxeViolations(page);
+  await context.close();
+});

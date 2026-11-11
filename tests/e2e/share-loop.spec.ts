@@ -386,6 +386,8 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   // Only Trace may frame Trace.
   expect(res!.headers()["x-frame-options"]).toBe("SAMEORIGIN");
   expect(res!.headers()["content-security-policy"]).toContain("frame-ancestors 'self'");
+  expect(res!.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(res!.headers()["x-content-type-options"]).toBe("nosniff");
   await expect(page.getByRole("heading", { level: 1, name: "Try both sides of a GP visit" })).toBeVisible();
   await expectNoSideScroll(page);
 
