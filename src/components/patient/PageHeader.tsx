@@ -35,6 +35,8 @@ export type PageHeaderProps = {
   tone?: "default" | "session";
   /** 56 (default) or 48 (RecordA2's title row). */
   height?: 48 | 56;
+  /** 2 when the header heads a list beside a detail at desktop widths (the detail has the page's h1). */
+  level?: 1 | 2;
   className?: string;
 };
 
@@ -49,8 +51,10 @@ export function PageHeader({
   action,
   tone = "default",
   height = 56,
+  level = 1,
   className,
 }: PageHeaderProps) {
+  const Heading = level === 2 ? "h2" : "h1";
   const iconTone = tone === "session" ? "session" : "default";
   const back = backHref ? (
     <IconLink href={backHref} label={backLabel} icon="chevron-left" size={32} tone={iconTone} className="-ml-1.5" />
@@ -82,7 +86,7 @@ export function PageHeader({
     <header className={cn("flex shrink-0 items-center gap-3 px-5", height === 48 ? "min-h-12" : "min-h-14", className)}>
       {back}
       <div className="flex min-w-0 flex-1 flex-col">
-        <h1 className={cn("font-display font-light", size === "lg" ? "text-title" : "text-title-sm")}>{title}</h1>
+        <Heading className={cn("font-display font-light", size === "lg" ? "text-title" : "text-title-sm")}>{title}</Heading>
         {subtitle && (
           <p className={cn("text-body", tone === "session" ? "text-on-session-2" : "text-ink-2")}>{subtitle}</p>
         )}

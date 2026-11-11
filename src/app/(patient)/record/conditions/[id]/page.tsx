@@ -11,6 +11,7 @@ import { useLoad } from "@/lib/useLoad";
 import { DetailList, NotFound } from "../../../_components/DetailList";
 import { DeleteWithConfirm } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
+import { RecordPanel } from "../../_components/RecordPanel";
 
 /**
  * Condition detail (no board): the visit detail's pattern (BRIEF.md 5.9).
@@ -37,6 +38,7 @@ function ConditionDetailScreen() {
       backLabel="Back to Record"
       action={c ? <IconLink href={`/record/conditions/${c.id}/edit`} label={`Edit ${c.name}`} icon="pencil" size={32} /> : undefined}
       tabBar
+      aside={<RecordPanel level={2} initialTab="conditions" current={id} syncUrl={false} />}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />

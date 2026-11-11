@@ -24,9 +24,9 @@ import { cn } from "@/lib/cn";
 
 export type TabKey = "home" | "record" | "add" | "meds" | "profile";
 
-type Tab = { key: TabKey; label: string; href: string; icon: IconName; match: (p: string) => boolean };
+export type Tab = { key: TabKey; label: string; href: string; icon: IconName; match: (p: string) => boolean };
 
-const TABS: Tab[] = [
+export const TABS: Tab[] = [
   { key: "home", label: "Home", href: "/home", icon: "home", match: (p) => p === "/home" },
   { key: "record", label: "Record", href: "/record", icon: "record", match: (p) => p.startsWith("/record") },
   { key: "add", label: "Add", href: "/add", icon: "plus", match: (p) => p.startsWith("/add") },

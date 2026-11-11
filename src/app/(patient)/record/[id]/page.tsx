@@ -22,6 +22,7 @@ import { useLoad } from "@/lib/useLoad";
 import { DetailList, NotFound } from "../../_components/DetailList";
 import { DeleteWithConfirm } from "../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../_components/Screens";
+import { RecordPanel } from "../_components/RecordPanel";
 
 async function loadEntry(id: string): Promise<RecordEntry | null> {
   if (!isUuid(id)) return null;
@@ -57,6 +58,7 @@ function EntryDetailScreen() {
       backLabel="Back to Record"
       action={editable ? <IconLink href={`/record/${entry.id}/edit`} label={`Edit ${entry.title}`} icon="pencil" size={32} /> : undefined}
       tabBar
+      aside={<RecordPanel level={2} initialTab="timeline" current={id} syncUrl={false} />}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />

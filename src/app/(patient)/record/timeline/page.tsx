@@ -13,7 +13,9 @@ import { Notice } from "@/components/ui/Notice";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { dayKey } from "@/lib/dates";
 import { capitalise, eventCaption, eventMeta, loadSection, type HealthEvent } from "@/lib/patient/record";
+import { useDesktop } from "@/lib/useDesktop";
 import { useLoad } from "@/lib/useLoad";
+import { PaneHint } from "../../_components/PaneHint";
 import { LoadStatus, SubScreen } from "../../_components/Screens";
 
 type Filter = "all" | "infection" | "condition";
@@ -37,8 +39,12 @@ async function loadEvents() {
  *
  * Not on the board: the sheet's "Edit" (a full-screen form, where Delete
  * is) and "Add to your timeline" under the card.
+ *
+ * At desktop widths the chosen event opens in the pane beside the list
+ * instead of a sheet (the portal's Full timeline), and its row is marked.
  */
 function TimelineScreen() {
+  const desktop = useDesktop();
   const data = useLoad(loadEvents);
   const [filter, setFilter] = useState<Filter>("all");
   const asked = useSearchParams().get("event");
@@ -60,7 +66,13 @@ function TimelineScreen() {
   const open = events.find((e) => e.id === openId) ?? null;
 
   return (
-    <SubScreen title="Timeline" backHref="/record" backLabel="Back to Record" tabBar>
+    <SubScreen
+      title="Timeline"
+      backHref="/record"
+      backLabel="Back to Record"
+      tabBar
+      detail={open ? <EventPane event={open} /> : <PaneHint>Choose an entry to see it here.</PaneHint>}
+    >
       <div className="flex flex-col gap-3.5 px-5 pb-4 pt-3.5">
         <SegmentedControl<Filter> label="Show" options={FILTERS} value={filter} onChange={setFilter} />
         {data.status !== "ready" ? (
@@ -87,6 +99,7 @@ function TimelineScreen() {
                     title={e.title}
                     caption={eventCaption(e)}
                     onClick={() => setOpenId(e.id)}
+                    selected={desktop ? e.id === openId : undefined}
                   />
                 </li>
               );
@@ -97,7 +110,7 @@ function TimelineScreen() {
           Add to your timeline
         </AddLink>
       </div>
-      <EventSheet event={open} onClose={close} />
+      <EventSheet event={desktop ? null : open} onClose={close} />
     </SubScreen>
   );
 }
@@ -109,31 +122,52 @@ function EventSheet({ event: e, onClose }: { event: HealthEvent | null; onClose:
       onClose={onClose}
       title={e?.title ?? ""}
       meta={e ? eventMeta(e) : undefined}
-      actions={
-        e && (
-          <ButtonLink href={`/record/timeline/${e.id}/edit`} variant="text" aria-label={`Edit ${e.title}`}>
-            Edit
-          </ButtonLink>
-        )
-      }
+      actions={e && <EditEvent event={e} />}
     >
-      {e && (
-        <>
-          {e.seen_by && <DetailBlock label="Seen by">{e.seen_by}</DetailBlock>}
-          {e.outcome && <DetailBlock label="Outcome">{capitalise(e.outcome)}</DetailBlock>}
-          {e.prescriptions.length > 0 && (
-            <DetailBlock
-              label="Prescribed"
-              items={e.prescriptions.map((p) => ({ name: p.name, detail: p.detail ?? undefined }))}
-            />
-          )}
-          {e.notes && <DetailBlock label="Doctor's notes">{e.notes}</DetailBlock>}
-          {e.is_mental_health && (
-            <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
-          )}
-        </>
-      )}
+      {e && <EventBlocks event={e} />}
     </BottomSheet>
+  );
+}
+
+/** The same event in the pane beside the list, at desktop widths. */
+function EventPane({ event: e }: { event: HealthEvent }) {
+  return (
+    <div className="flex flex-col gap-4 px-5 pb-6">
+      <div className="flex min-h-14 flex-col justify-center pt-1">
+        <h2 className="font-display text-title-md font-light">{e.title}</h2>
+        <p className="text-body text-ink-2">{eventMeta(e)}</p>
+      </div>
+      <EventBlocks event={e} />
+      <EditEvent event={e} className="w-fit" />
+    </div>
+  );
+}
+
+function EditEvent({ event: e, className }: { event: HealthEvent; className?: string }) {
+  return (
+    <ButtonLink href={`/record/timeline/${e.id}/edit`} variant="text" aria-label={`Edit ${e.title}`} className={className}>
+      Edit
+    </ButtonLink>
+  );
+}
+
+/** Seen by, Outcome, Prescribed and Doctor's notes; blocks with nothing in them are left out. */
+function EventBlocks({ event: e }: { event: HealthEvent }) {
+  return (
+    <>
+      {e.seen_by && <DetailBlock label="Seen by">{e.seen_by}</DetailBlock>}
+      {e.outcome && <DetailBlock label="Outcome">{capitalise(e.outcome)}</DetailBlock>}
+      {e.prescriptions.length > 0 && (
+        <DetailBlock
+          label="Prescribed"
+          items={e.prescriptions.map((p) => ({ name: p.name, detail: p.detail ?? undefined }))}
+        />
+      )}
+      {e.notes && <DetailBlock label="Doctor's notes">{e.notes}</DetailBlock>}
+      {e.is_mental_health && (
+        <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
+      )}
+    </>
   );
 }
 

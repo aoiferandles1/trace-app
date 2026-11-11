@@ -48,8 +48,17 @@ export type ListRowProps = {
   gap?: 12 | 14;
   /** Row height without `padY`: 64 (default) or 60 (InsuranceA2's providers). */
   height?: 60 | 64;
+  /**
+   * The row whose detail is open beside the list (desktop two panes): the
+   * portal's 3px accent bar at the card's left edge, and aria-current="page".
+   */
+  current?: boolean;
   className?: string;
 };
+
+/** The selected row's 3px accent bar, on the card's inner left edge (cards of rows are 18px in). */
+const CURRENT_BAR =
+  "relative before:absolute before:inset-y-2 before:-left-4.5 before:w-0.75 before:rounded-full before:bg-accent";
 
 const padYClasses = { 10: "py-2.5", 11: "py-2.75", 12: "py-3" } as const;
 
@@ -81,6 +90,7 @@ export function ListRow({
   padY,
   gap = 14,
   height = 64,
+  current = false,
   className,
 }: ListRowProps) {
   const Title = href || onClick ? "span" : titleAs;
@@ -106,11 +116,12 @@ export function ListRow({
     gap === 12 ? "gap-3" : "gap-3.5",
     padY ? padYClasses[padY] : height === 60 ? "min-h-15" : "min-h-16 py-2",
     (href || onClick) && "transition-colors duration-150 ease-out hovered:text-accent-alt",
+    current && CURRENT_BAR,
     className,
   );
   if (href)
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} aria-current={current ? "page" : undefined} className={classes}>
         {body}
       </Link>
     );
@@ -136,6 +147,7 @@ export function YearRow({
   caption,
   href,
   onClick,
+  selected,
   className,
 }: {
   year: string;
@@ -145,6 +157,12 @@ export function YearRow({
   caption?: ReactNode;
   href?: string;
   onClick?: () => void;
+  /**
+   * Desktop two panes: the row open in the pane beside the list. Set it (true
+   * or false) on every row of such a list: the row then says aria-pressed and
+   * the selected one has the 3px accent bar.
+   */
+  selected?: boolean;
   className?: string;
 }) {
   const body = (
@@ -169,6 +187,7 @@ export function YearRow({
   );
   const classes = cn(
     "grid min-h-15 w-full grid-cols-[52px_1fr_20px] items-center py-2 text-left text-ink",
+    selected && CURRENT_BAR,
     className,
   );
   if (href)
@@ -178,7 +197,7 @@ export function YearRow({
       </Link>
     );
   return (
-    <button type="button" onClick={onClick} className={classes}>
+    <button type="button" onClick={onClick} aria-pressed={selected} className={classes}>
       {body}
     </button>
   );

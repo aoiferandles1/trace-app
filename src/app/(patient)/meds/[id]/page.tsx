@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../_components/DetailList";
 import { LoadStatus, SubScreen } from "../../_components/Screens";
+import { MedsPanel } from "../_components/MedsPanel";
 import { loadMedication } from "./_components/loadMedication";
 
 /**
@@ -52,6 +53,7 @@ function MedDetailScreen() {
       backLabel="Back to Medications"
       action={m ? <IconLink href={`/meds/${m.id}/edit`} label={`Edit ${m.name}`} icon="pencil" size={32} /> : undefined}
       tabBar
+      aside={<MedsPanel level={2} initialTab={fromPast ? "past" : "current"} current={id} syncUrl={false} />}
     >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />

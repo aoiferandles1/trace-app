@@ -6,11 +6,13 @@ import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { usePatientSession } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
 import { PageHeader } from "@/components/patient/PageHeader";
+import { PatientRail } from "@/components/patient/PatientRail";
 import { TabBar } from "@/components/patient/TabBar";
 import { DemoStrip } from "@/components/ui/DemoStrip";
 import { StateMessage } from "@/components/ui/StateMessage";
 import { formatCountdown } from "@/lib/format";
 import { clinicianName, isOpen, msUntil } from "@/lib/patient/share";
+import { useDesktop } from "@/lib/useDesktop";
 import { useNow } from "@/lib/useNow";
 
 /**
@@ -24,6 +26,12 @@ import { useNow } from "@/lib/useNow";
  *
  * Both render <DemoMarker /> (demo accounts only, at the very top) and
  * <LiveBannerSlot /> (the strip while a doctor has access).
+ *
+ * From 1024px both take the desktop layout (PatientShell): the rail in place
+ * of the tab bar, on every screen framed here, forms included (the phone
+ * hides its tab bar on forms for room; the rail costs none). `aside` (a
+ * detail screen's list) and `detail` (what a list screen shows beside it)
+ * make two panes; they are mounted only at desktop widths.
  */
 
 /** The live share banner (p-home-live), on every screen while a session is active or paused. */
@@ -56,19 +64,25 @@ export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" })
 export function TabScreen({
   header,
   banner,
+  detail,
   children,
 }: {
   header: ReactNode;
   /** Replaces the live banner; `null` hides it (Home shows the share in its own card). */
   banner?: ReactNode;
+  /** Desktop only: the right-hand pane beside this list. */
+  detail?: ReactNode;
   children: ReactNode;
 }) {
+  const desktop = useDesktop();
   return (
     <PatientShell
       demo={<DemoMarker />}
       banner={banner === undefined ? <LiveBannerSlot /> : banner}
       header={header}
-      tabBar={<TabBar />}
+      tabBar={desktop ? undefined : <TabBar />}
+      rail={desktop ? <PatientRail /> : undefined}
+      detail={desktop ? detail : undefined}
     >
       {children}
     </PatientShell>
@@ -84,6 +98,8 @@ export function SubScreen({
   action,
   footer,
   tabBar = false,
+  aside,
+  detail,
   children,
 }: {
   title: string;
@@ -96,8 +112,13 @@ export function SubScreen({
   footer?: ReactNode;
   /** The tab bar, for detail screens the boards draw with it. Never on forms. */
   tabBar?: boolean;
+  /** Desktop only: the list to the left of this detail. */
+  aside?: ReactNode;
+  /** Desktop only: the right-hand pane beside this list. */
+  detail?: ReactNode;
   children: ReactNode;
 }) {
+  const desktop = useDesktop();
   return (
     <PatientShell
       demo={<DemoMarker />}
@@ -106,7 +127,10 @@ export function SubScreen({
         <PageHeader title={title} size={titleSize} subtitle={subtitle} action={action} backHref={backHref} backLabel={backLabel} />
       }
       footer={footer}
-      tabBar={tabBar ? <TabBar /> : undefined}
+      tabBar={tabBar && !desktop ? <TabBar /> : undefined}
+      rail={desktop ? <PatientRail /> : undefined}
+      aside={desktop ? aside : undefined}
+      detail={desktop ? detail : undefined}
     >
       {children}
     </PatientShell>
