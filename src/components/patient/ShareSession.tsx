@@ -88,13 +88,16 @@ export function ShareSessionProvider({
   const [loaded, setLoaded] = useState(initial !== undefined);
   const [message, setMessage] = useState("");
 
-  // The gate hands over its first read once it has it.
-  useEffect(() => {
+  // The gate hands over its first read once it has it (adjusted during
+  // render, React's pattern for state that follows a prop).
+  const [seen, setSeen] = useState(initial);
+  if (initial !== seen) {
+    setSeen(initial);
     if (initial !== undefined) {
       setSessionState((cur) => pick(cur, initial));
       setLoaded(true);
     }
-  }, [initial]);
+  }
 
   const announce = useCallback((text: string) => {
     // Clear first, so the same words twice are still read out.

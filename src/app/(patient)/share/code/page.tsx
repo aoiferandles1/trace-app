@@ -154,7 +154,7 @@ function CodeBody({
   return (
     <div className="flex flex-col gap-6 px-4 pb-10 pt-2">
       <div className="flex flex-col gap-3">
-        <h2 className="font-display text-[40px] font-light leading-[1.15] tracking-[-0.01em]">
+        <h2 className="font-display text-[36px] font-light leading-[1.15] tracking-[-0.02em]">
           {finished ?? "Your code is ready."}
         </h2>
         <p className="text-body-lg">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { HintStrip } from "@/components/ui/HintStrip";
@@ -34,18 +34,16 @@ import { useShareSession } from "./ShareSession";
 export function AccessRequestSheet() {
   const router = useRouter();
   const { session, setSession, refresh, announce } = useShareSession();
-  const [busy, setBusy] = useState<"allow" | "deny" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [busyState, setBusyState] = useState<{ id: string; what: "allow" | "deny" } | null>(null);
+  const [errorState, setErrorState] = useState<{ id: string; text: string } | null>(null);
   const open = session?.status === "requested";
-  const sessionId = open ? session.id : null;
-
-  // A new request starts clean.
-  useEffect(() => {
-    setError(null);
-    setBusy(null);
-  }, [sessionId]);
-
   if (!session) return null;
+  // Both belong to one request; a new request starts clean.
+  const busy = busyState?.id === session.id ? busyState.what : null;
+  const error = errorState?.id === session.id ? errorState.text : null;
+  const id = session.id;
+  const setBusy = (what: "allow" | "deny" | null) => setBusyState(what ? { id, what } : null);
+  const setError = (text: string | null) => setErrorState(text ? { id, text } : null);
 
   async function respond(allow: boolean) {
     if (!session) return;

@@ -157,7 +157,7 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
           </>
         )}
         <dt className="text-text-tertiary">Shared</dt>
-        <dd>{sharedList(prefsOf(s)).join(", ")}</dd>
+        <dd>{sharedList({ ...prefsOf(s), allow_notes: false }).join(", ")}</dd>
         {s.notes_entry_id && (
           <>
             <dt className="text-text-tertiary">Notes</dt>
