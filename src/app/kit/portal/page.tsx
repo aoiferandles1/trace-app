@@ -39,7 +39,6 @@ const VIEWS: Array<[string, string, IconName, boolean]> = [
   ["Care team", "care-team", "person", true],
   ["Family history", "family", "tree", true],
   ["Documents", "documents", "document", false],
-  ["Insurance", "insurance", "shield", false],
   ["Mental health", "mental-health", "smile", false],
 ];
 

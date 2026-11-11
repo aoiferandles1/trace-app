@@ -42,10 +42,9 @@ const OPTIONAL = [
   { label: "Care team", path: "care-team", section: "care_team", key: "share_care_team" },
   { label: "Family history", path: "family", section: "family_history", key: "share_family_history" },
   { label: "Documents", path: "documents", section: "documents", key: "share_documents" },
-  { label: "Insurance", path: "insurance", section: "insurance", key: "share_insurance" },
   { label: "Mental health", path: "mental-health", section: "mental_health", key: "share_mental_health" },
 ] as const;
-const RAIL = ["Overview", "Recent visits", "Medications", "Full timeline", "Care team", "Family history", "Documents", "Insurance", "Mental health"];
+const RAIL = ["Overview", "Recent visits", "Medications", "Full timeline", "Care team", "Family history", "Documents", "Mental health"];
 
 async function openSession(browser: Browser, patient: PortalPatient, opts: ScopeOptions) {
   const share = await patient.shareCode({ ...NOTHING_OPTIONAL, ...opts });
@@ -74,7 +73,6 @@ const cases: Array<{ name: string; opts: ScopeOptions; shared: string[] }> = [
 
 for (const c of cases) {
   test(`scope alone: ${c.name} shows exactly its rail item and view`, async ({ browser, patient }) => {
-    if (c.name === "Insurance") await patient.connectInsurance();
     const { context, page, requested } = await openSession(browser, patient, c.opts);
     const nav = page.getByRole("navigation", { name: "Patient record" });
 
@@ -93,7 +91,6 @@ for (const c of cases) {
       await expect(page.getByText("did not share this part of the record")).toHaveCount(0);
     }
     if (c.name === "Family history") await expect(page.getByText("Heart attack at 61").filter({ visible: true }).first()).toBeVisible();
-    if (c.name === "Insurance") await expect(page.getByText("•••• 4821")).toBeVisible();
     if (c.name === "Full timeline") await expect(page.getByRole("heading", { level: 3, name: "Chest infection" })).toBeVisible();
     // The rail's pill fades over 150ms; let it finish so axe measures the end state.
     await page.waitForTimeout(250);
@@ -136,6 +133,24 @@ for (const c of cases) {
     await context.close();
   });
 }
+
+test("insurance: never in the portal, even if a session granted it", async ({ browser, patient }) => {
+  // Insurance is personal (Aoife, Nov 2026); the patient app always shares with it off.
+  // Grant it at the database anyway: the portal must still show and fetch nothing.
+  await patient.connectInsurance();
+  const { context, page, requested } = await openSession(browser, patient, { share_insurance: true });
+  const nav = page.getByRole("navigation", { name: "Patient record" });
+  await expect(nav.getByText("Insurance")).toHaveCount(0);
+  expect(await section(page, "insurance")).toEqual({ status: 400, body: { error: "invalid_section" } });
+  expect((await page.request.get("/view/session/insurance")).status()).toBe(404);
+  for (const name of ["overview", "medications"]) {
+    expect(JSON.stringify((await section(page, name)).body)).not.toContain("4821");
+  }
+  await expect(page.getByText("•••• 4821")).toHaveCount(0);
+  expect(requested).not.toContain("insurance");
+  await patient.end();
+  await context.close();
+});
 
 test("conditions: shown on the Overview only when shared", async ({ browser, patient }) => {
   const { context, page } = await openSession(browser, patient, { share_conditions: true });

@@ -4,7 +4,9 @@ import type { Scope } from "./api";
 /**
  * The live record's views, in the rail's order (BRIEF.md 6.3, board
  * PortalRecordE): Overview, Recent visits, Medications, Full timeline, Care
- * team, Family history, then Documents, Insurance, Mental health.
+ * team, Family history, then Documents, Mental health. Insurance is
+ * personal and never shared with a doctor (Aoife, Nov 2026): it has no
+ * view, no route and no place in the rail, whatever a session's scope says.
  *
  * Each view is opened by one scope key (Overview and Medications always).
  * The rail lists the granted views as links and the rest, in the same
@@ -21,7 +23,6 @@ export type ViewKey =
   | "care-team"
   | "family"
   | "documents"
-  | "insurance"
   | "mental-health";
 
 export type ViewDef = {
@@ -41,7 +42,6 @@ export const VIEWS: ViewDef[] = [
   { key: "care-team", label: "Care team", href: "/view/session/care-team", icon: "person", scope: "care_team" },
   { key: "family", label: "Family history", href: "/view/session/family", icon: "tree", scope: "family_history" },
   { key: "documents", label: "Documents", href: "/view/session/documents", icon: "document", scope: "documents" },
-  { key: "insurance", label: "Insurance", href: "/view/session/insurance", icon: "shield", scope: "insurance" },
   { key: "mental-health", label: "Mental health", href: "/view/session/mental-health", icon: "smile", scope: "mental_health" },
 ];
 

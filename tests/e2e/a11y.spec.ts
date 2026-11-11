@@ -235,8 +235,8 @@ test("portal: every screen reflows at 320px and works with the keyboard (stand-i
     for (const view of ["", "/visits", "/medications", "/timeline", "/care-team", "/family", "/end"]) {
       await check("/view/session" + view, "Test Patient", 1);
     }
-    set({ status: () => statusOf("active", { scope: { ...SCOPE, documents: true, insurance: true, mental_health: true } }) });
-    for (const view of ["/documents", "/insurance", "/mental-health"]) {
+    set({ status: () => statusOf("active", { scope: { ...SCOPE, documents: true, mental_health: true } }) });
+    for (const view of ["/documents", "/mental-health"]) {
       await check("/view/session" + view, "Test Patient", 1);
     }
     set({ status: () => statusOf("paused"), record: null });

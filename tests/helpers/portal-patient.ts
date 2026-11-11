@@ -104,13 +104,19 @@ export class PortalPatient {
     this.appointmentEntryId = (data as { appointment_entry_id: string }).appointment_entry_id;
   }
 
-  /** A share code with the redesign's defaults, changed by `opts`. All four new scopes are always named. */
+  /**
+   * A share code with the patient app's defaults (Aoife, Nov 2026: Full
+   * timeline and Medication notes on; Documents, Family history, Mental
+   * health off; Insurance always off), changed by `opts`. All four new
+   * scopes are always named, which is what reaches the new overload.
+   */
   async shareCode(opts: ScopeOptions = {}): Promise<Session> {
     const { data, error } = await this.client.rpc("create_share_code", {
       share_documents: false,
       share_family_history: false,
       share_insurance: false,
-      share_medication_notes: false,
+      share_medication_notes: true,
+      share_full_timeline: true,
       ...opts,
       appointment_entry_id: this.appointmentEntryId,
     });

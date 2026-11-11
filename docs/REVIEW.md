@@ -121,6 +121,7 @@ Rebuilt on PortalEntryB (Enter code), PortalWaitB (Waiting) and PortalRecordE (t
 - **P14. Paused and ended.** In the code step's frame: a small label over the title ("Access paused", "Access ended"), a line or two, one action ("End session now", "Enter a new code").
 - **P15. Declined, timed out, withdrawn.** A label, the title, one line, "Try again".
 - **P16. Two panes at narrower widths.** Recent visits, Medications and Full timeline put list and detail side by side only when the record area is at least 600px wide (at 1280 with the notes open it is 654px). At 1024 with the notes open they stack; collapse the notes to get them side by side.
+- **P16b. Insurance.** Not in the portal at all, as you decided: no rail item (not even "Not shared"), no view, no address, and the record route refuses the section even if a session granted it.
 - **P17. The countdown reaching zero.** The record leaves the screen at once ("Checking access"), and the database's answer follows within a second (normally Time's up).
 - **Below 1024px, every portal screen.** The layout stacks: the rail becomes a row of section tabs and the notes panel moves under the record.
 
@@ -155,7 +156,6 @@ Each is built from the UI kit, matching the nearest existing screen. Redesign or
 - **End session step** (inside the record, see P6).
 - **Not shared**: what an ungranted view's address shows ("Jane did not share this part of the record."); nothing is fetched.
 - **Documents** (no board): rows with a document icon, the title, "PDF" or "Photo" and the date; each opens the file in a new tab, served as the file itself. Empty: "No documents shared."
-- **Insurance** (no board): the provider, then Member number (•••• 4821), Plan and Renews. Empty: "No insurance details included."
 - **Mental health** (no board): the items flagged as mental health, grouped as Conditions, Visits, Timeline and Documents (each only when its own section was shared too). Empty: "Nothing flagged as mental health."
 - **About the portal** (`/view/about`): For your practice and Privacy and security, the old accordion's words, and the portfolio line.
 
@@ -259,7 +259,7 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 - Timed out: "No answer" / "Your patient didn't answer in time." / "Requests close after 5 minutes. Ask your patient for a new code."
 - Withdrawn: "Code withdrawn" / "Your patient withdrew the code." / "They cancelled the share before answering. Ask them for a new code if you still need their record."
 - Record header (board): "Allergy" (or "Allergies", "None recorded"), "Blood type" ("Not known"), "Implant" when there is one, "Shared for 30 min" / "Shared for 1 hour" / "Shared until 23:59" / "Shared until ended" ("No timer"), "29:54 left", "End session"
-- Rail (board): Overview, Recent visits, Medications, Full timeline, Care team, Family history, Documents, Insurance, Mental health; "Not shared" under each left out
+- Rail (board, without Insurance): Overview, Recent visits, Medications, Full timeline, Care team, Family history, Documents, Mental health; "Not shared" under each left out
 - Overview (board): "Conditions", "Recent visits", "View all", "Upcoming", "Medications", "Vitals", "Blood pressure", "Heart rate, bpm", "Weight, kg", "O2 saturation" · new: "Not shared", "None recorded.", "No visits recorded.", "No current medications.", the vitals' date
 - Recent visits (board): "Upcoming", "Last 3", "Older visits are in the full timeline.", "The shaded part of each bar is the normal range." · new: "Earlier", "Past", "No details recorded.", "No results recorded."
 - Medications (board): "Current", "Past", "Now 36mg, since Feb 2025", "Stopped 9 Aug 2026", "History", "Prescribed by Dr Hennessy", 'Jane: "..."' · new: "No strength history recorded.", "No past medications."
@@ -267,7 +267,7 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 - Family history (board): "Contains other people's health information.", "All", "Heart", "Diabetes", "Asthma" (and "Cancer", "Stroke" when present), "Tap a condition to see who has it.", "Heart: Dad's dad, Dad", "None known" · new: "no one", "No relatives recorded."
 - Care team (board): "You" beside the doctor · new: "No one recorded."
 - Not shared view: "Jane did not share this part of the record."
-- Documents, Insurance, Mental health: see section 2
+- Documents, Mental health: see section 2
 - Session notes (board): "Session notes", "Added to Jane's record when the session ends.", "Chief complaint", "Assessment", "Plan", "Follow-up", "Save notes" · new: "Jane did not allow notes for this session." · status "Saving notes…", "Notes saved", "Notes could not be saved. Check your connection and try Save notes again." · for screen readers "Collapse session notes", "Open session notes", "Resize session notes. Arrow keys resize, Enter collapses or opens."
 - End session step: "End session with Jane Doe", "Access closes on both sides straight away.", "Started", "Duration", "Your session notes are added to Jane's record when the session ends, and Jane can read them." or "Jane did not allow notes, so nothing is added to the record.", "End session", "Back to the record" · after a failed save: "Your latest notes could not be saved. Ending the session will try again."
 - Access paused: "Access paused", "Time's up on this share.", "The patient's timer ran out, so their record is hidden. It comes back here if they add more time.", "If nothing changes, the session closes at 10:02.", "You can still finish your notes. They go to the record when the session ends.", "End session now"
@@ -277,7 +277,7 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 - Errors: "The code could not be checked. Check your connection and try again." · "The request could not be cancelled. Check your connection and try again." · "The session could not be ended. Check your connection and try again."
 - Announcements for screen readers: "Session started. You are reading the shared record." · "5 minutes of access left." · "1 minute of access left." · "Access paused. The patient's time ran out and the record is hidden." · "The patient added more time. The record is back." · "Session ended. Access to the record is closed."
 - About the portal: "About the portal", "Trace is a portfolio project by Aoife Randles, not a medical service. Read the case study or the terms.", "For your practice", "Privacy and security" (the old accordion's rows), "Back to the portal"
-- Browser tab titles: "Clinical Access Portal", "Overview", "Recent visits", "Medications", "Full timeline", "Care team", "Family history", "Documents", "Insurance", "Mental health", "End session", "Privacy and security", each followed by "· Trace Clinical Access Portal"
+- Browser tab titles: "Clinical Access Portal", "Overview", "Recent visits", "Medications", "Full timeline", "Care team", "Family history", "Documents", "Mental health", "End session", "Privacy and security", each followed by "· Trace Clinical Access Portal"
 
 ---
 
@@ -345,7 +345,6 @@ Each has a default the build uses until you decide.
 - **How long Time's up waits, and how long a Manual share can run.** (30 minutes, and 12 hours.)
 - **Six code boxes** where Figma shows four (a Supabase limit). (Six boxes, same style.)
 - **Portal: End session in one click or two?** (Two: the End session step, P6.)
-- **Portal: Medication notes off by default.** The brief asks you to confirm. (Off; the doctor sees a note only when you share Medication notes and that note.)
 - **Portal: PDFs open in a sandbox.** Shared files are sent with a sandbox policy, as the notes require. Some versions of Chrome refuse to show a PDF under that policy (its viewer needs scripts); photos are unaffected. If that happens, the fallback is to download PDFs instead of opening them. (Opened in the browser; not yet checked in a desktop Chrome.)
 - **Portal: vitals date** beside Vitals (P9). Keep it? (Kept.)
 

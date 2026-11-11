@@ -115,19 +115,20 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(page.getByRole("heading", { level: 3, name: "Blood count and INR" })).toBeVisible();
   await expect(main.getByText("18 µg/L, low").filter({ visible: true })).toBeVisible();
   await expect(main.getByRole("img", { name: /Ferritin 18 µg\/L, low/ })).toBeVisible();
-  await expect(main.getByText("Older visits are in the full timeline.").filter({ visible: true })).toBeVisible();
+  // The default share includes the full timeline, so there is no "Older visits" note (and the
+  // demo has no visits older than these three, so no "Earlier" group either).
+  await expect(main.getByText("Older visits are in the full timeline.")).toHaveCount(0);
   await page.waitForTimeout(250);
   await expectNoAxeViolations(page);
 
-  // Medications: the step chart's values in order, prescriber, no notes (Medication notes is off).
+  // Medications: the step chart's values in order, prescriber, and Jane's notes (Medication notes is on by default).
   await nav.getByRole("link", { name: "Medications" }).click();
   await expect(page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
   await expect(main.getByText("Now 36mg, since Feb 2025").filter({ visible: true })).toBeVisible();
   const chart = main.locator("table").filter({ hasText: "Strength" });
   await expect(chart.locator("tbody tr td:first-child")).toHaveText(["18mg", "27mg", "36mg", "45mg", "36mg"]);
   await expect(main.getByText("Prescribed by Dr Hennessy").filter({ visible: true }).first()).toBeVisible();
-  await expect(main.getByText(/Jane: "/)).toHaveCount(0);
-  await expect(main.getByText("Back on 36", { exact: false })).toHaveCount(0);
+  await expect(main.getByText('Jane: "Back on 36. Smoother and sleeping better."').filter({ visible: true })).toBeVisible();
   await page.getByRole("radio", { name: "Past" }).click();
   await expect(main.getByRole("button", { name: /Doxycycline/ })).toContainText("2 Aug 2026 to 9 Aug 2026");
   await expect(page.getByRole("heading", { level: 3, name: "Doxycycline" })).toBeVisible();
@@ -143,6 +144,12 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(main.getByRole("button", { name: /^Warfarin/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("radio", { name: "Current" })).toHaveAttribute("aria-checked", "true");
 
+  // Full timeline (on by default).
+  await nav.getByRole("link", { name: "Full timeline" }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "Chest infection" })).toBeVisible();
+  await page.getByRole("radio", { name: "Conditions" }).click();
+  await expect(page.getByRole("heading", { level: 3, name: "Asthma flare" })).toBeVisible();
+
   // Care team.
   await nav.getByRole("link", { name: "Care team" }).click();
   await expect(page.getByRole("heading", { level: 2, name: "Care team" })).toBeVisible();
@@ -152,7 +159,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expectNoAxeViolations(page);
 
   // The views this share left out are dimmed rows, not links.
-  for (const name of ["Full timeline", "Family history", "Documents", "Insurance", "Mental health"]) {
+  for (const name of ["Family history", "Documents", "Mental health"]) {
     await expect(nav.getByRole("link", { name })).toHaveCount(0);
     await expect(nav.getByText(name)).toBeVisible();
   }
@@ -185,7 +192,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
     expect.arrayContaining(["code_generated", "requested", "approved", "section_viewed", "notes_saved", "ended"]),
   );
   const viewed = events.filter((e) => e.event === "section_viewed").map((e) => (e.detail as { section: string }).section);
-  expect(new Set(viewed)).toEqual(new Set(["overview", "recent_visits", "medications", "care_team"]));
+  expect(new Set(viewed)).toEqual(new Set(["overview", "recent_visits", "full_timeline", "medications", "care_team"]));
 
   // And the record is gone for good.
   for (const section of ["overview", "medications", "recent_visits"]) {

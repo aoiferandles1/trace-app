@@ -45,8 +45,8 @@ import { useSection, useSession } from "./SessionContext";
 
 /**
  * The live record's views (BRIEF.md 6.4 to 6.8, board PortalRecordE; the
- * Documents, Insurance and Mental health views have no board and follow
- * the same patterns). Each loads only its own section, and is mounted only
+ * Documents and Mental health views have no board and follow
+ * the same patterns; Insurance is never shown to a doctor). Each loads only its own section, and is mounted only
  * when the patient granted it (SessionFrame checks the scope first).
  *
  * Two-pane views (Recent visits, Medications, Full timeline) put the list
@@ -915,46 +915,6 @@ export function DocumentsView() {
     <div className="flex max-w-170 flex-col gap-4 pt-8.5">
       <PaneTitle>Documents</PaneTitle>
       {list.length === 0 ? <Quiet>No documents shared.</Quiet> : <DocumentRows docs={list} />}
-    </div>
-  );
-}
-
-/* ----------------------------------------------------------- insurance */
-
-export function InsuranceView() {
-  const ins = useSection("insurance");
-  if (ins.state === "loading") return <Loading />;
-  if (ins.state === "error") return <LoadFailed />;
-  const list = ins.record.data.connections;
-  return (
-    <div className="flex max-w-170 flex-col gap-4 pt-8.5">
-      <PaneTitle>Insurance</PaneTitle>
-      {list.length === 0 ? (
-        <Quiet>No insurance details included.</Quiet>
-      ) : (
-        list.map((c) => (
-          <section key={c.id} aria-labelledby={`ins-${c.id}`} className="flex flex-col gap-4">
-            <h3 id={`ins-${c.id}`} className="text-row-lg font-medium">
-              {c.provider}
-            </h3>
-            <dl className="grid gap-x-12 gap-y-4 @min-[560px]:grid-cols-3">
-              <DetailBlock label="Member number" term>
-                {c.member_number_masked}
-              </DetailBlock>
-              {c.plan_name && (
-                <DetailBlock label="Plan" term>
-                  {c.plan_name}
-                </DetailBlock>
-              )}
-              {c.renews_on && (
-                <DetailBlock label="Renews" term>
-                  {formatDateOnly(c.renews_on)}
-                </DetailBlock>
-              )}
-            </dl>
-          </section>
-        ))
-      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ export type Scope = {
   care_team: boolean;
   mental_health: boolean;
   documents: boolean;
+  /** Reported by the database; the portal never shows insurance. */
   insurance: boolean;
   family_history: boolean;
   medication_notes: boolean;
@@ -198,17 +199,6 @@ export type DocumentItem = {
   is_mental_health: boolean;
 };
 
-export type Insurance = {
-  id: string;
-  provider: string;
-  member_number_masked: string;
-  plan_name: string | null;
-  renews_on: string | null;
-  via: "provider" | "manual";
-  include_in_shares: boolean;
-  connected_at: string | null;
-};
-
 export type Vitals = {
   recorded_on: string;
   systolic: number | null;
@@ -241,7 +231,6 @@ export type SectionData = {
   full_timeline: { events: HealthEvent[]; visits: Entry[] };
   care_team: { care_team: CareTeamMember[] };
   family_history: { relatives: Relative[] };
-  insurance: { connections: Insurance[] };
   documents: { documents: DocumentItem[] };
   mental_health: { conditions: Condition[]; visits: Entry[]; events: HealthEvent[]; documents: DocumentItem[] };
 };

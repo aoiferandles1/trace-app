@@ -29,7 +29,9 @@ const COOKIE_MAX_AGE = 60 * 60 * 24;
 /**
  * The redesigned record's sections (portal_get_record version 2,
  * supabase/README.md section 10). The database decides what each one holds
- * and refuses the ones the patient did not grant.
+ * and refuses the ones the patient did not grant. `insurance` is left out
+ * on purpose: insurance is personal and never shown to a doctor, so this
+ * route refuses it (invalid_section) even if a session granted it.
  */
 export const SECTIONS = [
   "overview",
@@ -39,7 +41,6 @@ export const SECTIONS = [
   "full_timeline",
   "care_team",
   "family_history",
-  "insurance",
   "documents",
   "mental_health",
 ] as const;

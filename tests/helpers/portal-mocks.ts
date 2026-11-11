@@ -180,7 +180,6 @@ const DATA: Record<string, unknown> = {
   },
   care_team: { care_team: [] },
   family_history: { relatives: [] },
-  insurance: { connections: [] },
   documents: { documents: [] },
   mental_health: { conditions: [], visits: [], events: [], documents: [] },
 };
@@ -193,7 +192,6 @@ const SECTION_SCOPE: Record<string, keyof typeof SCOPE | null> = {
   full_timeline: "full_timeline",
   care_team: "care_team",
   family_history: "family_history",
-  insurance: "insurance",
   documents: "documents",
   mental_health: "mental_health",
 };
