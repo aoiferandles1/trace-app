@@ -32,21 +32,14 @@ import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { DemoMarker } from "../_components/Screens";
 
-type Context = { clinician: string | null; includeInsurance: boolean };
+type Context = { clinician: string | null };
 
-/** Who the appointment is with (the title), and whether insurance is set to go in shares. */
+/** Who the appointment is with (the title). */
 async function loadContext(appointmentId: string | null): Promise<Context> {
-  const supabase = createClient();
-  const [visit, insurance] = await Promise.all([
-    appointmentId
-      ? supabase.from("entries").select("clinician").eq("id", appointmentId).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    supabase.from("insurance_connections").select("include_in_shares").limit(1),
-  ]);
-  return {
-    clinician: visit.data?.clinician?.trim() || null,
-    includeInsurance: Boolean(insurance.data?.[0]?.include_in_shares),
-  };
+  const visit = appointmentId
+    ? await createClient().from("entries").select("clinician").eq("id", appointmentId).maybeSingle()
+    : { data: null };
+  return { clinician: visit.data?.clinician?.trim() || null };
 }
 
 /**
@@ -54,10 +47,10 @@ async function loadContext(appointmentId: string | null): Promise<Context> {
  * asked each time, at the moment of sharing (PLAN.md section 2).
  *
  * The scope tiles start from the GP visit profile: Safety info and
- * Medications are locked (always shared); Conditions, Recent visits and Care
- * team on; Full timeline, Documents, Family history, Insurance, Medication
- * notes and Mental health off (Insurance starts on when the connection's
- * "Include in shares" is on). Then the duration, "Doctor can add notes", the
+ * Medications are locked (always shared); Conditions, Recent visits, Full
+ * timeline, Care team and Medication notes on; Documents, Family history and
+ * Mental health off. Insurance is personal and has no tile (owner's
+ * decision). Then the duration, "Doctor can add notes", the
  * count, and "Create share code", which calls the new create_share_code with
  * every scope named (it replaces any unused code).
  *
@@ -73,19 +66,13 @@ function ShareConfirmScreen() {
   const { session, setSession } = useShareSession();
   const context = useLoad(() => loadContext(appointmentId), [appointmentId]);
   const [prefs, setPrefs] = useState<SharePrefs>(GP_VISIT_DEFAULTS);
-  // Insurance follows "Include in shares" until the patient touches the tile.
-  const [insuranceTouched, setInsuranceTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const ctx = context.status === "ready" ? context.data : null;
-  const effective: SharePrefs = {
-    ...prefs,
-    share_insurance: insuranceTouched ? prefs.share_insurance : Boolean(ctx?.includeInsurance),
-  };
+  const effective = prefs;
 
   function toggle(key: ScopeKey, value: boolean) {
-    if (key === "share_insurance") setInsuranceTouched(true);
     setPrefs((p) => ({ ...p, [key]: value }));
   }
 

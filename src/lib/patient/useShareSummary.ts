@@ -11,7 +11,7 @@ import { sharedScopes, type SharePrefs } from "./share";
  * about what is in it ("4 active", "3 items", "GP, 2 specialists"), counted
  * from the patient's own record with the rules the portal follows
  * (supabase/README.md section 10: a mental health item only with that
- * scope, insurance only when "Include in shares" is on).
+ * scope). Insurance is personal and never shared (owner's decision).
  */
 
 export type SummaryRow = { id: string; label: string; detail?: string };
@@ -23,23 +23,20 @@ type Counts = {
   events: { mental: boolean }[];
   relatives: number;
   documents: { mental: boolean }[];
-  insurance: { provider: string; include: boolean } | null;
 };
 
 async function loadCounts(): Promise<Counts> {
   const supabase = createClient();
-  const [meds, conditions, team, events, relatives, documents, insurance] = await Promise.all([
+  const [meds, conditions, team, events, relatives, documents] = await Promise.all([
     supabase.from("medications").select("ended_on"),
     supabase.from("conditions").select("is_mental_health"),
     supabase.from("care_team").select("kind"),
     supabase.from("health_events").select("is_mental_health"),
     supabase.from("relatives").select("id", { count: "exact", head: true }),
     supabase.from("documents").select("is_mental_health"),
-    supabase.from("insurance_connections").select("provider, include_in_shares").limit(1),
   ]);
   if (relatives.error) throw relatives.error;
   const today = dayKey();
-  const ins = must(insurance)[0];
   return {
     medications: must(meds).filter((m) => isCurrentMedication(m, today)).length,
     conditions: must(conditions).map((c) => ({ mental: c.is_mental_health })),
@@ -47,7 +44,6 @@ async function loadCounts(): Promise<Counts> {
     events: must(events).map((e) => ({ mental: e.is_mental_health })),
     relatives: relatives.count ?? 0,
     documents: must(documents).map((d) => ({ mental: d.is_mental_health })),
-    insurance: ins ? { provider: ins.provider, include: ins.include_in_shares } : null,
   };
 }
 
@@ -111,8 +107,6 @@ export function useShareSummary(prefs: SharePrefs | null, profile: Profile): Sum
         return count(visible(c.documents), "document", "documents");
       case "family_history":
         return count(c.relatives, "relative", "relatives");
-      case "insurance":
-        return !c.insurance ? "Not connected" : c.insurance.include ? c.insurance.provider : "Not included in shares";
       case "medication_notes":
         return "Notes you chose to share";
       default:

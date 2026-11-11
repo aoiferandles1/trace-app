@@ -81,7 +81,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await expect(page).toHaveURL(/\/share\?appointment=/);
   await expect(page.getByRole("heading", { level: 1, name: "Share with Dr Hennessy" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "30 min" })).toBeChecked();
-  await expect(page.getByText("5 of 11 shared")).toBeVisible();
+  await expect(page.getByText("7 of 10 shared")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
   await page.getByRole("button", { name: "Create share code" }).click();
@@ -96,14 +96,13 @@ test("happy path: the today card to notes on the timeline and in the share histo
     /Medications.*4 active/,
     /Conditions.*3 items/,
     /Recent visits.*Last 3/,
+    /Full timeline.*9 events/,
     /Care team.*GP, 2 specialists, 1 pharmacy/,
+    /Medication notes/,
   ]);
   await expect(page.getByRole("region", { name: "Not shared" }).getByRole("listitem")).toHaveText([
-    "Full timeline",
     "Documents",
     "Family history",
-    "Insurance",
-    "Medication notes",
     "Mental health",
   ]);
   await expectNoAxeViolations(page);
@@ -125,12 +124,12 @@ test("happy path: the today card to notes on the timeline and in the share histo
     "Medications",
     "Conditions",
     "Recent visits",
+    "Full timeline",
     "Care team",
+    "Medication notes",
     "Can add session notes",
   ]);
-  await expect(
-    sheet.getByText("Not shared: Full timeline, Documents, Family history, Insurance, Medication notes, Mental health."),
-  ).toBeVisible();
+  await expect(sheet.getByText("Not shared: Documents, Family history, Mental health.")).toBeVisible();
   await expect(sheet.getByText("Name and practice are as typed. Trace does not check them.")).toBeVisible();
   // Focus is inside the sheet, on the request, not on Allow.
   await expect(sheet.locator("#access-request-body")).toBeFocused();
@@ -148,7 +147,9 @@ test("happy path: the today card to notes on the timeline and in the share histo
     "Medications",
     "Conditions",
     "Recent visits",
+    "Full timeline",
     "Care team",
+    "Medication notes",
   ]);
   await expect(page.getByText(/^Access ends at \d{1,2}:\d{2}(am|pm)$/)).toBeVisible();
   await expectNoAxeViolations(page);
@@ -207,7 +208,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
   const entry = page.getByRole("article", { name: /Dr Hennessy · GP/ }).first();
   await expect(entry).toBeVisible({ timeout: 20_000 });
   await expect(entry.getByText("Ended", { exact: true })).toBeVisible();
-  await expect(entry.getByText("Safety info, Medications, Conditions, Recent visits, Care team")).toBeVisible();
+  await expect(entry.getByText("Safety info, Medications, Conditions, Recent visits, Full timeline, Care team, Medication notes")).toBeVisible();
   for (const line of ["You made a share code", "Dr Hennessy typed the code and asked for access", "You allowed access", "Viewed the overview", "Session notes added to your record", "Dr Hennessy ended the session"]) {
     await expect(entry.getByText(line)).toBeVisible();
   }
@@ -225,30 +226,31 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
   await expect(tiles.getByRole("switch", { name: "Safety info" })).toHaveCount(0);
   await expect(tiles.getByRole("switch", { name: "Medications" })).toHaveCount(0);
   await expect(tiles.getByRole("img", { name: "Always shared" })).toHaveCount(2);
-  // The GP visit defaults: the original five on, everything new off.
+  // The GP visit defaults: the original five, Full timeline and Medication notes on; the rest off.
+  // Insurance is personal and has no tile (owner's decision).
   const expected: [string, boolean][] = [
     ["Conditions", true],
     ["Recent visits", true],
-    ["Full timeline", false],
+    ["Full timeline", true],
     ["Care team", true],
     ["Documents", false],
     ["Family history", false],
-    ["Insurance", false],
-    ["Medication notes", false],
+    ["Medication notes", true],
     ["Mental health, private by default", false],
   ];
   for (const [name, on] of expected) {
     await expect(tiles.getByRole("switch", { name, exact: true })).toHaveAttribute("aria-checked", String(on));
   }
-  await expect(page.getByText("5 of 11 shared")).toBeVisible();
+  await expect(tiles.getByRole("switch", { name: "Insurance" })).toHaveCount(0);
+  await expect(page.getByText("7 of 10 shared")).toBeVisible();
 
-  // Change them: Family history and Medication notes on, Care team off.
+  // Change them: Family history on, Full timeline and Care team off.
   await tiles.getByRole("switch", { name: "Family history" }).click();
-  await tiles.getByRole("switch", { name: "Medication notes" }).click();
+  await tiles.getByRole("switch", { name: "Full timeline" }).click();
   await tiles.getByRole("switch", { name: "Care team" }).click();
   await expect(tiles.getByRole("switch", { name: "Family history" })).toHaveAttribute("aria-checked", "true");
   await expect(tiles.getByRole("switch", { name: "Care team" })).toHaveAttribute("aria-checked", "false");
-  await expect(page.getByText("6 of 11 shared")).toBeVisible();
+  await expect(page.getByText("6 of 10 shared")).toBeVisible();
 
   // The duration is a radiogroup: arrow keys choose.
   const durations = page.getByRole("radiogroup", { name: "For how long" });
@@ -293,7 +295,6 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
     "Full timeline",
     "Care team",
     "Documents",
-    "Insurance",
     "Mental health",
   ]);
   const doctor = await newDoctor(browser);
@@ -310,7 +311,7 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
     "Medication notes",
     "Can add session notes",
   ]);
-  await expect(sheet.getByText("Not shared: Full timeline, Care team, Documents, Insurance, Mental health.")).toBeVisible();
+  await expect(sheet.getByText("Not shared: Full timeline, Care team, Documents, Mental health.")).toBeVisible();
   await sheet.getByRole("button", { name: "Allow access" }).click();
   await page.waitForURL(/\/session$/);
   await expect(page.getByRole("region", { name: "Dr Hennessy can see" }).getByRole("listitem")).toHaveText([

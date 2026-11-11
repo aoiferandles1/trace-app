@@ -37,7 +37,6 @@ export type ScopeKey =
   | "share_care_team"
   | "share_documents"
   | "share_family_history"
-  | "share_insurance"
   | "share_medication_notes"
   | "share_mental_health";
 
@@ -48,18 +47,19 @@ export type SharePrefs = Record<ScopeKey, boolean> & {
 
 /**
  * The GP visit profile (PLAN.md section 7, BRIEF.md section 4.5): what every
- * share starts from. The original five on; Full timeline, Documents, Family
- * history, Insurance, Medication notes and Mental health off.
+ * share starts from. The original five, Full timeline and Medication notes on
+ * (owner's decision, 11 Nov 2026); Documents, Family history and Mental
+ * health off. Insurance is personal and never shared (owner's decision), so
+ * it is not a switch at all: createCodeArgs always sends it off.
  */
 export const GP_VISIT_DEFAULTS: SharePrefs = {
   share_conditions: true,
   share_recent_visits: true,
-  share_full_timeline: false,
+  share_full_timeline: true,
   share_care_team: true,
   share_documents: false,
   share_family_history: false,
-  share_insurance: false,
-  share_medication_notes: false,
+  share_medication_notes: true,
   share_mental_health: false,
   allow_notes: true,
   duration_kind: "30m",
@@ -89,7 +89,6 @@ export const SCOPES: ScopeDef[] = [
   { key: "share_care_team", id: "care_team", label: "Care team", icon: "people" },
   { key: "share_documents", id: "documents", label: "Documents", icon: "document" },
   { key: "share_family_history", id: "family_history", label: "Family history", icon: "tree" },
-  { key: "share_insurance", id: "insurance", label: "Insurance", icon: "shield" },
   { key: "share_medication_notes", id: "medication_notes", label: "Medication notes", icon: "pencil" },
   { key: "share_mental_health", id: "mental_health", label: "Mental health", icon: "smile" },
 ];
@@ -113,7 +112,8 @@ export function createCodeArgs(p: SharePrefs, appointmentId: string | null) {
     share_care_team: p.share_care_team,
     share_documents: p.share_documents,
     share_family_history: p.share_family_history,
-    share_insurance: p.share_insurance,
+    // Insurance is personal (owner's decision): never shared. The database still takes the switch.
+    share_insurance: false,
     share_medication_notes: p.share_medication_notes,
     share_mental_health: p.share_mental_health,
     allow_notes: p.allow_notes,
@@ -157,7 +157,6 @@ export function prefsOf(s: ShareSession): SharePrefs {
     // Sessions the old create_share_code made have none of the new switches.
     share_documents: Boolean(s.share_documents),
     share_family_history: Boolean(s.share_family_history),
-    share_insurance: Boolean(s.share_insurance),
     share_medication_notes: Boolean(s.share_medication_notes),
     share_mental_health: s.share_mental_health,
     allow_notes: s.allow_notes,

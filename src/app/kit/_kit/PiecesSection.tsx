@@ -63,7 +63,7 @@ export function SheetsSection() {
               clinician={{ name: "Dr Hennessy", role: "GP", practice: "Rathmines Medical Centre" }}
               duration="30 min"
               shared={["Safety info", "Medications", "Conditions", "Recent visits", "Care team", "Can add session notes"]}
-              notIncluded="Full timeline, Documents, Family history, Insurance, Mental health"
+              notIncluded="Documents, Family history, Mental health"
             />
             <p className="text-caption text-ink-2">Name and practice are as typed. Trace does not check them.</p>
           </BottomSheet>
@@ -140,7 +140,7 @@ export function PatientPiecesSection() {
                 { label: "Medications", detail: "4 active" },
                 { label: "Conditions", detail: "3 items" },
               ]}
-              notIncluded={["Full timeline", "Documents", "Family history", "Insurance", "Medication notes", "Mental health"]}
+              notIncluded={["Documents", "Family history", "Mental health"]}
             />
           </div>
         </Specimen>

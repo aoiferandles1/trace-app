@@ -14,7 +14,14 @@ import { Notice } from "@/components/ui/Notice";
 import { StateMessage } from "@/components/ui/StateMessage";
 import { dayKey, daysUntil, formatShortDate, formatTime, greetingFor } from "@/lib/dates";
 import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
-import { ENTRY_KIND_LABEL, entryIcon, loadSections, type RecordEntry, type RecordMedication } from "@/lib/patient/record";
+import {
+  ENTRY_KIND_LABEL,
+  entryIcon,
+  loadSections,
+  URGENT_REFILL_DAYS,
+  type RecordEntry,
+  type RecordMedication,
+} from "@/lib/patient/record";
 import { clinicianName, isOpen, msUntil, type ShareSession } from "@/lib/patient/share";
 import { fullName, isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
@@ -67,8 +74,6 @@ function daysText(days: number): string {
   return `${days} ${days === 1 ? "day" : "days"}`;
 }
 
-/** A refill counts as urgent within two weeks (MainA2 tints Warfarin's at 8 days). */
-const URGENT_REFILL_DAYS = 14;
 
 /**
  * Home (board MainA2), three states (PLAN.md section 7):

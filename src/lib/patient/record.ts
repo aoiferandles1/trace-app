@@ -290,3 +290,158 @@ export function entryIcon(e: Pick<RecordEntry, "kind" | "title">): IconName {
   return "calendar";
 }
 
+
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * A date column at its precision: "2 Aug 2026" (day), "Jan 2024" (month),
+ * "2015" (year). `withYear: false` drops the year from a day or month
+ * ("2 Aug", "Aug").
+ */
+export function formatAtPrecision(day: string, precision: DatePrecision, withYear = true): string {
+  const [y, m, d] = day.split("-").map(Number);
+  if (precision === "year") return String(y);
+  if (precision === "month") return withYear ? `${MONTH_SHORT[m - 1]} ${y}` : MONTH_SHORT[m - 1];
+  return withYear ? `${d} ${MONTH_SHORT[m - 1]} ${y}` : `${d} ${MONTH_SHORT[m - 1]}`;
+}
+
+/**
+ * "2 Aug to 9 Aug 2026" (both in one year), "1 Apr 2024 to 30 Sep 2025",
+ * "Jan 2024 to Mar 2024" (MedDetailA2 keeps both years on months),
+ * "Feb 2025 to now".
+ */
+export function formatRange(start: string, end: string | null, precision: DatePrecision): string {
+  if (!end) return `${formatAtPrecision(start, precision)} to now`;
+  const sameYear = start.slice(0, 4) === end.slice(0, 4);
+  const from = precision === "day" && sameYear ? formatAtPrecision(start, "day", false) : formatAtPrecision(start, precision);
+  return `${from} to ${formatAtPrecision(end, precision)}`;
+}
+
+/** "Now 36mg, since Feb 2025" (MedDetailA2); "Stopped 9 Aug 2026" for a past medication. */
+export function medicationNowLine(m: RecordMedication): string | null {
+  const latest = m.periods[0];
+  if (m.status === "past") {
+    const end = m.ended_on ?? latest?.end_date;
+    return end ? `Stopped ${formatAtPrecision(end, latest?.date_precision === "month" ? "month" : "day")}` : null;
+  }
+  if (!latest) return m.strength_label ? `Now ${m.strength_label}` : null;
+  return `Now ${latest.strength_label}, since ${formatAtPrecision(latest.start_date, latest.date_precision)}`;
+}
+
+/** Number of strength changes: one fewer than the periods (5 periods are 4 changes). */
+export function strengthChanges(m: RecordMedication): number {
+  return Math.max(0, m.period_count - 1);
+}
+
+/**
+ * A refill counts as urgent at 5 days or fewer (owner's decision, 11 Nov
+ * 2026; the boards tint Warfarin's at 8 days). Home's Coming up and the
+ * Medications list both use it.
+ */
+export const URGENT_REFILL_DAYS = 5;
+
+/**
+ * The Medications list's sub line (MedsA2).
+ * Current: the schedule, then the strength changes or the supply left
+ * ("Morning, 4 strength changes", "Evening, 8 days left"). `urgent` is true
+ * when the supply line is the urgent one.
+ * Past: "2 Aug to 9 Aug 2026, Dr Hennessy".
+ */
+export function medicationCaption(m: RecordMedication): { text: string; urgent: boolean } {
+  if (m.status === "past") {
+    const start = m.started_on ?? m.periods[m.periods.length - 1]?.start_date ?? null;
+    const end = m.ended_on;
+    const when = start && end ? formatRange(start, end, "day") : end ? `Ended ${formatAtPrecision(end, "day")}` : null;
+    return { text: [when, m.prescriber].filter(Boolean).join(", "), urgent: false };
+  }
+  const parts: string[] = [];
+  const schedule = m.schedule ?? (m.frequency ? capitalise(m.frequency) : null);
+  if (schedule) parts.push(schedule);
+  const left = m.supply_days_left;
+  if (left !== null && left <= URGENT_REFILL_DAYS) {
+    parts.push(left < 0 ? "refill overdue" : left === 0 ? "refill due today" : `${left} ${left === 1 ? "day" : "days"} left`);
+    return { text: parts.join(", "), urgent: true };
+  }
+  const changes = strengthChanges(m);
+  if (changes > 0) parts.push(`${changes} strength ${changes === 1 ? "change" : "changes"}`);
+  return { text: parts.join(", "), urgent: false };
+}
+
+/** "Infection", "Condition". */
+export const EVENT_KIND_LABEL: Record<HealthEvent["kind"], string> = { infection: "Infection", condition: "Condition" };
+
+/** "Aug, Infection" (TimelineA2's row sub line). */
+export function eventCaption(e: HealthEvent): string {
+  const when = e.date_precision === "year" ? null : formatAtPrecision(e.occurred_on, e.date_precision, false);
+  return [when, EVENT_KIND_LABEL[e.kind]].filter(Boolean).join(", ");
+}
+
+/** "Aug 2026, Infection" (TimelineA2's sheet). */
+export function eventMeta(e: HealthEvent): string {
+  return `${formatAtPrecision(e.occurred_on, e.date_precision)}, ${EVENT_KIND_LABEL[e.kind]}`;
+}
+
+/** "PDF" for a PDF, "Photo" for a JPEG or PNG (README section 10, a document). */
+export function documentTypeLabel(contentType: RecordDocument["content_type"]): string {
+  return contentType === "application/pdf" ? "PDF" : "Photo";
+}
+
+/** "820 KB", "2.4 MB". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, "")} MB`;
+}
+
+/** The most a document may be: 3 MB (the database refuses more). */
+export const MAX_DOCUMENT_BYTES = 3 * 1024 * 1024;
+
+/** The three types the database stores. */
+export const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"] as const;
+
+/** Every relation the database takes, with the words the shapes give it. */
+export const RELATION_OPTIONS: { value: string; label: string }[] = [
+  { value: "mother", label: "Mum" },
+  { value: "father", label: "Dad" },
+  { value: "sister", label: "Sister" },
+  { value: "brother", label: "Brother" },
+  { value: "daughter", label: "Daughter" },
+  { value: "son", label: "Son" },
+  { value: "maternal_grandmother", label: "Mum's mum" },
+  { value: "maternal_grandfather", label: "Mum's dad" },
+  { value: "paternal_grandmother", label: "Dad's mum" },
+  { value: "paternal_grandfather", label: "Dad's dad" },
+  { value: "maternal_aunt", label: "Mum's sister" },
+  { value: "maternal_uncle", label: "Mum's brother" },
+  { value: "paternal_aunt", label: "Dad's sister" },
+  { value: "paternal_uncle", label: "Dad's brother" },
+  { value: "other", label: "Someone else" },
+];
+
+/** A relative's condition groups, in the family tree filter's order (FamilyA2: Heart, Diabetes, Asthma). */
+export const CONDITION_CATEGORIES: { value: NonNullable<RelativeCondition["category"]>; label: string }[] = [
+  { value: "heart", label: "Heart" },
+  { value: "diabetes", label: "Diabetes" },
+  { value: "asthma", label: "Asthma" },
+  { value: "cancer", label: "Cancer" },
+  { value: "stroke", label: "Stroke" },
+  { value: "other", label: "Other" },
+];
+
+/**
+ * The group a condition of the patient's own falls in, for the family tree's
+ * "You" node (patient conditions carry no category in the database).
+ */
+export function categoryOfConditionName(name: string): RelativeCondition["category"] {
+  if (/heart|atrial|cardi|angina|arrhythm|hypertension|blood pressure/i.test(name)) return "heart";
+  if (/diabet/i.test(name)) return "diabetes";
+  if (/asthma/i.test(name)) return "asthma";
+  if (/cancer|tumou?r|lymphoma|leuk|melanoma/i.test(name)) return "cancer";
+  if (/stroke/i.test(name)) return "stroke";
+  return null;
+}
+
+/** The database's error code for a failed call (`error.message`), or null. */
+export function errorCode(error: unknown): string | null {
+  if (error && typeof error === "object" && "message" in error) return String((error as { message: unknown }).message);
+  return null;
+}

@@ -44,7 +44,9 @@ test("home shows Jane's record", async ({ page }) => {
   await expect(today.getByRole("link", { name: "Share record" })).toHaveAttribute("href", /\/share\?appointment=/);
   // Coming up: the refill (urgent, in words), then the upcoming visits, soonest first.
   const coming = page.getByRole("list", { name: "Coming up" });
-  await expect(coming.getByRole("link")).toHaveText([/8 days.*Warfarin refill/, /INR blood test/, /Cardiology follow-up/]);
+  // The refill is 8 days away: urgent only from 5 days down (owner's decision), so an ordinary tile.
+  await expect(coming.getByRole("link")).toHaveText([/Warfarin refill/, /INR blood test/, /Cardiology follow-up/]);
+  await expect(coming.getByText("8 days")).toHaveCount(0);
   await expect(coming.getByRole("link", { name: /Warfarin refill/ })).toHaveAttribute("href", /\/meds\//);
   // Recent: the three latest past entries, not today's visit (it is on the card).
   const recent = page.getByRole("region", { name: "Recent" });
@@ -546,7 +548,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   const today = page.getByRole("region", { name: "GP visit today" });
   await expect(today.getByRole("link", { name: "Share record" })).toBeVisible();
   const coming = page.getByRole("list", { name: "Coming up" });
-  await expect(coming.getByRole("link", { name: /8 days.*Warfarin refill/ })).toBeVisible();
+  await expect(coming.getByRole("link", { name: /Warfarin refill/ })).toBeVisible();
   await expect(coming.getByRole("link", { name: /INR blood test/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Recent" }).getByRole("link", { name: /Blood test, full blood count and INR.*Result/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-home.png"), fullPage: true });

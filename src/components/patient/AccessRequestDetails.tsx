@@ -23,7 +23,7 @@ export function AccessRequestDetails({
   duration: string;
   context?: string;
   shared: string[];
-  /** "Full timeline, documents, insurance and mental health" */
+  /** "Documents, family history and mental health" */
   notIncluded?: string;
 }) {
   const subline = [clinician.role, clinician.practice].filter(Boolean).join(", ");
