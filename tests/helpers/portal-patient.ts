@@ -174,6 +174,29 @@ export class PortalPatient {
     return data;
   }
 
+  /** The mocked provider's sample plan, included in shares. */
+  async connectInsurance(): Promise<void> {
+    const { data, error } = await this.client.rpc("save_insurance", {
+      provider: "VHI",
+      member_number: "1234 5678 4821",
+      plan_name: "Comprehensive plan",
+      renews_on: "2027-03-01",
+      via: "provider",
+    });
+    if (error || !data) fail("save_insurance", error);
+    const res = await this.client
+      .from("insurance_connections")
+      .update({ include_in_shares: true })
+      .eq("id", (data as { id: string }).id);
+    if (res.error) fail("update insurance_connections", res.error);
+  }
+
+  /** A condition flagged as mental health (the seed has none). */
+  async addMentalHealthCondition(name: string): Promise<void> {
+    const { error } = await this.client.from("conditions").insert({ name, status: "ongoing", is_mental_health: true });
+    if (error) fail("insert condition", error);
+  }
+
   /** Turns `note_shared` off on every period of one medication (by name). */
   async hideNotes(medicationName: string): Promise<void> {
     const { data: meds, error } = await this.client.from("medications").select("id").eq("name", medicationName);

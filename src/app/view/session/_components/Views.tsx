@@ -455,6 +455,14 @@ export function MedicationsView() {
   const meds = useSection("medications");
   const [tab, setTab] = useState<"current" | "past" | null>(null);
   const [selected, setSelected] = useState<string | null>(wanted);
+  // Next keeps this view alive (hidden) between visits, so a new ?id= from
+  // Overview must replace the earlier choice: adjust state when it changes.
+  const [lastWanted, setLastWanted] = useState(wanted);
+  if (wanted !== lastWanted) {
+    setLastWanted(wanted);
+    setSelected(wanted);
+    setTab(null);
+  }
 
   if (meds.state === "loading") return <Loading />;
   if (meds.state === "error") return <LoadFailed />;

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
 import { PatientSummaryCard, type HeaderFact } from "@/components/portal/PatientSummaryCard";
 import { PortalFooter } from "@/components/portal/PortalFooter";
@@ -211,6 +211,15 @@ export function SessionFrame({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => () => window.clearTimeout(autosave.current), []);
+
+  // Next's route announcer reads the page's h1 when the document has no
+  // title at that moment (between a navigation and its metadata), and keeps
+  // what it read. Here the h1 is the patient's name, which must not outlive
+  // the session, so the document always has a title. Runs before the
+  // announcer's own effect (children's effects run first).
+  useLayoutEffect(() => {
+    if (!document.title) document.title = "Clinical Access Portal";
+  });
 
   const endSession = useCallback(async () => {
     setEnding(true);
