@@ -64,11 +64,14 @@ export function Eyebrow({
   children,
   tone = "indigo",
   uppercase = false,
+  size = "md",
   className,
 }: {
   children: ReactNode;
   tone?: keyof typeof eyebrowTone;
   uppercase?: boolean;
+  /** md: 14px. sm: 12px Label, as on the sign-up steps ("About You"). */
+  size?: "sm" | "md";
   className?: string;
 }) {
   const t = eyebrowTone[tone];
@@ -76,7 +79,7 @@ export function Eyebrow({
     <p
       className={cn(
         "flex items-center gap-2 font-medium",
-        uppercase ? "text-label uppercase" : "text-body-sm",
+        uppercase ? "text-label uppercase" : size === "sm" ? "text-label" : "text-body-sm",
         t.text,
         className,
       )}
