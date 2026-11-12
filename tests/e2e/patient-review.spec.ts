@@ -215,3 +215,87 @@ test("F10, F4: the printable record and the email screen", async ({ page }) => {
   await expect(page.getByText("The demo has no email to change.")).toBeVisible();
   await expectNoAxeViolations(page);
 });
+
+/** A share as my_share_session returns it, for stand-in responses (a real share needs the doctor's portal). */
+function standIn(overrides: Record<string, unknown>) {
+  const now = Date.now();
+  return {
+    id: "00000000-0000-4000-8000-0000000000a1",
+    patient_id: "00000000-0000-4000-8000-0000000000a2",
+    status: "active",
+    code: "4837",
+    code_expires_at: new Date(now - 30 * 60_000).toISOString(),
+    share_conditions: true,
+    share_recent_visits: true,
+    share_full_timeline: true,
+    share_care_team: true,
+    share_documents: false,
+    share_family_history: false,
+    share_insurance: false,
+    share_medication_notes: true,
+    share_mental_health: false,
+    allow_notes: true,
+    duration_kind: "30m",
+    appointment_entry_id: null,
+    clinician_name: "Dr Hennessy",
+    clinician_role: "GP",
+    clinician_practice: "Rathmines Medical Centre",
+    requested_at: new Date(now - 11 * 60_000).toISOString(),
+    request_expires_at: new Date(now - 6 * 60_000).toISOString(),
+    approved_at: new Date(now - 10 * 60_000).toISOString(),
+    expires_at: new Date(now + 20 * 60_000).toISOString(),
+    paused_at: null,
+    ended_at: null,
+    ended_by: null,
+    chief_complaint: null,
+    assessment: null,
+    plan: null,
+    follow_up: null,
+    notes_updated_at: null,
+    notes_entry_id: null,
+    created_at: new Date(now - 12 * 60_000).toISOString(),
+    updated_at: new Date(now).toISOString(),
+    closes_at: null,
+    ...overrides,
+  };
+}
+
+test("A12, A14, A17: End sharing now is on screen, asks first; Add 15 min is offered (stand-in share)", async ({ page }) => {
+  let current: unknown = standIn({});
+  await page.route("**/rest/v1/rpc/my_share_session", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(current) }),
+  );
+  await page.route("**/rest/v1/rpc/extend_session", (route) => {
+    current = standIn({ expires_at: new Date(Date.now() + 35 * 60_000).toISOString(), updated_at: new Date(Date.now() + 1000).toISOString() });
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(current) });
+  });
+  await page.goto("/session");
+  await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible({ timeout: 20_000 });
+  // Pinned: inside the 844px screen with every section shared, not below the fold.
+  await expect(page.getByRole("button", { name: "End sharing now" })).toBeInViewport();
+  await page.getByRole("button", { name: "Add 15 min" }).click();
+  await expect(page.getByText(/^Access ends at /)).toBeVisible();
+  await page.getByRole("button", { name: "End sharing now" }).click();
+  const sheet = page.getByRole("dialog", { name: "End sharing now?" });
+  await expect(sheet).toBeVisible();
+  await expectNoAxeViolations(page, "dialog");
+  await sheet.getByRole("button", { name: "Keep sharing" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
+});
+
+test("A13: a share that ends while you are elsewhere leaves a line at the top (stand-in share)", async ({ page }) => {
+  let current: unknown = standIn({});
+  await page.route("**/rest/v1/rpc/my_share_session", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(current) }),
+  );
+  await page.goto("/record");
+  await expect(page.getByRole("link", { name: /Dr Hennessy can see your record/ })).toBeVisible({ timeout: 20_000 });
+  current = standIn({ status: "ended", ended_at: new Date().toISOString(), ended_by: "clinician", updated_at: new Date(Date.now() + 2000).toISOString() });
+  const line = page.getByText(/^Dr Hennessy no longer has access to your record\./);
+  await expect(line).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("link", { name: "View summary" })).toHaveAttribute("href", /\/session\/ended\?id=/);
+  await expectNoAxeViolations(page);
+  await page.getByRole("button", { name: "Dismiss" }).click();
+  await expect(line).toBeHidden();
+});

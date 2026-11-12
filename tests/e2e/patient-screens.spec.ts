@@ -108,6 +108,10 @@ test("phone screens at 390 x 844", async ({ page, browser }) => {
   await shot("session-active");
 
   await page.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home/, { timeout: 20_000 });
   await doctor.context.close();
 });

@@ -184,7 +184,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
 
   // Back to the bright app, with one line; the summary is a link away.
   await page.waitForURL(/\/home\?ended=/, { timeout: 10_000 });
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./)).toBeVisible();
   await expect(page.getByRole("link", { name: "Share record" })).toHaveCount(0);
   await expect(page.getByRole("list", { name: "Coming up" }).getByRole("link", { name: /INR blood test/ })).toBeVisible();
   await expectNoAxeViolations(page);
@@ -323,6 +323,8 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
     "Medication notes",
   ]);
   await page.getByRole("button", { name: "End sharing now" }).click();
+  // It asks once before ending (A17).
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await doctor.context.close();
 });
@@ -367,9 +369,13 @@ test("the patient ends early: the portal closes within seconds", async ({ page, 
   await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   const endedAt = Date.now();
   await page.waitForURL(/\/home\?ended=/);
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./)).toBeVisible();
   await expect(doctor.page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
   expect(Date.now() - endedAt).toBeLessThan(6_000);
   await expect(doctor.page.getByText("Penicillin")).toHaveCount(0);
@@ -403,6 +409,10 @@ test("the patient ends after the doctor's notes autosaved: the ended screen and 
   await page.waitForTimeout(1_500); // the autosave's realtime update reaches the phone first
 
   await page.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await page.getByRole("link", { name: "View summary" }).click();
   await page.waitForURL(/\/session\/ended\?id=/);
@@ -455,6 +465,8 @@ test("share from Profile on a day with no appointment", async ({ page, browser }
   await expect(page.getByText("Rathmines Medical Centre", { exact: true })).toBeVisible();
   await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "End sharing now" }).click();
+  // It asks once before ending (A17).
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await expect(doctor.page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
   await doctor.context.close();
@@ -562,6 +574,10 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   await expectNoAxeViolations(page);
 
   await phone.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await phone.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await expect(laptop.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
 
   // Narrower than 1100px: the phone alone, with the portal one tab away.
@@ -658,7 +674,7 @@ test("Time's up (stand-in data): extend brings the session back", async ({ page 
   await page.goto("/session");
   await expect(page.getByRole("heading", { level: 1, name: "Time's up" })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Dr Hennessy's access has been paused. Your record is no longer visible until you decide.")).toBeVisible();
-  await expect(page.getByText("29 of 29 min")).toBeVisible();
+  await expect(page.getByText("29 min", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /End sharing.*notes are added to your record/ })).toBeVisible();
   await expect(page.getByText(/^If you don't decide, the session closes at /)).toBeVisible();
   await expectNoAxeViolations(page);

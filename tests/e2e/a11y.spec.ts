@@ -363,9 +363,12 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
 
   await page.getByRole("button", { name: "End sharing now" }).focus();
   await page.keyboard.press("Enter");
+  // It asks once before ending (A17); the sheet's confirm, by keyboard too.
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).focus();
+  await page.keyboard.press("Enter");
   // Back to the bright app, with one line and the summary a link away.
   await page.waitForURL(/\/home\?ended=/);
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./)).toBeVisible();
   await expect(page.locator('[role="status"][aria-live="polite"]').last()).toHaveText(
     "Sharing ended. Dr Hennessy no longer has access to your record.",
   );
