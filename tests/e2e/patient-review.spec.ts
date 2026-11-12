@@ -95,7 +95,7 @@ test("A11: Create share code works again after Back from the code", async ({ pag
   await page.getByRole("link", { name: "Share your record" }).click();
   const create = page.getByRole("button", { name: "Create share code" });
   await create.click();
-  await expect(page.getByRole("button", { name: /Your code: .*Copy it/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: /Your code: \d \d \d \d\. Copy it/ })).toBeVisible({ timeout: 20_000 });
   await page.getByRole("link", { name: "Back to what you share" }).click();
   await expect(create).toBeVisible();
   await expect(create).toBeEnabled();
@@ -103,7 +103,7 @@ test("A11: Create share code works again after Back from the code", async ({ pag
   // The live code is pointed to, and a new one replaces it.
   await expect(page.getByText(/still works/)).toBeVisible();
   await create.click();
-  await expect(page.getByRole("button", { name: /Your code: .*Copy it/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: /Your code: \d \d \d \d\. Copy it/ })).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   await clientFor(file).rpc("end_session");
 });

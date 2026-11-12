@@ -210,13 +210,7 @@ function CodeBody({
         {finished ? (
           <CodeDisplay code={session.code} className="opacity-50" />
         ) : (
-          <button
-            type="button"
-            onClick={copyCode}
-            className="rounded-code text-left"
-          >
-            <CodeDisplay code={session.code} label={`Your code: ${session.code.split("").join(" ")}. Copy it`} />
-          </button>
+          <CodeDisplay code={session.code} onCopy={copyCode} />
         )}
         <p role="status" className="sr-only">
           {copied === "code" ? "Code copied." : copied === "address" ? "Address copied." : ""}
