@@ -60,7 +60,7 @@ async function generateFrom(page: Page, entry: "card" | "profile"): Promise<stri
     await expect(page.getByRole("heading", { level: 1, name: "Share with Dr Hennessy" })).toBeVisible();
   } else {
     await page.goto("/profile");
-    await page.getByRole("link", { name: "Share my record" }).click();
+    await page.getByRole("link", { name: "Share your record" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Share your record" })).toBeVisible();
   }
   await page.getByRole("button", { name: "Create share code" }).click();
@@ -165,11 +165,11 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await expect(page.getByRole("link", { name: "Share record" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Dr Hennessy can see your record/ })).toHaveCount(0);
   await expectNoAxeViolations(page);
-  // The banner is on other screens, and Profile hides "Share my record".
+  // The banner is on other screens, and Profile hides "Share your record".
   await page.goto("/profile");
   await expect(page.getByRole("link", { name: /Dr Hennessy can see your record/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("link", { name: "Share history" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Share my record" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Share your record" })).toHaveCount(0);
 
   // The doctor writes notes and ends; the patient's /session moves on by itself.
   await page.getByRole("link", { name: /Dr Hennessy can see your record/ }).click();
@@ -218,7 +218,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
 
 test("scope tiles: the defaults, the locked tiles, and the new scopes reaching the session", async ({ page, browser }) => {
   await page.goto("/profile");
-  await page.getByRole("link", { name: "Share my record" }).click({ timeout: 20_000 });
+  await page.getByRole("link", { name: "Share your record" }).click({ timeout: 20_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Share your record" })).toBeVisible();
   const tiles = page.getByRole("region", { name: "What your doctor can see" });
 
@@ -439,7 +439,7 @@ test("share from Profile on a day with no appointment", async ({ page, browser }
   await expect(page.getByRole("button", { name: /share/i })).toHaveCount(0);
 
   await page.goto("/profile");
-  await expect(page.getByRole("link", { name: "Share my record" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("link", { name: "Share your record" })).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   const code = await generateFrom(page, "profile");
 

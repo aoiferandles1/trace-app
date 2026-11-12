@@ -12,7 +12,7 @@ import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
-import { DeleteWithConfirm } from "../../../_components/forms/FormBits";
+import { DeleteWithConfirm, MENTAL_HEALTH_LINE } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /**
@@ -78,7 +78,7 @@ function MentalHealthToggle({ document: d }: { document: RecordDocument }) {
       <SwitchRow
         surface="tile"
         title="About mental health"
-        description="Kept out of every share unless you include mental health for that share."
+        description={MENTAL_HEALTH_LINE}
         checked={on}
         onCheckedChange={async (next) => {
           setOn(next);

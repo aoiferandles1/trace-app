@@ -20,11 +20,11 @@ const COUNTRY_CODES: Record<string, string> = { Ireland: "IE", "United Kingdom":
 
 /**
  * Profile (BRIEF.md section 5.12; no board): who you are, then one list of
- * rows. Your details, Share my record (hidden while a doctor has access),
- * Insurance, Documents, Care team, Share history, Privacy and security, and
+ * rows. Your details, Share your record (hidden while a doctor has access),
+ * Insurance, Documents, Care team, Share history, Privacy and data, and
  * for demo accounts Reset demo; then Sign out.
  *
- * Export and account deletion live under Privacy and security
+ * Export and account deletion live under Privacy and data
  * (/profile/privacy). Mental health has no page (owner's decision): it stays
  * a flag on each item and a share tile.
  */
@@ -83,7 +83,7 @@ function ProfileScreen() {
           </li>
           {share.loaded && !isOpen(share.session) && (
             <li>
-              <ListRow icon="share" title="Share my record" chevron href="/share" />
+              <ListRow icon="share" title="Share your record" chevron href="/share" />
             </li>
           )}
           <li>
@@ -99,7 +99,7 @@ function ProfileScreen() {
             <ListRow icon="history" title="Share history" chevron href="/access-log" />
           </li>
           <li>
-            <ListRow icon="lock" title="Privacy and security" chevron href="/profile/privacy" />
+            <ListRow icon="lock" title="Privacy and data" chevron href="/profile/privacy" />
           </li>
           {isAnonymous && (
             <li>

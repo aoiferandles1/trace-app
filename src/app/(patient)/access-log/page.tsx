@@ -120,7 +120,7 @@ function AccessLogScreen() {
         <StateMessage
           className="px-5 py-6"
           message="You haven't shared your record yet. Every share shows up here."
-          action={{ label: "Share my record", href: "/share" }}
+          action={{ label: "Share your record", href: "/share" }}
         />
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-8 pt-2">

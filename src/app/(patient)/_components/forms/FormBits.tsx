@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useId, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { Notice } from "@/components/ui/Notice";
 import { SwitchRow } from "@/components/ui/Switch";
 import { errorCode } from "@/lib/patient/record";
@@ -79,16 +80,48 @@ export function checkErrors(errors: FieldErrors, ids: Record<string, string>): b
   return false;
 }
 
+/** The one wording, everywhere, for what the mental health flag does (E15). */
+export const MENTAL_HEALTH_LINE = "Left out of every share unless you include mental health.";
+
+/** The one wording for a personal note. */
+export const PERSONAL_NOTE_LINE = "Only you can see personal notes. They are never shared with a doctor.";
+
 /** The "About mental health" switch (PLAN.md section 8). */
 export function MentalHealthSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <SwitchRow
       surface="tile"
       title="About mental health"
-      description="Kept out of every share unless you include mental health for that share."
+      description={MENTAL_HEALTH_LINE}
       checked={checked}
       onCheckedChange={onChange}
     />
+  );
+}
+
+/**
+ * "More details": the fields most people skip, folded away so a form shows
+ * its essentials first. Starts open when one of them already has a value.
+ */
+export function MoreDetails({ initiallyOpen = false, children }: { initiallyOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(initiallyOpen);
+  const id = useId();
+  return (
+    <div className="flex flex-col gap-5">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className="flex h-11 w-fit items-center gap-2 text-label font-semibold text-accent hovered:text-accent-alt"
+      >
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={18} />
+        More details
+      </button>
+      <div id={id} hidden={!open} className="flex flex-col gap-5">
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -147,7 +180,16 @@ export function DeleteWithConfirm({
   const [failed, setFailed] = useState(false);
   return (
     <>
-      <Button variant="destructive" size="md" onClick={() => setOpen(true)} className="w-fit">
+      <Button
+        variant="destructive"
+        size="md"
+        onClick={() => {
+          // A failure from an earlier try is not this one's.
+          setFailed(false);
+          setOpen(true);
+        }}
+        className="w-fit"
+      >
         {label}
       </Button>
       <BottomSheet
@@ -157,6 +199,7 @@ export function DeleteWithConfirm({
         actions={
           <>
             <Button
+              variant="danger"
               size="lg"
               fullWidth
               loading={busy}

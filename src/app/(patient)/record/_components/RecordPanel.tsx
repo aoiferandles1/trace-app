@@ -19,12 +19,13 @@ import {
   conditionCaption,
   ENTRY_KIND_LABEL,
   entryIcon,
+  entryTitle,
   loadSections,
   type RecordCondition,
   type RecordEntry,
   type Relative,
 } from "@/lib/patient/record";
-import type { Profile } from "@/lib/patient/types";
+import { allergyLabels, type Profile } from "@/lib/patient/types";
 import { useLoad } from "@/lib/useLoad";
 import { LoadStatus } from "../../_components/Screens";
 
@@ -50,7 +51,7 @@ async function loadRecord() {
 /** The pinned facts in RecordA2's words: "Penicillin allergy", "Blood type A+", implants as typed. */
 function safetyFacts(p: Pick<Profile, "allergies" | "blood_type" | "implants">): string[] {
   return [
-    ...p.allergies.map((a) => `${a} allergy`),
+    ...allergyLabels(p.allergies),
     ...(p.blood_type ? [`Blood type ${p.blood_type}`] : []),
     ...p.implants,
   ];
@@ -88,9 +89,15 @@ export function RecordPanel({
   const { profile } = usePatientSession();
   const params = useSearchParams();
   const asked = params.get("tab");
-  const [tab, setTab] = useState<Tab>(
-    initialTab ?? (asked === "conditions" || asked === "family" ? asked : "timeline"),
-  );
+  const askedTab: Tab = asked === "conditions" || asked === "family" ? asked : "timeline";
+  const [tab, setTab] = useState<Tab>(initialTab ?? askedTab);
+  // Next.js keeps this screen alive: a later visit to /record?tab=... (after
+  // "Add a condition", say) must open that tab, not the one left showing.
+  const [seenAsked, setSeenAsked] = useState(asked);
+  if (syncUrl && !initialTab && asked !== seenAsked) {
+    setSeenAsked(asked);
+    setTab(askedTab);
+  }
   const data = useLoad(loadRecord);
   // Unique per screen: Next.js keeps earlier screens in the page, hidden.
   const tabIds = useId();
@@ -153,7 +160,7 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
     return (
       <StateMessage
         message="Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here."
-        action={{ label: "Add to my record", href: "/add" }}
+        action={{ label: "Add to your record", href: "/add" }}
       />
     );
   }
@@ -165,7 +172,7 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
           <li key={e.id}>
             <ListRow
               icon={entryIcon(e)}
-              title={e.title}
+              title={entryTitle(e)}
               caption={ENTRY_KIND_LABEL[e.kind]}
               value={<time dateTime={dayKey(e.occurs_at)}>{formatShortDate(e.occurs_at)}</time>}
               valueStyle={e.upcoming ? "accent" : "caption"}

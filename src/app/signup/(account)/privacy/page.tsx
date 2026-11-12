@@ -60,7 +60,7 @@ function PrivacyScreen() {
             description={
               <>
                 You must agree to continue.{" "}
-                <Link href="/terms" className="text-accent underline underline-offset-2">
+                <Link href="/terms?back=/signup/privacy" className="text-accent underline underline-offset-2">
                   Read full terms
                 </Link>
               </>

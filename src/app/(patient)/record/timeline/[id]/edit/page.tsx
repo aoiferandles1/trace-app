@@ -23,7 +23,7 @@ function EditEventScreen() {
   const e = data.status === "ready" ? data.data : null;
   return (
     <SubScreen
-      title="Edit timeline"
+      title="Edit event"
       titleSize="md"
       backHref={`/record/timeline?event=${id}`}
       backLabel="Back to Timeline"

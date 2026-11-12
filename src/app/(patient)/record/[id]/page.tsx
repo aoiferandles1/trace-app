@@ -1,6 +1,8 @@
 "use client";
 
+import { useBack } from "@/lib/back";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { Card } from "@/components/ui/Card";
@@ -15,12 +17,13 @@ import {
   type RecordEntry,
   type ResultValue,
   type TextDetail,
+  entryTitle,
 } from "@/lib/patient/record";
 import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { DetailList, NotFound } from "../../_components/DetailList";
-import { DeleteWithConfirm } from "../../_components/forms/FormBits";
+import { DeleteWithConfirm, MENTAL_HEALTH_LINE, PERSONAL_NOTE_LINE } from "../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../_components/Screens";
 import { RecordPanel } from "../_components/RecordPanel";
 
@@ -49,13 +52,15 @@ function EntryDetailScreen() {
   const data = useLoad(() => loadEntry(id), [id]);
   const entry = data.status === "ready" ? data.data : null;
   const editable = entry && entry.source === "patient" && entry.kind !== "session_notes";
+  // Opened from Home or a share's summary, Back returns there.
+  const back = useBack("/record");
 
   return (
     <SubScreen
-      title={entry?.title ?? "Entry"}
+      title={entry ? entryTitle(entry) : "Entry"}
       titleSize="md"
-      backHref="/record"
-      backLabel="Back to Record"
+      backHref={back}
+      backLabel={back === "/record" ? "Back to Record" : "Back"}
       action={editable ? <IconLink href={`/record/${entry.id}/edit`} label={`Edit ${entry.title}`} icon="pencil" size={32} /> : undefined}
       tabBar
       aside={<RecordPanel level={2} initialTab="timeline" current={id} syncUrl={false} />}
@@ -79,10 +84,11 @@ function caption(e: RecordEntry): string {
   return [e.upcoming ? `Upcoming ${kind.toLowerCase()}` : kind, when, who, e.place].filter(Boolean).join(", ");
 }
 
+// Plain words for the patient (the portal keeps the clinical ones).
 const TEXT_FIELDS: [keyof TextDetail, string][] = [
   ["reason", "Reason"],
-  ["assessment", "Assessment"],
-  ["plan", "Plan"],
+  ["assessment", "What the doctor found"],
+  ["plan", "What happens next"],
   ["follow_up", "Follow-up"],
   ["medication", "Medication"],
   ["quantity", "Quantity"],
@@ -105,6 +111,7 @@ function EntryDetail({ entry }: { entry: RecordEntry }) {
   const router = useRouter();
   const d = entry.detail;
   const rows = d?.kind === "text" ? textRows(entry, d) : [];
+  const editable = entry.source === "patient" && entry.kind !== "session_notes";
   // Session notes keep their text in the detail; their body repeats it.
   const body = entry.kind !== "session_notes" && entry.body ? entry.body : null;
   const empty = rows.length === 0 && !body && d?.kind !== "result";
@@ -123,7 +130,17 @@ function EntryDetail({ entry }: { entry: RecordEntry }) {
             ))}
           </Card>
         ) : (
-          <p className="text-body text-ink-2">No results recorded yet.</p>
+          <p className="text-body text-ink-2">
+            No results recorded yet.
+            {editable && (
+              <>
+                {" "}
+                <Link href={`/record/${entry.id}/edit`} className="font-semibold text-accent underline underline-offset-2">
+                  Add results
+                </Link>
+              </>
+            )}
+          </p>
         ))}
 
       {(rows.length > 0 || body) && (
@@ -132,28 +149,30 @@ function EntryDetail({ entry }: { entry: RecordEntry }) {
 
       {empty && <p className="text-body text-ink-2">Nothing else recorded{entry.upcoming ? " yet" : ""}.</p>}
 
-      {entry.kind === "note" && (
-        <Notice tone="neutral">Personal note. Only you can see it; it is never shared with a doctor.</Notice>
-      )}
+      {entry.kind === "note" && <Notice tone="neutral">{PERSONAL_NOTE_LINE}</Notice>}
       {entry.kind === "session_notes" ? (
         <MentalHealthToggle entry={entry} />
       ) : (
         entry.is_mental_health && (
-          <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
+          <Notice tone="neutral">{MENTAL_HEALTH_LINE}</Notice>
         )
       )}
 
-      <DeleteWithConfirm
-        label="Delete entry"
-        title="Delete this entry?"
-        body="It will be removed from your record. You can't undo this."
-        onConfirm={async () => {
-          const { error } = await createClient().from("entries").delete().eq("id", entry.id);
-          if (error) return false;
-          router.replace("/record");
-          return true;
-        }}
-      />
+      {/* Entries the patient wrote are deleted from their Edit form, as everything else is.
+          A doctor's session notes have no form, so theirs stays here. */}
+      {entry.kind === "session_notes" && (
+        <DeleteWithConfirm
+          label="Delete these notes"
+          title="Delete these notes?"
+          body="They will be removed from your record. You can't undo this."
+          onConfirm={async () => {
+            const { error } = await createClient().from("entries").delete().eq("id", entry.id);
+            if (error) return false;
+            router.replace("/record");
+            return true;
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -183,7 +202,7 @@ function MentalHealthToggle({ entry }: { entry: RecordEntry }) {
       <SwitchRow
         surface="tile"
         title="About mental health"
-        description="Kept out of every share unless you include mental health for that share."
+        description={MENTAL_HEALTH_LINE}
         checked={on}
         onCheckedChange={async (next) => {
           setOn(next);

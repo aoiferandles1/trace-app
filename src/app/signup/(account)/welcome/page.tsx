@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
+import { allergyLabels } from "@/lib/patient/types";
 import { GP_VISIT_DEFAULTS, joinLabels, sharedScopes } from "@/lib/patient/share";
 import { GP_PROFILE_KEY } from "../_lib/gpProfile";
 import { useStepSave } from "../_lib/useStepSave";
@@ -31,7 +32,7 @@ function WelcomeStepScreen() {
 
   const critical = [
     profile.blood_type ? `Blood type ${profile.blood_type}` : null,
-    ...profile.allergies.map((a) => `${a} allergy`),
+    ...allergyLabels(profile.allergies),
     ...profile.implants,
   ].filter(Boolean);
 
@@ -44,7 +45,7 @@ function WelcomeStepScreen() {
       }
       footer={
         <Button size="lg" fullWidth loading={busy} onClick={() => void save({}, "/home")}>
-          Go to my record
+          Go to your record
         </Button>
       }
     >

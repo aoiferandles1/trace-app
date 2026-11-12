@@ -3,7 +3,7 @@ import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "./Icon";
 
 /**
- * Home's "Coming up" tile (MainA2): 148 x 132, radius 22, a bare icon at the
+ * Home's "Coming up" tile (MainA2): 148 x 132 (taller only for larger text), radius 22, a bare icon at the
  * top, then the day in Sora 300 with the month, and the title.
  *
  * `urgent` is the one tinted form (urgent-tint, icon and badge in the urgent
@@ -44,12 +44,14 @@ export function DateTile({
           <span className="font-display text-numeral-lg font-light">{day}</span>
           <span className="ml-1 text-caption font-medium">{month}</span>
         </time>
-        <span className="text-caption font-medium">{title}</span>
+        {/* Two lines at most: a long title ends in an ellipsis rather than spilling out of the tile. */}
+        <span className="line-clamp-2 break-words text-caption font-medium">{title}</span>
       </span>
     </>
   );
   const classes = cn(
-    "flex h-33 w-37 shrink-0 flex-col justify-between rounded-tile-lg p-3.5 text-ink",
+    // At least 132px: larger text grows the tile instead of overflowing it.
+    "flex min-h-33 w-37 shrink-0 flex-col justify-between gap-2 rounded-tile-lg p-3.5 text-ink",
     urgent ? "bg-urgent-tint" : "border border-border-card bg-surface",
     className,
   );

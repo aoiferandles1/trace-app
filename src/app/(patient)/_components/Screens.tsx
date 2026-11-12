@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { usePatientSession } from "@/components/patient/PatientSession";
-import { useShareSession } from "@/components/patient/ShareSession";
+import { useShareSession, type ShareNotice } from "@/components/patient/ShareSession";
+import { IconButton } from "@/components/ui/IconButton";
 import { PageHeader } from "@/components/patient/PageHeader";
 import { PatientRail } from "@/components/patient/PatientRail";
 import { TabBar } from "@/components/patient/TabBar";
@@ -35,19 +37,50 @@ import { useNow } from "@/lib/useNow";
  * rail, the centred column, as the sharing screens and sign-up.
  */
 
-/** The live share banner (p-home-live), on every screen while a session is active or paused. */
+/**
+ * The live share banner (p-home-live), on every screen while a session is
+ * active or paused; in its last 5 minutes it says access ends soon. Once a
+ * share or a request is over, the same place holds the one line saying how
+ * it ended (ShareSession's `notice`), until it is dismissed.
+ */
 export function LiveBannerSlot(): ReactNode {
-  const { session } = useShareSession();
+  const { session, notice, dismissNotice } = useShareSession();
   const open = isOpen(session);
   const ticking = open && session.status === "active" && session.duration_kind !== "manual";
   const now = useNow(ticking);
-  if (!open) return null;
+  if (!open) return notice ? <ShareNoticeStrip notice={notice} onDismiss={dismissNotice} /> : null;
+  const left = ticking ? msUntil(session.expires_at, now) : 0;
   return (
     <LiveShareBanner
       clinicianName={clinicianName(session)}
       paused={session.status === "paused"}
-      timeLeft={ticking ? formatCountdown(msUntil(session.expires_at, now)) : undefined}
+      endingSoon={ticking && left <= 5 * 60_000}
+      timeLeft={ticking ? formatCountdown(left) : undefined}
     />
+  );
+}
+
+/** "Dr Hennessy no longer has access to your record. View summary", with a close button. */
+export function ShareNoticeStrip({ notice, onDismiss }: { notice: ShareNotice; onDismiss: () => void }) {
+  return (
+    <div className="flex min-h-11 items-center gap-2 border-b border-border-tabbar bg-surface pl-5 pr-1.5">
+      <p className="min-w-0 flex-1 py-2 text-caption">
+        {notice.text}
+        {notice.link && (
+          <>
+            {" "}
+            <Link
+              href={notice.link.href}
+              onClick={onDismiss}
+              className="font-semibold text-accent underline underline-offset-2 hovered:text-accent-alt"
+            >
+              {notice.link.label}
+            </Link>
+          </>
+        )}
+      </p>
+      <IconButton icon="close" label="Dismiss" size={36} tone="muted" onClick={onDismiss} />
+    </div>
   );
 }
 
@@ -150,10 +183,16 @@ export function LoadStatus({
   tone?: "ground" | "session";
 }) {
   if (status === "loading") {
+    // Quiet placeholders in the shape of a list (no shimmer, no gradient); the word is for screen readers.
+    const block = tone === "session" ? "bg-on-session-border" : "bg-border-row";
     return (
-      <p role="status" className={tone === "session" ? "px-5 py-10 text-center text-caption text-on-session-2" : "px-5 py-10 text-center text-caption text-ink-2"}>
-        Loading&hellip;
-      </p>
+      <div role="status" className="flex flex-col gap-3 px-5 pb-6 pt-5">
+        <span className="sr-only">Loading</span>
+        <span aria-hidden="true" className={`h-5 w-2/5 rounded-full ${block}`} />
+        {[0, 1, 2].map((i) => (
+          <span key={i} aria-hidden="true" className={`h-16 rounded-tile ${block}`} />
+        ))}
+      </div>
     );
   }
   return (

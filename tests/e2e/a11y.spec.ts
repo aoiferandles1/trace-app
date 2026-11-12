@@ -158,7 +158,7 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/profile/insurance/manual", "Policy details"],
     ["/profile/documents", "Documents"],
     ["/profile/documents/upload", "Upload a document"],
-    ["/add", "Add to my record"],
+    ["/add", "Add to your record"],
     ["/add/note", "Log a note"],
     ["/add/appointment", "Add a visit"],
     ["/add/medication", /medication/i],
@@ -218,7 +218,7 @@ test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe
     [`/meds/${med}`, "Concerta", "detail"],
     ["/record/timeline", "Timeline", "list"],
     ["/record/family", "Family history", "column"],
-    ["/add", "Add to my record", "column"],
+    ["/add", "Add to your record", "column"],
     ["/profile", "Profile", "column"],
     ["/profile/insurance", "Insurance", "column"],
     ["/profile/documents", "Documents", "column"],
@@ -401,7 +401,7 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
   await page.goto("/home");
   await expect(page.getByRole("heading", { level: 1, name: /, Jane$/ })).toBeVisible({ timeout: 20_000 });
   await page.goto("/profile/privacy");
-  await page.getByRole("button", { name: "Delete my account" }).click();
+  await page.getByRole("button", { name: "Delete your account" }).click();
   await expect(page.getByRole("dialog", { name: "Delete your account?" })).toBeVisible();
   const running = await page.evaluate(() =>
     document.getAnimations().filter((a) => {
@@ -410,7 +410,7 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
     }).length,
   );
   expect(running).toBe(0);
-  await page.getByRole("button", { name: "Keep my account" }).click();
+  await page.getByRole("button", { name: "Keep your account" }).click();
 });
 
 test("signed out: welcome, sign in, sign up and the link-expired page at 320px with the keyboard", async ({ browser }) => {

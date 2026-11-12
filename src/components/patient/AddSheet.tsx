@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import type { IconName } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
+import { useHere, withBack } from "@/lib/back";
 
 /**
  * The Add flow (BRIEF.md section 7): the tab bar's centre plus opens a
@@ -25,13 +26,17 @@ export const ADD_ROWS: { href: string; icon: IconName; title: string }[] = [
   { href: "/record/timeline/new", icon: "clock", title: "Add to your timeline" },
 ];
 
-/** The rows as one card of links. `onChoose` runs when one is followed (the sheet closes itself). */
-export function AddRows({ onChoose, className }: { onChoose?: () => void; className?: string }) {
+/**
+ * The rows as one card of links. `onChoose` runs when one is followed (the
+ * sheet closes itself). Each form's Back returns to `back`: the screen under
+ * the sheet, or /add.
+ */
+export function AddRows({ onChoose, back, className }: { onChoose?: () => void; back: string; className?: string }) {
   return (
     <Card as="ul" aria-label="What to add" className={className}>
       {ADD_ROWS.map((row) => (
         <li key={row.href} onClick={onChoose}>
-          <ListRow href={row.href} icon={row.icon} title={row.title} height={60} chevron />
+          <ListRow href={withBack(row.href, back)} icon={row.icon} title={row.title} height={60} chevron />
         </li>
       ))}
     </Card>
@@ -39,10 +44,11 @@ export function AddRows({ onChoose, className }: { onChoose?: () => void; classN
 }
 
 export function AddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const here = useHere();
   return (
-    <BottomSheet open={open} onClose={onClose} title="Add to my record">
+    <BottomSheet open={open} onClose={onClose} title="Add to your record">
       {/* Closed in state before the next screen shows, so Back does not reopen it. */}
-      <AddRows onChoose={onClose} />
+      <AddRows onChoose={onClose} back={here} />
     </BottomSheet>
   );
 }

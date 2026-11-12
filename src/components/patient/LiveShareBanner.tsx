@@ -16,6 +16,7 @@ export function LiveShareBanner({
   clinicianName,
   timeLeft,
   paused = false,
+  endingSoon = false,
   href = "/session",
   className,
 }: {
@@ -24,6 +25,8 @@ export function LiveShareBanner({
   timeLeft?: string;
   /** Time's up: the record is hidden until the patient decides. */
   paused?: boolean;
+  /** The last 5 minutes: says access ends soon (the visible 5 and 1 minute warning). */
+  endingSoon?: boolean;
   href?: string;
   className?: string;
 }) {
@@ -36,7 +39,11 @@ export function LiveShareBanner({
       )}
     >
       <span className="min-w-0 flex-1 text-caption font-medium">
-        {paused ? `${clinicianName}'s access is paused` : `${clinicianName} can see your record`}
+        {paused
+          ? `${clinicianName}'s access is paused`
+          : endingSoon
+            ? `${clinicianName}'s access ends soon`
+            : `${clinicianName} can see your record`}
       </span>
       {paused ? (
         <span className="shrink-0 text-caption font-semibold">Time&apos;s up</span>

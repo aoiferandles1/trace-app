@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { PatientShell } from "@/components/layout/PatientShell";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/patient/PageHeader";
+import { TermsHeader } from "./TermsHeader";
 
 export const metadata: Metadata = { title: "Terms" };
 
@@ -11,7 +13,13 @@ export const metadata: Metadata = { title: "Terms" };
  */
 export default function TermsPage() {
   return (
-    <PatientShell header={<PageHeader title="Terms" backHref="/" backLabel="Back to Trace" />}>
+    <PatientShell
+      header={
+        <Suspense fallback={<PageHeader title="Terms" backHref="/" backLabel="Back to Trace" />}>
+          <TermsHeader />
+        </Suspense>
+      }
+    >
       <div className="flex flex-col gap-6 px-5 pb-10 pt-2 text-body text-ink">
         <Section title="What Trace is">
           <p>

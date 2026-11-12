@@ -95,10 +95,11 @@ export function formatTimelineDate(iso: string): string {
   return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
-/** "5 Jan" (Home's Recently added). */
-export function formatShortDate(iso: string): string {
-  const { m, d } = dayParts(iso);
-  return `${d} ${MONTHS[m - 1]}`;
+/** "5 Jan" this year, "5 Jan 2025" in any other (Home's Recent, Record, Share history). */
+export function formatShortDate(iso: string, now: Date = new Date()): string {
+  const { y, m, d } = dayParts(iso);
+  const thisYear = Number(dayKey(now).slice(0, 4));
+  return y === thisYear ? `${d} ${MONTHS[m - 1]}` : `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** "Wed 14 Jan" (Home's Upcoming card). */

@@ -30,7 +30,7 @@ export function CareMemberForm({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const next: FieldErrors = { name: name.trim() ? undefined : "Enter a name, like Dr Hennessy." };
+    const next: FieldErrors = { name: name.trim() ? undefined : "Enter their name." };
     setErrors(next);
     if (!checkErrors(next, ids)) return;
     onSaving(true);
@@ -50,21 +50,21 @@ export function CareMemberForm({
 
   return (
     <FormFrame id={formId} onSubmit={submit} error={saveError}>
-      <TextField id={ids.name} label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Dr Hennessy" error={errors.name} />
+      <TextField id={ids.name} label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} error={errors.name} />
       <SelectField label="Type" options={CARE_KIND_OPTIONS} value={kind} onChange={(e) => setKind(e.target.value)} />
       <TextField
         label="Role or specialty"
         optional
         value={role}
         onChange={(e) => setRole(e.target.value)}
-        placeholder="e.g. GP, Cardiology"
+        maxLength={200}
       />
       <TextField
         label="Practice, clinic or shop"
         optional
         value={org}
         onChange={(e) => setOrg(e.target.value)}
-        placeholder="e.g. Rathmines Medical Centre"
+        maxLength={200}
       />
     </FormFrame>
   );

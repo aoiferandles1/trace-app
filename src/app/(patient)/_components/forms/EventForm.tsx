@@ -17,6 +17,21 @@ const KIND_OPTIONS = [
   { value: "condition", label: "Condition" },
 ];
 
+const MONTH_OPTIONS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+].map((label, i) => ({ value: String(i + 1).padStart(2, "0"), label }));
+
 const OUTCOME_OPTIONS = [
   { value: "", label: "Not set" },
   { value: "resolved", label: "Resolved" },
@@ -53,7 +68,9 @@ export function EventForm({
   const e = event;
   const [kind, setKind] = useState<string>(e?.kind ?? "infection");
   const [title, setTitle] = useState(e?.title ?? "");
-  const [month, setMonth] = useState(e ? e.occurred_on.slice(0, 7) : dayKey().slice(0, 7));
+  // Month and year as two fields: <input type="month"> is plain text in desktop Safari and Firefox (A50).
+  const [monthNo, setMonthNo] = useState(e ? e.occurred_on.slice(5, 7) : dayKey().slice(5, 7));
+  const [year, setYear] = useState(e ? e.occurred_on.slice(0, 4) : dayKey().slice(0, 4));
   const [clinician, setClinician] = useState(e?.clinician ?? "");
   const [place, setPlace] = useState(e?.place ?? "");
   const [outcome, setOutcome] = useState<string>(e?.outcome ?? "");
@@ -64,7 +81,8 @@ export function EventForm({
   );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
-  const ids = { title: `${formId}-title`, month: `${formId}-month` };
+  const ids = { title: `${formId}-title`, month: `${formId}-month`, year: `${formId}-year` };
+  const thisMonth = dayKey().slice(0, 7);
 
   function setRow(key: string, patch: Partial<RxRow>) {
     setRx((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -72,9 +90,11 @@ export function EventForm({
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
+    const month = `${year}-${monthNo}`;
+    const y = Number(year);
     const next: FieldErrors = {
       title: title.trim() ? undefined : "Say what it was, like Chest infection.",
-      month: /^\d{4}-\d{2}$/.test(month) ? undefined : "Enter the month and year, like August 2026.",
+      year: !/^\d{4}$/.test(year) || y < 1900 ? "Enter the year, like 2026." : month > thisMonth ? "Pick this month or an earlier one." : undefined,
     };
     setErrors(next);
     if (!checkErrors(next, ids)) return;
@@ -128,21 +148,22 @@ export function EventForm({
         label="What it was"
         value={title}
         onChange={(x) => setTitle(x.target.value)}
-        placeholder={kind === "infection" ? "e.g. Chest infection" : "e.g. Hypothyroidism diagnosed"}
         maxLength={200}
         error={errors.title}
       />
-      <TextField
-        id={ids.month}
-        label="Month"
-        type="month"
-        max={dayKey().slice(0, 7)}
-        value={month}
-        onChange={(x) => setMonth(x.target.value)}
-        error={errors.month}
-      />
-      <TextField label="Seen by" optional value={clinician} onChange={(x) => setClinician(x.target.value)} placeholder="e.g. Dr Hennessy" maxLength={200} />
-      <TextField label="Practice or hospital" optional value={place} onChange={(x) => setPlace(x.target.value)} placeholder="e.g. Rathmines Medical Centre" maxLength={200} />
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField id={ids.month} label="Month" options={MONTH_OPTIONS} value={monthNo} onChange={(x) => setMonthNo(x.target.value)} />
+        <TextField
+          id={ids.year}
+          label="Year"
+          inputMode="numeric"
+          value={year}
+          onChange={(x) => setYear(x.target.value.replace(/\D/g, "").slice(0, 4))}
+          error={errors.year}
+        />
+      </div>
+      <TextField label="Seen by" optional value={clinician} onChange={(x) => setClinician(x.target.value)} maxLength={200} />
+      <TextField label="Practice or hospital" optional value={place} onChange={(x) => setPlace(x.target.value)} maxLength={200} />
       <SelectField label="Outcome" options={OUTCOME_OPTIONS} value={outcome} onChange={(x) => setOutcome(x.target.value)} />
 
       <fieldset className="flex flex-col gap-3">
@@ -154,7 +175,6 @@ export function EventForm({
               label={`Medicine ${i + 1}`}
               value={r.name}
               onChange={(x) => setRow(r.key, { name: x.target.value })}
-              placeholder="e.g. Doxycycline 100mg"
               maxLength={200}
             />
             <TextField
@@ -162,7 +182,6 @@ export function EventForm({
               optional
               value={r.detail}
               onChange={(x) => setRow(r.key, { detail: x.target.value })}
-              placeholder="e.g. 7 days"
               maxLength={200}
             />
             <Button

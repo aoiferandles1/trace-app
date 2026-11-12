@@ -62,6 +62,9 @@ export function ButtonsSection() {
         <Specimen title="Destructive (text)">
           <ButtonStates variant="destructive" size="md" />
         </Specimen>
+        <Specimen title="Danger (the confirm in a delete sheet)" surface="surface">
+          <ButtonStates variant="danger" size="lg" />
+        </Specimen>
         <Specimen title="On session indigo: primary is white with ink text" surface="session">
           <ButtonStates variant="primary" size="lg" tone="session" />
         </Specimen>

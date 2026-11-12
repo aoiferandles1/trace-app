@@ -58,7 +58,7 @@ async function loadContext(appointmentId: string | null): Promise<Context> {
  * every scope named (it replaces any unused code).
  *
  * Reached from Home's today card (`?appointment=<visit id>`, which names the
- * doctor) or from Profile's "Share my record" on any day. The switches start
+ * doctor) or from Profile's "Share your record" on any day. The switches start
  * from the last share made in this browser (Mental health always off).
  * While a doctor has access this screen opens the session instead; while a
  * code is waiting it points to that code (a new one replaces it).

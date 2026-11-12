@@ -11,6 +11,9 @@ import { cn } from "@/lib/cn";
  *   portal's "End session" on PortalRecordE).
  * - text: accent 600 text, no border, 44px tall ("Deny", "Add a condition").
  * - destructive: a text button in the critical colour ("Disconnect", "Delete").
+ * - danger: critical fill, white 600 text. Only the confirm in a delete
+ *   sheet ("Delete everything"), so the act that can't be undone never
+ *   looks like the screen's ordinary primary action.
  *
  * Tones change the colours for the surface underneath:
  * - "session" (session indigo): primary is a white fill with ink text
@@ -27,7 +30,7 @@ import { cn } from "@/lib/cn";
  * Use <Button> for actions and <ButtonLink> for navigation; both share styles.
  */
 
-export type ButtonVariant = "primary" | "secondary" | "text" | "destructive";
+export type ButtonVariant = "primary" | "secondary" | "text" | "destructive" | "danger";
 export type ButtonSize = "sm" | "md" | "lg" | "xl";
 export type ButtonTone = "default" | "session" | "onAccent";
 
@@ -66,6 +69,8 @@ function variantClasses(variant: ButtonVariant, tone: ButtonTone): string {
   if (variant === "secondary")
     return "border border-border-control bg-surface text-accent hovered:bg-ground pressed:border-accent pressed:bg-ground pressed:text-accent-alt disabled:text-ink-2";
   if (variant === "destructive") return "bg-transparent text-critical hovered:underline disabled:text-ink-2";
+  if (variant === "danger")
+    return "bg-critical text-white hovered:underline pressed:underline disabled:bg-border-control disabled:text-ink-2";
   return "bg-transparent text-accent hovered:text-accent-alt hovered:underline disabled:text-ink-2";
 }
 

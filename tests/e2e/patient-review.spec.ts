@@ -92,7 +92,7 @@ test("A1: an edit form opened again shows the saved values", async ({ page }) =>
 
 test("A11: Create share code works again after Back from the code", async ({ page }) => {
   await page.goto("/profile");
-  await page.getByRole("link", { name: "Share my record" }).click();
+  await page.getByRole("link", { name: "Share your record" }).click();
   const create = page.getByRole("button", { name: "Create share code" });
   await create.click();
   await expect(page.getByRole("button", { name: /Your code: .*Copy it/ })).toBeVisible({ timeout: 20_000 });

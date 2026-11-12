@@ -18,6 +18,7 @@ import {
   sharedScopes,
   type ShareSession,
 } from "@/lib/patient/share";
+import { withBack } from "@/lib/back";
 import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -114,7 +115,7 @@ function EndedBody({ session }: { session: ShareSession }) {
         <DetailBlock term label="Session notes">
           {session.notes_entry_id ? (
             <Link
-              href={`/record/${session.notes_entry_id}`}
+              href={withBack(`/record/${session.notes_entry_id}`, `/session/ended?id=${session.id}`)}
               className="font-semibold text-accent underline-offset-2 hovered:underline"
               aria-label="View session notes"
             >

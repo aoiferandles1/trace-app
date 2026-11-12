@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { CheckingScreen, PatientSessionGate } from "@/components/patient/PatientSession";
+import { RouteTitle } from "@/lib/patient/pageTitle";
 
 /**
  * Every signed-in patient route (/home, /record, /meds, /add, /profile).
@@ -10,6 +11,7 @@ import { CheckingScreen, PatientSessionGate } from "@/components/patient/Patient
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<CheckingScreen />}>
+      <RouteTitle />
       <PatientSessionGate gate="record">{children}</PatientSessionGate>
     </Suspense>
   );

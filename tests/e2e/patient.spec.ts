@@ -189,7 +189,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
     ["Add to your timeline", "/record/timeline/new"],
   ];
   // The address shows the rows as a screen (the desktop rail's Add goes here).
-  await gotoScreen(page, "/add", "Add to my record");
+  await gotoScreen(page, "/add", "Add to your record");
   const list = page.getByRole("list", { name: "What to add" });
   await expect(list.getByRole("link")).toHaveText(rows.map(([name]) => name));
   for (const [name, href] of rows) await expect(list.getByRole("link", { name })).toHaveAttribute("href", href);
@@ -202,7 +202,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
     // On the phone the tab bar's plus opens the same rows as a sheet over the current screen.
     await gotoScreen(page, "/home", /^Good/);
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    const sheet = page.getByRole("dialog", { name: "Add to my record" });
+    const sheet = page.getByRole("dialog", { name: "Add to your record" });
     await expect(sheet).toBeVisible();
     await expect(sheet.getByRole("link")).toHaveText(rows.map(([name]) => name));
     await expectNoAxeViolations(page, "dialog");
@@ -269,7 +269,7 @@ test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) 
   await page.getByLabel("Time").filter({ visible: true }).fill("10:15");
   await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill("Dr Byrne");
   await page.getByRole("textbox", { name: /Where/ }).fill("Ranelagh Dental");
-  await page.getByRole("button", { name: "Save to my record" }).click();
+  await page.getByRole("button", { name: "Save visit" }).click();
   await page.waitForURL(/\/record$/);
   await gotoScreen(page, "/home", /^Good/);
   await expect(page.getByRole("region", { name: /today$/ })).toHaveCount(0);
@@ -342,7 +342,7 @@ test("profile: the list, details, edit with critical safety, care team, export",
   const list = page.getByRole("list", { name: "Your record and settings" });
   await expect(list.getByRole("link")).toHaveText([
     "Your details",
-    "Share my record",
+    "Share your record",
     "Insurance",
     "Documents",
     "Care team",
@@ -362,7 +362,7 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expect(page.getByRole("heading", { level: 1, name: "Privacy and security" })).toBeVisible();
   await expectNoAxeViolations(page);
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Export my data/ }).click();
+  await page.getByRole("button", { name: /Export your data/ }).click();
   const file = await (await download).path();
   const exported = JSON.parse(readFileSync(file, "utf8"));
   expect(exported.version).toBe(2);
@@ -414,7 +414,7 @@ test("a brand-new record shows empty states", async ({ page }) => {
   await emptyRecord(clientFor(file));
   await gotoScreen(page, "/home", /^Good/);
   await expect(page.getByText("Your record is empty.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add to my record" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Add to your record" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Coming up" })).toHaveCount(0);
   await expectNoAxeViolations(page);
 
@@ -488,7 +488,7 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await expect(page.getByText("Blood type A+ · Penicillin allergy")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
-  await page.getByRole("button", { name: "Go to my record" }).click();
+  await page.getByRole("button", { name: "Go to your record" }).click();
   await page.waitForURL(/\/home$/);
 
   const { data: profile } = await db.from("profiles").select("*").eq("id", user.user!.id).single();
@@ -583,7 +583,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
     if (e.doctor) await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
     await page.getByRole("textbox", { name: /^Where/ }).fill(e.where);
-    await page.getByRole("button", { name: "Save to my record" }).click();
+    await page.getByRole("button", { name: "Save visit" }).click();
     await page.waitForURL(/\/record$/);
   }
   await gotoScreen(page, "/add/note", "Log a note");
@@ -656,7 +656,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
 
 test("delete my account signs out and removes the user", async ({ page }) => {
   await gotoScreen(page, "/profile/privacy", "Privacy and security");
-  await page.getByRole("button", { name: "Delete my account" }).click();
+  await page.getByRole("button", { name: "Delete your account" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");
   await sheet.getByRole("button", { name: "Delete everything" }).click();

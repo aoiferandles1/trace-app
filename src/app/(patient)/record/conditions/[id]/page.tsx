@@ -1,7 +1,7 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { IconLink } from "@/components/ui/IconButton";
 import { Notice } from "@/components/ui/Notice";
 import { capitalise } from "@/lib/patient/record";
@@ -9,19 +9,18 @@ import { isUuid, type Condition } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { DetailList, NotFound } from "../../../_components/DetailList";
-import { DeleteWithConfirm } from "../../../_components/forms/FormBits";
+import { MENTAL_HEALTH_LINE } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 import { RecordPanel } from "../../_components/RecordPanel";
 
 /**
  * Condition detail (no board): the visit detail's pattern (BRIEF.md 5.9).
  * The condition as the title, a caption ("Managed, since 2019", the
- * portal's Overview line), labelled blocks, the pencil in the header for Edit, and "Delete
- * condition" as a critical text button with its confirm sheet.
+ * portal's Overview line), labelled blocks, and the pencil in the header for
+ * Edit, where "Delete condition" is (as on every Edit form).
  */
 function ConditionDetailScreen() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     const { data, error } = await createClient().from("conditions").select("*").eq("id", id).maybeSingle();
@@ -58,19 +57,8 @@ function ConditionDetailScreen() {
             />
           )}
           {c.is_mental_health && (
-            <Notice tone="neutral">About mental health. Left out of a share unless you include mental health.</Notice>
+            <Notice tone="neutral">{MENTAL_HEALTH_LINE}</Notice>
           )}
-          <DeleteWithConfirm
-            label="Delete condition"
-            title="Delete this condition?"
-            body="It will be removed from your record. You can't undo this."
-            onConfirm={async () => {
-              const { error } = await createClient().from("conditions").delete().eq("id", c.id);
-              if (error) return false;
-              router.replace("/record?tab=conditions");
-              return true;
-            }}
-          />
         </div>
       )}
     </SubScreen>

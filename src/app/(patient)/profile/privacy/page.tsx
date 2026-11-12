@@ -12,13 +12,14 @@ import { createClient } from "@/lib/supabase/client";
 import { SubScreen } from "../../_components/Screens";
 
 /**
- * Privacy and security (Profile's row; no board): the terms, "Export my
+ * Privacy and data (Profile's row; no board): the terms, "Export your
  * data" (export_my_data version 2, every table, as a JSON file) and
- * "Delete my account" (a destructive text row with a confirm sheet).
+ * "Delete your account" (a destructive text row with a confirm sheet).
  */
 function PrivacyScreen() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState(false);
+  const [exported, setExported] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(false);
@@ -26,6 +27,7 @@ function PrivacyScreen() {
   async function exportData() {
     setExporting(true);
     setExportError(false);
+    setExported(null);
     const { data, error } = await createClient().rpc("export_my_data", { version: 2 });
     setExporting(false);
     if (error || !data) {
@@ -36,11 +38,14 @@ function PrivacyScreen() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `trace-export-${dayKey()}.json`;
+    const name = `trace-export-${dayKey()}.json`;
+    a.download = name;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
+    // Some browsers start the download after the click returns: let it go first.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setExported(name);
   }
 
   async function deleteAccount() {
@@ -58,28 +63,33 @@ function PrivacyScreen() {
   }
 
   return (
-    <SubScreen title="Privacy and security" backHref="/profile" backLabel="Back to Profile">
+    <SubScreen title="Privacy and data" backHref="/profile" backLabel="Back to Profile">
       <div className="flex flex-col gap-5 px-5 pb-6 pt-2">
         <Card as="ul">
           <li>
-            <ListRow icon="document" title="Privacy and terms" chevron href="/terms" />
+            <ListRow icon="document" title="Privacy and terms" chevron href="/terms?back=/profile/privacy" />
           </li>
           <li>
             <ListRow
               icon="download"
-              title={exporting ? "Preparing your file…" : "Export my data"}
+              title={exporting ? "Preparing your file…" : "Export your data"}
               caption="Everything in your record, as one file"
               onClick={exporting ? undefined : exportData}
             />
           </li>
         </Card>
+        {exported && (
+          <Notice tone="neutral" icon="tick" live="polite">
+            Saved as {exported} in your downloads.
+          </Notice>
+        )}
         {exportError && (
           <Notice tone="critical" live="assertive">
             Your data couldn&apos;t be exported. Check your connection and try again.
           </Notice>
         )}
         <Button variant="destructive" className="w-fit" onClick={() => setConfirmDelete(true)}>
-          Delete my account
+          Delete your account
         </Button>
       </div>
 
@@ -89,11 +99,11 @@ function PrivacyScreen() {
         title="Delete your account?"
         actions={
           <>
-            <Button size="lg" fullWidth onClick={deleteAccount} loading={deleting}>
+            <Button variant="danger" size="lg" fullWidth onClick={deleteAccount} loading={deleting}>
               Delete everything
             </Button>
             <Button variant="text" onClick={() => setConfirmDelete(false)}>
-              Keep my account
+              Keep your account
             </Button>
           </>
         }
