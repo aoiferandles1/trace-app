@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "playwright test --trace off"
+    "test:e2e": "playwright test --trace off",
+    "test:db": "node tests/support/local-supabase/run-sql-tests.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@electric-sql/pglite": "^0.3.16",
     "@playwright/test": "1.63.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
