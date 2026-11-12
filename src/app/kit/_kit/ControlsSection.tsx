@@ -314,6 +314,7 @@ export function FormsSection() {
             <CodeInput length={4} size="lg" label="Patient's share code" labelHidden value={code} onChange={setCode} />
             <CodeInput length={4} size="lg" label="Focused code (example)" labelHidden value="72" onChange={() => {}} forceFocus />
             <CodeInput length={4} size="lg" label="Wrong code (example)" labelHidden value="7294" onChange={() => {}} error="Wrong code. 2 tries left before a 15 minute pause." />
+            <CodeInput length={4} size="lg" label="Wrong code, focused (example)" labelHidden value="" onChange={() => {}} forceFocus error="That code doesn't match. 3 tries left before a 15 minute pause." />
             <CodeInput length={4} size="lg" label="Locked code (example)" labelHidden value="" onChange={() => {}} disabled />
           </div>
         </Specimen>

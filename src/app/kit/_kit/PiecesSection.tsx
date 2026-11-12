@@ -227,6 +227,26 @@ export function PortalPiecesSection() {
         <Specimen title="Session notes panel" surface="ground" desk bleed className="max-w-[300px]">
           <SessionNotesPanel notes={notes} onChange={setNotes} onSave={() => {}} patientFirstName="Jane" />
         </Specimen>
+        <Specimen title="Session notes, saved" surface="ground" desk bleed className="max-w-[300px]">
+          <SessionNotesPanel
+            notes={{ ...notes, chiefComplaint: notes.chiefComplaint || "Cough for a week" }}
+            onChange={setNotes}
+            onSave={() => {}}
+            patientFirstName="Jane"
+            saveState="saved"
+            savedAt="11:29"
+          />
+        </Specimen>
+        <Specimen title="Session notes, not saved" surface="ground" desk bleed className="max-w-[300px]">
+          <SessionNotesPanel
+            notes={notes}
+            onChange={setNotes}
+            onSave={() => {}}
+            patientFirstName="Jane"
+            saveState="error"
+            errorText="Notes could not be saved. Check your connection and try Save notes again."
+          />
+        </Specimen>
         <Specimen title="Session notes, not allowed" surface="ground" desk bleed className="max-w-[300px]">
           <SessionNotesPanel notes={notes} onChange={setNotes} onSave={() => {}} patientFirstName="Jane" allowed={false} />
         </Specimen>
