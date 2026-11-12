@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import { IconLink } from "@/components/ui/IconButton";
 import { Notice } from "@/components/ui/Notice";
 import { ResultRow } from "@/components/ui/RangeBar";
@@ -19,6 +21,7 @@ import {
   type TextDetail,
   entryTitle,
 } from "@/lib/patient/record";
+import { downloadIcs } from "@/lib/patient/calendar";
 import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
@@ -148,6 +151,26 @@ function EntryDetail({ entry }: { entry: RecordEntry }) {
       )}
 
       {empty && <p className="text-body text-ink-2">Nothing else recorded{entry.upcoming ? " yet" : ""}.</p>}
+
+      {entry.upcoming && (
+        <Button
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconLeft={<Icon name="calendar" size={18} />}
+          onClick={() => downloadIcs({ title: entryTitle(entry), start: entry.occurs_at, minutes: 30, location: entry.place }, "trace-visit")}
+        >
+          Add to calendar
+        </Button>
+      )}
+      {(entry.kind === "letter" || entry.kind === "imaging") && editable && (
+        <p className="text-body text-ink-2">
+          Have the {entry.kind === "letter" ? "letter" : "scan"} as a file?{" "}
+          <Link href="/profile/documents/upload" className="font-semibold text-accent underline underline-offset-2">
+            Upload it to Documents
+          </Link>
+        </p>
+      )}
 
       {entry.kind === "note" && <Notice tone="neutral">{PERSONAL_NOTE_LINE}</Notice>}
       {entry.kind === "session_notes" ? (

@@ -133,7 +133,7 @@ function AccessLogScreen() {
   const shares = data.status === "ready" ? data.data.filter((x) => !unused(x.session)) : [];
   const spare = data.status === "ready" ? data.data.length - shares.length : 0;
   return (
-    <SubScreen title="Share history" backHref="/profile" backLabel="Back to Profile">
+    <SubScreen title="Share history" backHref="/profile" backLabel="Back to Profile" tabBar>
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : shares.length === 0 ? (

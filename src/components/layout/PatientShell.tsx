@@ -77,22 +77,23 @@ export function PatientShell({
     );
   }
   return (
-    <div className={cn("desk-lg h-dvh", session ? "bg-session" : "bg-ground")}>
+    // Printing (Your record to print) lets the page run on instead of one scrolling screen.
+    <div className={cn("desk-lg h-dvh print:h-auto", session ? "bg-session" : "bg-ground")}>
       <div
         className={cn(
-          "mx-auto flex h-dvh w-full max-w-[480px] flex-col min-[481px]:max-w-[430px] min-[481px]:border-x",
+          "mx-auto flex h-dvh w-full max-w-[480px] flex-col min-[481px]:max-w-[430px] min-[481px]:border-x print:h-auto print:max-w-none print:border-0",
           session
             ? "on-session bg-session text-white min-[481px]:border-on-session-border"
             : "bg-ground text-ink min-[481px]:border-border-card",
           className,
         )}
       >
-        {demo}
-        {banner && <div className="shrink-0">{banner}</div>}
+        <div className="contents print:hidden">{demo}</div>
+        {banner && <div className="shrink-0 print:hidden">{banner}</div>}
         <main
           id="main"
           className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto",
+            "flex min-h-0 flex-1 flex-col overflow-y-auto print:overflow-visible",
             // Whatever is last on screen clears the home indicator (0 outside a full screen
             // home screen app): the tab bar and the footer pad themselves, else <main> does.
             !footer && !tabBar && "pb-[env(safe-area-inset-bottom)]",
@@ -104,7 +105,7 @@ export function PatientShell({
         {footer && (
           <div
             className={cn(
-              "shrink-0 px-5 pt-3",
+              "shrink-0 px-5 pt-3 print:hidden",
               tabBar ? "pb-6" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]",
               session ? "bg-session" : "border-t border-border-tabbar bg-ground",
             )}
@@ -112,7 +113,7 @@ export function PatientShell({
             {footer}
           </div>
         )}
-        {tabBar && <div className="shrink-0">{tabBar}</div>}
+        {tabBar && <div className="shrink-0 print:hidden">{tabBar}</div>}
       </div>
     </div>
   );

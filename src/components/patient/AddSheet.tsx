@@ -14,7 +14,7 @@ import { useHere, withBack } from "@/lib/back";
  * address itself).
  *
  * Only what the app can add today. The brief's six rows plus "Add to your
- * timeline" (an illness or diagnosis, TimelineA2's data).
+ * timeline" (an illness or diagnosis, TimelineA2's data) and "Log vitals".
  */
 export const ADD_ROWS: { href: string; icon: IconName; title: string }[] = [
   { href: "/add/appointment", icon: "calendar", title: "Add a visit" },
@@ -24,6 +24,7 @@ export const ADD_ROWS: { href: string; icon: IconName; title: string }[] = [
   { href: "/profile/documents/upload", icon: "document-plus", title: "Upload a document" },
   { href: "/add/note", icon: "pencil", title: "Log a note" },
   { href: "/record/timeline/new", icon: "clock", title: "Add to your timeline" },
+  { href: "/add/vitals", icon: "heart", title: "Log vitals" },
 ];
 
 /**

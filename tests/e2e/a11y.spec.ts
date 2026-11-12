@@ -131,6 +131,15 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
   const event = (await db.from("health_events").select("id").limit(1).single()).data!.id;
   const relative = (await db.from("relatives").select("id").eq("relation", "paternal_grandfather").single()).data!.id;
   const person = (await db.from("care_team").select("id").limit(1).single()).data!.id;
+  // The demo has no documents: add one (a 1 x 1 PNG) for the document screens.
+  const uploaded = await db.rpc("upload_document", {
+    title: "Test letter",
+    content_type: "image/png",
+    data_base64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  });
+  expect(uploaded.error, uploaded.error?.message).toBeNull();
+  const doc = (uploaded.data as { id: string }).id;
+  const reading = (await db.from("vitals").select("id").limit(1).single()).data!.id;
 
   const screens: [string, string | RegExp][] = [
     ["/home", /^Good (morning|afternoon|evening), Jane$/],
@@ -158,6 +167,14 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/profile/insurance/manual", "Policy details"],
     ["/profile/documents", "Documents"],
     ["/profile/documents/upload", "Upload a document"],
+    [`/profile/documents/${doc}`, "Test letter"],
+    [`/profile/documents/${doc}/edit`, "Edit document"],
+    ["/record/vitals", "Vitals"],
+    ["/add/vitals", "Log vitals"],
+    [`/record/vitals/${reading}/edit`, "Edit vitals"],
+    ["/record/search", "Search your record"],
+    ["/record/print", "Your record to print"],
+    ["/profile/email", "Change email"],
     ["/add", "Add to your record"],
     ["/add/note", "Log a note"],
     ["/add/appointment", "Add a visit"],
@@ -225,6 +242,9 @@ test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe
     ["/profile/care-team", "Care team", "column"],
     ["/profile/privacy", "Privacy and data", "column"],
     ["/access-log", "Share history", "column"],
+    ["/record/vitals", "Vitals", "column"],
+    ["/record/search", "Search your record", "column"],
+    ["/record/print", "Your record to print", "focused"],
     ["/add/note", "Log a note", "focused"],
     ["/share", "Share your record", "focused"],
   ];

@@ -9,6 +9,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { TextField } from "@/components/ui/TextField";
+import { Icon } from "@/components/ui/Icon";
 import { IconLink } from "@/components/ui/IconButton";
 import { Notice } from "@/components/ui/Notice";
 import { StepChart } from "@/components/ui/StepChart";
@@ -25,6 +26,7 @@ import {
   URGENT_REFILL_DAYS,
 } from "@/lib/patient/record";
 import { createClient } from "@/lib/supabase/client";
+import { downloadIcs } from "@/lib/patient/calendar";
 import { useLoad } from "@/lib/useLoad";
 import { DetailList, NotFound } from "../../_components/DetailList";
 import { LoadStatus, SubScreen } from "../../_components/Screens";
@@ -129,6 +131,17 @@ function MedDetail({ m, reload }: { m: RecordMedication; reload: () => void }) {
           </SectionHeading>
           <DetailList rows={details} />
         </section>
+      )}
+      {m.status === "current" && m.refill_due_on && (
+        <Button
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconLeft={<Icon name="calendar" size={18} />}
+          onClick={() => downloadIcs({ title: `${m.name} refill`, day: m.refill_due_on! }, "trace-refill")}
+        >
+          Add the refill to your calendar
+        </Button>
       )}
     </div>
   );

@@ -553,8 +553,18 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   // Someone else's id, or no session: nothing.
   expect((await page.request.get("/api/documents/00000000-0000-4000-8000-000000000000")).status()).toBe(404);
 
+  // Rename and re-date it (F8), then delete it from the same Edit form.
+  await page.getByRole("link", { name: "Edit Discharge letter" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit document" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("textbox", { name: "Name" }).fill("Discharge summary");
+  await page.getByLabel(/Date on the document/).filter({ visible: true }).fill("2026-11-03");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Discharge summary" })).toBeVisible();
+  await expect(page.getByText(/^3 Nov 2026, Photo/)).toBeVisible();
+  await page.getByRole("link", { name: "Edit Discharge summary" }).click();
   await page.getByRole("button", { name: "Delete document" }).click();
-  await page.getByRole("dialog", { name: "Delete Discharge letter?" }).getByRole("button", { name: "Delete document" }).click();
+  await page.getByRole("dialog", { name: "Delete Discharge summary?" }).getByRole("button", { name: "Delete document" }).click();
   await page.waitForURL(/\/profile\/documents$/);
   await expect(page.getByText("No documents yet.")).toBeVisible();
 });

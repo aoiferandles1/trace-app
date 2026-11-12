@@ -63,7 +63,7 @@ function PrivacyScreen() {
   }
 
   return (
-    <SubScreen title="Privacy and data" backHref="/profile" backLabel="Back to Profile">
+    <SubScreen title="Privacy and data" backHref="/profile" backLabel="Back to Profile" tabBar>
       <div className="flex flex-col gap-5 px-5 pb-6 pt-2">
         <Card as="ul">
           <li>
@@ -73,9 +73,12 @@ function PrivacyScreen() {
             <ListRow
               icon="download"
               title={exporting ? "Preparing your file…" : "Export your data"}
-              caption="Everything in your record, as one file"
+              caption="Everything in your record, as one data file"
               onClick={exporting ? undefined : exportData}
             />
+          </li>
+          <li>
+            <ListRow icon="document" title="Print your record" caption="To read, or save as a PDF" chevron href="/record/print" />
           </li>
         </Card>
         {exported && (

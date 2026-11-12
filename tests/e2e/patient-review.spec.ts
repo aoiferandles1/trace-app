@@ -107,3 +107,111 @@ test("A11: Create share code works again after Back from the code", async ({ pag
   await expectNoAxeViolations(page);
   await clientFor(file).rpc("end_session");
 });
+
+test("F1: log vitals, see them listed, edit them; axe on the new screens", async ({ page }) => {
+  await page.goto("/record");
+  await page.getByRole("link", { name: "Vitals" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Vitals" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("link", { name: "Log vitals" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Log vitals" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("button", { name: "Save vitals" }).click();
+  await expect(page.getByText("Enter at least one reading.")).toBeVisible();
+  await page.getByRole("textbox", { name: /top number/ }).fill("1288");
+  await page.getByRole("textbox", { name: /bottom number/ }).fill("82");
+  await page.getByRole("button", { name: "Save vitals" }).click();
+  await expect(page.getByText("Enter a number from 50 to 260, no decimals.")).toBeVisible();
+  await page.getByRole("textbox", { name: /top number/ }).fill("124");
+  await page.getByRole("textbox", { name: /Heart rate/ }).fill("70");
+  await page.getByRole("button", { name: "Save vitals" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Vitals" })).toBeVisible();
+  const readings = page.getByRole("list", { name: "Readings" });
+  await expect(readings.getByRole("link").first()).toHaveText(/124\/82, heart rate 70/);
+  await readings.getByRole("link").first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit vitals" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: /top number/ })).toHaveValue("124");
+  await expectNoAxeViolations(page);
+});
+
+test("F3: search the record by word and by kind", async ({ page }) => {
+  await page.goto("/record");
+  await page.getByRole("link", { name: "Search your record" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Search your record" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("searchbox", { name: "Search" }).fill("warfarin");
+  const matches = page.getByRole("list", { name: "Matches" });
+  await expect(matches.getByRole("link", { name: /^Warfarin/ }).first()).toBeVisible();
+  await page.getByRole("radio", { name: "Medications" }).click();
+  await expect(matches.getByRole("link")).toHaveCount(1);
+  await matches.getByRole("link").click();
+  await expect(page.getByRole("heading", { level: 1, name: "Warfarin" })).toBeVisible();
+});
+
+test("A3: an empty Add a relative chooses nobody, and a second Mum is refused", async ({ page }) => {
+  await page.goto("/record/family");
+  await page.getByRole("link", { name: "Add a relative" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Add a relative" })).toBeVisible();
+  await page.getByRole("button", { name: "Save relative" }).click();
+  await expect(page.getByText("Choose who this is.")).toBeVisible();
+  await page.getByRole("combobox", { name: "Who" }).selectOption("mother");
+  // A typed condition name suggests its group (B14).
+  await page.getByRole("textbox", { name: "Condition 1" }).fill("Heart attack");
+  await expect(page.getByRole("combobox", { name: "Group" })).toHaveValue("heart");
+  await page.getByRole("button", { name: "Save relative" }).click();
+  await expect(page.getByText("Mum is already in your family history. Edit Mum there instead.")).toBeVisible();
+});
+
+test("A6: a strength change logged by mistake can be undone", async ({ page }) => {
+  const db = clientFor(file);
+  const med = (await db.from("medications").select("id").eq("name", "Levothyroxine").single()).data!.id;
+  await page.goto(`/meds/${med}`);
+  await expect(page.getByRole("heading", { level: 1, name: "Levothyroxine" })).toBeVisible();
+  await expect(page.getByText(/^Now 50mcg/)).toBeVisible();
+  await page.getByRole("button", { name: "Undo this change" }).click();
+  const sheet = page.getByRole("dialog", { name: "Undo the change to 50mcg?" });
+  await expectNoAxeViolations(page, "dialog");
+  await sheet.getByRole("button", { name: "Undo change" }).click();
+  await expect(page.getByText(/^Now 25mcg/)).toBeVisible();
+  // Every field the form takes is on the screen (A7).
+  await expect(page.getByRole("term")).toContainText(["How often"]);
+});
+
+test("A39: a photo over 3 MB is made smaller before upload", async ({ page }) => {
+  await page.goto("/profile/documents/upload");
+  await expect(page.getByRole("heading", { level: 1, name: "Upload a document" })).toBeVisible();
+  // A real 1 x 1 PNG padded past 3 MB (the bytes after the image are ignored by the decoder).
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  await page
+    .getByLabel("File", { exact: true })
+    .setInputFiles({ name: "phone photo.png", mimeType: "image/png", buffer: Buffer.concat([png, Buffer.alloc(3 * 1024 * 1024)]) });
+  await expect(page.getByText(/^JPEG, \d+ KB, made smaller from 3 MB$/)).toBeVisible();
+});
+
+test("H6, E28, B23: the demo strip opens the doctor's side; Profile has no middle dots; demo sign out asks first", async ({ page }) => {
+  await page.goto("/profile");
+  await expect(page.getByRole("link", { name: "Open the doctor's side" })).toHaveAttribute("href", "/view?demo=1");
+  await expect(page.getByText(/·/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  const sheet = page.getByRole("dialog", { name: "Sign out of the demo?" });
+  await expect(sheet).toBeVisible();
+  await expectNoAxeViolations(page, "dialog");
+  await sheet.getByRole("button", { name: "Stay in the demo" }).click();
+  await expect(sheet).toBeHidden();
+});
+
+test("F10, F4: the printable record and the email screen", async ({ page }) => {
+  await page.goto("/profile/privacy");
+  await page.getByRole("link", { name: /Print your record/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your record to print" })).toBeVisible();
+  await expect(page.getByText(/^Warfarin 5mg/)).toBeVisible();
+  await expectNoAxeViolations(page);
+  // A demo has no email to change.
+  await page.goto("/profile/email");
+  await expect(page.getByRole("heading", { level: 1, name: "Change email" })).toBeVisible();
+  await expect(page.getByText("The demo has no email to change.")).toBeVisible();
+  await expectNoAxeViolations(page);
+});

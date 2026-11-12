@@ -187,6 +187,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
     ["Upload a document", "/profile/documents/upload"],
     ["Log a note", "/add/note"],
     ["Add to your timeline", "/record/timeline/new"],
+    ["Log vitals", "/add/vitals"],
   ];
   // The address shows the rows as a screen (the desktop rail's Add goes here).
   await gotoScreen(page, "/add", "Add to your record");

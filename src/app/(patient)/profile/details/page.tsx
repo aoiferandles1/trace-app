@@ -6,7 +6,11 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/dates";
 import { fullName } from "@/lib/patient/types";
+import Link from "next/link";
+import { Notice } from "@/components/ui/Notice";
 import { cn } from "@/lib/cn";
+import { createClient } from "@/lib/supabase/client";
+import { useLoad } from "@/lib/useLoad";
 import { SubScreen } from "../../_components/Screens";
 
 /**
@@ -14,7 +18,10 @@ import { SubScreen } from "../../_components/Screens";
  * critical safety facts as they are stored, and "Edit details".
  */
 function DetailsScreen() {
-  const { profile, email } = usePatientSession();
+  const { profile, email, isAnonymous } = usePatientSession();
+  // A change of email waits for its confirmation link (F4): say which address.
+  const pending = useLoad(async () => (await createClient().auth.getUser()).data.user?.new_email ?? null);
+  const waiting = pending.status === "ready" ? pending.data : null;
   const name = fullName(profile);
   return (
     <SubScreen
@@ -41,6 +48,19 @@ function DetailsScreen() {
             {email && <InfoRow label="Email" value={email} />}
           </dl>
         </Card>
+        {waiting && (
+          <Notice tone="neutral" live="polite">
+            Open the link we sent to {waiting} to finish changing your email.
+          </Notice>
+        )}
+        {!isAnonymous && email && (
+          <Link
+            href="/profile/email"
+            className="-mt-2 hit-area w-fit text-label font-semibold text-accent transition-colors duration-150 ease-out hovered:text-accent-alt"
+          >
+            Change email
+          </Link>
+        )}
         <Card as="article" className="px-4.5" aria-label="Critical safety">
           <dl className="divide-y divide-border-row">
             <InfoRow label="Blood type" value={profile.blood_type} />

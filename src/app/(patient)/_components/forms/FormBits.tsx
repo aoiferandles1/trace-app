@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Notice } from "@/components/ui/Notice";
 import { SwitchRow } from "@/components/ui/Switch";
+import { useShareSession } from "@/components/patient/ShareSession";
 import { errorCode } from "@/lib/patient/record";
 
 /** Pieces every add and edit form shares. */
@@ -15,7 +16,7 @@ import { errorCode } from "@/lib/patient/record";
 export type FormControl = {
   formId: string;
   onSaving: (busy: boolean) => void;
-  /** After a successful save: leaves for `href`, replacing the form in the history. */
+  /** After a successful save: leaves for `href`, replacing the form in the history, and says "Saved." */
   onSaved: (href: string) => void;
 };
 
@@ -40,6 +41,7 @@ export function useFormScreen() {
   const [busy, setBusy] = useState(false);
   const [round, setRound] = useState(0);
   const saved = useRef(false);
+  const { announce } = useShareSession();
   useLayoutEffect(
     () => () => {
       // Runs when Next.js hides this screen (and on unmount).
@@ -53,9 +55,11 @@ export function useFormScreen() {
   const onSaved = useCallback(
     (href: string) => {
       saved.current = true;
+      // The screen it lands on shows the change; this says it worked (B12).
+      announce("Saved.");
       router.replace(href);
     },
-    [router],
+    [router, announce],
   );
   const control: FormControl = { formId, onSaving: setBusy, onSaved };
   return { formId, busy, formKey: String(round), control };

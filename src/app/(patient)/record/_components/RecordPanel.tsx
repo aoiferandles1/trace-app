@@ -10,6 +10,7 @@ import { usePatientSession } from "@/components/patient/PatientSession";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { IconLink } from "@/components/ui/IconButton";
 import { ListRow } from "@/components/ui/ListRow";
 import { SegmentedControl, tabPanelProps } from "@/components/ui/SegmentedControl";
 import { StateMessage } from "@/components/ui/StateMessage";
@@ -113,7 +114,13 @@ export function RecordPanel({
 
   return (
     <>
-      <PageHeader title="Record" height={48} level={level} />
+      <PageHeader
+        title="Record"
+        height={48}
+        level={level}
+        // Not on RecordA2: search over the whole record (F3).
+        action={level === 1 ? <IconLink href="/record/search" icon="search" label="Search your record" size={36} /> : undefined}
+      />
       <div className="flex flex-col gap-3.5 px-5 pb-6 pt-3.5">
         <div className="flex flex-col gap-1">
           <CriticalSafetyStrip items={facts} allergyIcon={false} />
@@ -185,15 +192,27 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
           </li>
         ))}
       </Card>
-      <ButtonLink
-        href="/record/timeline"
-        variant="text"
-        size="md"
-        className="w-fit"
-        iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
-      >
-        View full timeline
-      </ButtonLink>
+      <div className="flex flex-wrap gap-x-6">
+        <ButtonLink
+          href="/record/timeline"
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
+        >
+          View full timeline
+        </ButtonLink>
+        {/* Not on RecordA2: the way to the vitals (F1). */}
+        <ButtonLink
+          href="/record/vitals"
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
+        >
+          Vitals
+        </ButtonLink>
+      </div>
     </div>
   );
 }

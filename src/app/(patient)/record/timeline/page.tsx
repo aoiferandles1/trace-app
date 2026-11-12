@@ -161,7 +161,12 @@ function EventBlocks({ event: e }: { event: HealthEvent }) {
       {e.prescriptions.length > 0 && (
         <DetailBlock
           label="Prescribed"
-          items={e.prescriptions.map((p) => ({ name: p.name, detail: p.detail ?? undefined }))}
+          // A line linked to one of your medications opens it (B15).
+          items={e.prescriptions.map((p) => ({
+            name: p.name,
+            detail: p.detail ?? undefined,
+            href: p.medication_id ? `/meds/${p.medication_id}` : undefined,
+          }))}
         />
       )}
       {e.notes && <DetailBlock label="Doctor's notes">{e.notes}</DetailBlock>}

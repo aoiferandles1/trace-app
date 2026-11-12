@@ -19,7 +19,7 @@ const KIND_LABEL = { gp: "GP", specialist: "Specialist", pharmacy: "Pharmacy" } 
 function CareTeamScreen() {
   const data = useLoad(() => loadSection("care_team"));
   return (
-    <SubScreen title="Care team" backHref="/profile" backLabel="Back to Profile">
+    <SubScreen title="Care team" backHref="/profile" backLabel="Back to Profile" tabBar>
       <div className="flex flex-col gap-1 px-5 pb-6 pt-2">
         {data.status !== "ready" ? (
           <LoadStatus status={data.status} onRetry={data.reload} />
