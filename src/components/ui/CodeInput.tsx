@@ -102,7 +102,11 @@ export function CodeInput({
                   disabled
                     ? "border border-border-control bg-ground text-ink-2"
                     : error
-                      ? "border-2 border-critical"
+                      ? cn(
+                          "border-2 border-critical",
+                          // Focus stays visible on a wrong code: the ring sits on the next box.
+                          isActive && "outline-2 outline-offset-2 outline-(--focus-ring)",
+                        )
                       : isActive
                         ? "border-2 border-accent outline-2 outline-offset-2 outline-(--focus-ring)"
                         : "border border-border-field",

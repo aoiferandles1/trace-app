@@ -1,33 +1,16 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "../../src/lib/supabase/database.types";
 import { expectNoAxeViolations } from "./axe";
 import { expectChartLabelsClear } from "./helpers/chart";
-import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { expect, expectNoSideScroll, test } from "./helpers/patient";
 
 /**
  * The redesign's new patient sections (Phases 4 to 6): Medications and the
  * strength history, the full timeline and visit detail, the family tree,
- * insurance and documents. One anonymous demo user per Playwright project
- * (sign-ins are capped), reset before every test.
+ * insurance and documents. Every test has its own demo user with Jane Doe's
+ * record (helpers/patient.ts).
  */
-
-test.describe.configure({ mode: "default" });
-
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  file = statePath(`sections-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file) });
-
-test.beforeEach(async () => {
-  await reseed(clientFor(file));
-});
 
 async function gotoScreen(page: Page, path: string, heading: string | RegExp) {
   await page.goto(path);
@@ -37,12 +20,12 @@ async function gotoScreen(page: Page, path: string, heading: string | RegExp) {
 const dublinDay = (offset = 0) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() + offset * 86_400_000));
 
-async function medId(name: string) {
-  return (await clientFor(file).from("medications").select("id").eq("name", name).single()).data!.id;
+async function medId(db: SupabaseClient<Database>, name: string) {
+  return (await db.from("medications").select("id").eq("name", name).single()).data!.id;
 }
 
-async function periodsOf(id: string) {
-  const { data, error } = await clientFor(file)
+async function periodsOf(db: SupabaseClient<Database>, id: string) {
+  const { data, error } = await db
     .from("medication_periods")
     .select("id, strength, start_date, end_date, prescribed_by, note, note_shared")
     .eq("medication_id", id)
@@ -79,7 +62,7 @@ function eventView(page: Page, title: string, wide: boolean) {
     : page.getByRole("dialog", { name: title });
 }
 
-test("Concerta shows exactly 18, 27, 36, 45, 36 with dates, prescriber and notes (MedDetailA2)", async ({ page }) => {
+test("Concerta shows exactly 18, 27, 36, 54, 36 with dates, prescriber and notes (MedDetailA2)", async ({ page }) => {
   await gotoScreen(page, "/meds", "Medications");
   await page.getByRole("link", { name: /^Concerta/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Concerta" })).toBeVisible();
@@ -92,7 +75,7 @@ test("Concerta shows exactly 18, 27, 36, 45, 36 with dates, prescriber and notes
     /18mg\s*Jan 2024\s*Mar 2024/,
     /27mg\s*Mar 2024\s*Jun 2024/,
     /36mg\s*Jun 2024\s*Oct 2024/,
-    /45mg\s*Oct 2024\s*Feb 2025/,
+    /54mg\s*Oct 2024\s*Feb 2025/,
     /36mg\s*Feb 2025\s*now/,
   ]);
 
@@ -100,7 +83,7 @@ test("Concerta shows exactly 18, 27, 36, 45, 36 with dates, prescriber and notes
   const history = page.getByRole("region", { name: "History" }).getByRole("listitem");
   await expect(history).toHaveText([
     /^36mg\s*Feb 2025 to now\s*Prescribed by Dr Hennessy\s*Back on 36\. Smoother and sleeping better\./,
-    /^45mg\s*Oct 2024 to Feb 2025\s*Prescribed by Dr Hennessy\s*Too much\. Racing heart and trouble sleeping\./,
+    /^54mg\s*Oct 2024 to Feb 2025\s*Prescribed by Dr Hennessy\s*Too strong\. Felt on edge in the evenings and slept badly\./,
     /^36mg\s*Jun 2024 to Oct 2024\s*Prescribed by Dr Hennessy\s*Steady all day\. Good for work\./,
     /^27mg\s*Mar 2024 to Jun 2024\s*Prescribed by Dr Hennessy\s*Better focus through the morning\. Appetite dropped\./,
     /^18mg\s*Jan 2024 to Mar 2024\s*Prescribed by Dr Hennessy\s*Barely noticed it\. A little more focus in the morning, gone by lunch\./,
@@ -117,10 +100,10 @@ test("Concerta shows exactly 18, 27, 36, 45, 36 with dates, prescriber and notes
   await expectChartFits(page);
 });
 
-test("log a strength change: a new period, the previous one closed, nothing overwritten", async ({ page }) => {
-  const id = await medId("Concerta");
-  const before = await periodsOf(id);
-  expect(before.map((p) => p.strength)).toEqual([18, 27, 36, 45, 36]);
+test("log a strength change: a new period, the previous one closed, nothing overwritten", async ({ page, demo }) => {
+  const id = await medId(demo.db, "Concerta");
+  const before = await periodsOf(demo.db, id);
+  expect(before.map((p) => p.strength)).toEqual([18, 27, 36, 54, 36]);
 
   await gotoScreen(page, `/meds/${id}`, "Concerta");
   await page.getByRole("link", { name: "Log a strength change" }).click();
@@ -144,7 +127,7 @@ test("log a strength change: a new period, the previous one closed, nothing over
   await page.waitForURL(new RegExp(`/meds/${id}$`));
   await expect(page.getByText(/^Now 27mg, since /)).toBeVisible();
 
-  const after = await periodsOf(id);
+  const after = await periodsOf(demo.db, id);
   expect(after).toHaveLength(6);
   // The five earlier periods are as they were, except the open one, now closed on the change date.
   for (let i = 0; i < 4; i++) expect(after[i]).toEqual(before[i]);
@@ -166,8 +149,8 @@ test("log a strength change: a new period, the previous one closed, nothing over
   await expectChartFits(page);
 });
 
-test("a medication with one period works the same way, and notes can be added, edited and unshared", async ({ page }) => {
-  const id = await medId("Warfarin");
+test("a medication with one period works the same way, and notes can be added, edited and unshared", async ({ page, demo }) => {
+  const id = await medId(demo.db, "Warfarin");
   await gotoScreen(page, `/meds/${id}`, "Warfarin");
   await expect(page.getByText(/^Now 5mg, since Jun 2019$/)).toBeVisible();
   await expect(page.getByRole("table", { name: "Warfarin strength over time" }).getByRole("row")).toHaveCount(2);
@@ -186,7 +169,7 @@ test("a medication with one period works the same way, and notes can be added, e
   await page.getByRole("button", { name: "Save note" }).click();
   await page.waitForURL(new RegExp(`/meds/${id}$`));
   await expect(page.getByText("Fine. Bruise easily.").filter({ visible: true })).toBeVisible();
-  let [p] = await periodsOf(id);
+  let [p] = await periodsOf(demo.db, id);
   expect(p).toMatchObject({ note: "Fine. Bruise easily.", note_shared: true });
 
   // The per-note switch turns sharing off, and it stays off.
@@ -194,7 +177,7 @@ test("a medication with one period works the same way, and notes can be added, e
   await expect(share).toHaveAttribute("aria-checked", "true");
   await share.click();
   await expect(share).toHaveAttribute("aria-checked", "false");
-  await expect.poll(async () => (await periodsOf(id))[0].note_shared).toBe(false);
+  await expect.poll(async () => (await periodsOf(demo.db, id))[0].note_shared).toBe(false);
 
   // Editing the note keeps its setting.
   await page.getByRole("link", { name: /^Edit note, 5mg/ }).click();
@@ -203,7 +186,7 @@ test("a medication with one period works the same way, and notes can be added, e
   await page.getByRole("textbox", { name: "How it felt" }).fill("Fine. Bruise easily. INR steady.");
   await page.getByRole("button", { name: "Save note" }).click();
   await page.waitForURL(new RegExp(`/meds/${id}$`));
-  [p] = await periodsOf(id);
+  [p] = await periodsOf(demo.db, id);
   expect(p).toMatchObject({ note: "Fine. Bruise easily. INR steady.", note_shared: false });
 
   // A past medication has no strength change.
@@ -227,7 +210,8 @@ test("full timeline: the filter, and the sheet with Seen by, Outcome, Prescribed
     /Asthma flare\s*Feb, Condition/,
     /2025\s*Urinary tract infection\s*Sep, Infection/,
     /2024\s*Hay fever\s*Apr, Condition/,
-    /2023\s*Tonsillitis\s*Nov, Infection/,
+    /2023\s*ADHD diagnosed\s*Nov, Condition/,
+    /Tonsillitis\s*Nov, Infection/,
     /2022\s*Hypothyroidism diagnosed\s*Mar, Condition/,
     /2020\s*Covid-19\s*Dec, Infection/,
     /2019\s*Atrial fibrillation diagnosed\s*Jun, Condition/,
@@ -258,7 +242,7 @@ test("full timeline: the filter, and the sheet with Seen by, Outcome, Prescribed
   await expect(list.getByRole("button")).toHaveCount(5);
   await expect(list.getByRole("button", { name: /Hay fever/ })).toHaveCount(0);
   await filter.getByRole("radio", { name: "Conditions" }).click();
-  await expect(list.getByRole("button")).toHaveText([/2026\s*Asthma flare/, /2024\s*Hay fever/, /2022\s*Hypothyroidism/, /2019\s*Atrial fibrillation/]);
+  await expect(list.getByRole("button")).toHaveText([/2026\s*Asthma flare/, /2024\s*Hay fever/, /2023\s*ADHD diagnosed/, /2022\s*Hypothyroidism/, /2019\s*Atrial fibrillation/]);
   await page.waitForTimeout(300);
   await expectNoAxeViolations(page);
   await filter.getByRole("radio", { name: "All" }).click();
@@ -300,7 +284,9 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await page.getByRole("button", { name: "Save to timeline" }).click();
   await expect(page.getByText("Say what it was, like Chest infection.")).toBeVisible();
   await page.getByRole("textbox", { name: "What it was" }).fill("Ear infection");
-  await page.getByLabel("Month").filter({ visible: true }).fill("2026-10");
+  // Month and year are two fields (A50).
+  await page.getByRole("combobox", { name: "Month" }).selectOption("10");
+  await page.getByRole("textbox", { name: "Year" }).fill("2026");
   await page.getByRole("textbox", { name: /Seen by/ }).fill("Dr Hennessy");
   await page.getByRole("combobox", { name: "Outcome" }).selectOption("resolved");
   await page.getByRole("button", { name: "Add a medicine" }).click();
@@ -315,7 +301,7 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await expect(sheet.getByText("Oct 2026, Infection")).toBeVisible();
   await expect(sheet.getByText("Clarithromycin 250mg")).toBeVisible();
   await sheet.getByRole("link", { name: "Edit Ear infection" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Edit timeline" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit event" })).toBeVisible();
   await page.getByRole("button", { name: "Remove medicine 1" }).click();
   await page.getByRole("textbox", { name: /Doctor's notes/ }).fill("Cleared in a week.");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -329,11 +315,11 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Ear infection/ })).toHaveCount(0);
 });
 
-test("visit detail: the result kind flags in words; the text kind's blocks; session notes read-only", async ({ page }) => {
+test("visit detail: the result kind flags in words; the text kind's blocks; session notes read-only", async ({ page, demo }) => {
   await gotoScreen(page, "/record", "Record");
   await page.getByRole("link", { name: /Blood count and INR/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeVisible();
-  await expect(page.getByText("Result, 2 Nov 2026, ordered by Dr Hennessy, Mater Hospital")).toBeVisible();
+  await expect(page.getByText(/^Result, \d+ \w{3} \d{4}, ordered by Dr Hennessy, Mater Hospital$/)).toBeVisible();
   const results = page.getByRole("list", { name: "Results" }).getByRole("listitem");
   await expect(results).toHaveText([
     /Haemoglobin\s*128 g\/L$/,
@@ -341,6 +327,7 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
     /Platelets\s*245/,
     /INR\s*2\.4$/,
     /Ferritin\s*18 µg\/L, low$/,
+    /TSH\s*2\.1 mIU\/L$/,
   ]);
   await expect(page.getByRole("img", { name: "Ferritin 18 µg/L, low. Normal range 30 to 300." })).toBeVisible();
   await expect(page.getByRole("img", { name: /^Haemoglobin 128 g\/L, in range/ })).toBeVisible();
@@ -350,10 +337,19 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
   await page.getByRole("link", { name: "Back to Record" }).click();
   // From 1024px the entry's screen has the Record list beside it: wait for that screen to go.
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeHidden();
-  await page.getByRole("link", { name: /GP visit/ }).click();
+  // The seed's GP visit today has only its reason; give it the doctor's findings and plan to see every block.
+  const visit = await demo.db
+    .from("entries")
+    .update({ assessment: "Iron a little low.", plan: "Iron tablets for three months." })
+    .eq("id", demo.appointmentEntryId)
+    .select("id")
+    .single();
+  expect(visit.error).toBeNull();
+  await page.getByRole("link", { name: /^GP visit(?! for)/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "GP visit" })).toBeVisible();
-  await expect(page.getByRole("term")).toHaveText(["Reason", "Assessment", "Plan"]);
-  await expect(page.getByRole("definition").first()).toHaveText("Tired for three weeks");
+  // Plain words for the patient (B11).
+  await expect(page.getByRole("term")).toHaveText(["Reason", "What the doctor found", "What happens next"]);
+  await expect(page.getByRole("definition").first()).toHaveText("Go through the blood results");
   await expect(page.getByRole("link", { name: "Edit GP visit" })).toBeVisible();
   await expectNoAxeViolations(page);
 
@@ -365,7 +361,7 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
   await expect(page.getByRole("definition")).toHaveText(["Warfarin 5mg, daily", "28 tablets", "Boots, Rathmines"]);
 });
 
-test("family tree: drawn from the data, the same as a list for assistive tech, the sheet and the filter (FamilyA2)", async ({ page }) => {
+test("family tree: drawn from the data, the same as a list for assistive tech, the sheet and the filter (FamilyA2)", async ({ page, demo }) => {
   await gotoScreen(page, "/record?tab=family", "Record");
   await page.getByRole("link", { name: /Family tree/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Family history" })).toBeVisible();
@@ -377,11 +373,11 @@ test("family tree: drawn from the data, the same as a list for assistive tech, t
     /Dad's dad\s*,?\s*Heart attack at 61/,
     /Mum\s*,?\s*Type 2 diabetes/,
     /Dad\s*,?\s*Atrial fibrillation/,
-    /You\s*,?\s*3 conditions/,
+    /You\s*,?\s*4 conditions/,
     /Brother\s*,?\s*Asthma/,
   ]);
   await expect(tree.getByRole("button", { name: /^Dad's dad ?, Heart attack at 61$/ })).toBeVisible();
-  await expect(page.getByText("Tap a condition to see who has it.")).toBeVisible();
+  await expect(page.getByText("Choose a condition to see who has it.")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
@@ -408,7 +404,7 @@ test("family tree: drawn from the data, the same as a list for assistive tech, t
   await expect(tree.getByRole("listitem").nth(3)).toHaveText(/Dad's dad.*Heart attack at 61, Type 2 diabetes at|Dad's dad.*Heart attack at 61, Type 2 diabetes/);
 
   // ?relative= opens a sheet; ?add=relative goes to the form.
-  const rel = (await clientFor(file).from("relatives").select("id").eq("relation", "mother").single()).data!.id;
+  const rel = (await demo.db.from("relatives").select("id").eq("relation", "mother").single()).data!.id;
   await gotoScreen(page, `/record/family?relative=${rel}`, "Family history");
   await expect(page.getByRole("dialog", { name: "Mum" })).toBeVisible();
   await gotoScreen(page, "/record/family?add=relative", "Add a relative");
@@ -433,11 +429,12 @@ test("family tree: drawn from the data, the same as a list for assistive tech, t
   await expect(tree.getByRole("listitem")).toHaveCount(8);
 });
 
-test("insurance: the mocked provider sign-in, the connected card, disconnect, and manual entry (InsuranceA2)", async ({ page }) => {
+test("insurance: the mocked provider sign-in, the connected card, disconnect, and manual entry (InsuranceA2)", async ({ page, demo }) => {
   await gotoScreen(page, "/profile", "Profile");
   await page.getByRole("link", { name: "Insurance" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Insurance" })).toBeVisible();
-  await expect(page.getByText("Choose your provider and sign in with them. Trace never sees your password.")).toBeVisible();
+  // The password line is said once, in the sign-in sheet (E15).
+  await expect(page.getByText("Choose your provider and sign in with them.", { exact: true })).toBeVisible();
   await expect(page.getByRole("list", { name: "Providers" }).getByRole("listitem")).toHaveText([
     "VHI",
     "Laya Healthcare",
@@ -464,13 +461,13 @@ test("insurance: the mocked provider sign-in, the connected card, disconnect, an
   await expect(page.getByText("Include in shares")).toHaveCount(0);
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
-  const { data: rows } = await clientFor(file).from("insurance_connections").select("provider, member_number_last4, via");
+  const { data: rows } = await demo.db.from("insurance_connections").select("provider, member_number_last4, via");
   expect(rows).toEqual([{ provider: "VHI", member_number_last4: "4821", via: "provider" }]);
 
   await page.getByRole("button", { name: "Disconnect" }).click();
   await page.getByRole("dialog", { name: "Disconnect VHI?" }).getByRole("button", { name: "Disconnect" }).click();
   await expect(page.getByRole("list", { name: "Providers" })).toBeVisible();
-  expect((await clientFor(file).from("insurance_connections").select("id")).data).toEqual([]);
+  expect((await demo.db.from("insurance_connections").select("id")).data).toEqual([]);
 
   // Manual entry, from "Other provider".
   await page.getByRole("link", { name: "Other provider" }).click();
@@ -494,7 +491,11 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("documents: the limits first, the refusals in words, upload, open with safe headers, delete", async ({ page }) => {
+test("documents: the limits first, the refusals in words, upload, open with safe headers, delete", async ({ page, demo }) => {
+  // The seed's two sample letters (its upload allowance has 3 files left); this test starts from none.
+  const seeded = await demo.db.from("documents").select("title").order("title");
+  expect(seeded.data).toEqual([{ title: "ADHD assessment summary" }, { title: "Cardiology review letter" }]);
+  expect((await demo.db.from("documents").delete().eq("user_id", demo.userId)).error).toBeNull();
   await gotoScreen(page, "/profile/documents", "Documents");
   await expect(page.getByText("No documents yet.")).toBeVisible();
   await expectNoAxeViolations(page);
@@ -502,7 +503,9 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   await expect(page.getByRole("heading", { level: 1, name: "Upload a document" })).toBeVisible();
   // Focused flow: no tab bar. The limits are on the screen before anything fails.
   await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
-  await expect(page.getByText("PDF, JPEG or PNG, up to 3 MB. The demo keeps up to 5 files, 3 MB in all.")).toBeVisible();
+  await expect(
+    page.getByText("PDF, JPEG or PNG. A PDF can be up to 3 MB; larger photos are made smaller. The demo keeps up to 5 files, 3 MB in all."),
+  ).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
@@ -510,13 +513,13 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   // Not a PDF, though it says so.
   await input.setInputFiles({ name: "letter.pdf", mimeType: "application/pdf", buffer: Buffer.from("hello, not a pdf") });
   await expect(page.getByText("letter.pdf isn't a PDF, JPEG or PNG. Choose one of those.")).toBeVisible();
-  // Too big.
-  const big = Buffer.concat([PNG, Buffer.alloc(3 * 1024 * 1024)]);
-  await input.setInputFiles({ name: "scan.png", mimeType: "image/png", buffer: big });
-  await expect(page.getByText("scan.png is 3 MB. Choose a file of 3 MB or less.")).toBeVisible();
+  // A PDF that is too big is refused (only photos can be made smaller).
+  const big = Buffer.concat([Buffer.from("%PDF-1.4\n"), Buffer.alloc(3 * 1024 * 1024)]);
+  await input.setInputFiles({ name: "scan.pdf", mimeType: "application/pdf", buffer: big });
+  await expect(page.getByText("scan.pdf is 3 MB. Choose a file of 3 MB or less.")).toBeVisible();
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(input).toBeFocused();
-  expect((await clientFor(file).from("documents").select("id")).data).toEqual([]);
+  expect((await demo.db.from("documents").select("id")).data).toEqual([]);
 
   // A real PNG.
   await input.setInputFiles({ name: "Discharge letter.png", mimeType: "image/png", buffer: PNG });
@@ -547,8 +550,18 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   // Someone else's id, or no session: nothing.
   expect((await page.request.get("/api/documents/00000000-0000-4000-8000-000000000000")).status()).toBe(404);
 
+  // Rename and re-date it (F8), then delete it from the same Edit form.
+  await page.getByRole("link", { name: "Edit Discharge letter" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit document" })).toBeVisible();
+  await expectNoAxeViolations(page);
+  await page.getByRole("textbox", { name: "Name" }).fill("Discharge summary");
+  await page.getByLabel(/Date on the document/).filter({ visible: true }).fill("2026-11-03");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Discharge summary" })).toBeVisible();
+  await expect(page.getByText(/^3 Nov 2026, Photo/)).toBeVisible();
+  await page.getByRole("link", { name: "Edit Discharge summary" }).click();
   await page.getByRole("button", { name: "Delete document" }).click();
-  await page.getByRole("dialog", { name: "Delete Discharge letter?" }).getByRole("button", { name: "Delete document" }).click();
+  await page.getByRole("dialog", { name: "Delete Discharge summary?" }).getByRole("button", { name: "Delete document" }).click();
   await page.waitForURL(/\/profile\/documents$/);
   await expect(page.getByText("No documents yet.")).toBeVisible();
 });

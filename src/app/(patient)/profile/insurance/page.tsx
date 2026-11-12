@@ -83,7 +83,7 @@ function Choose({ onConnected }: { onConnected: () => void }) {
 
   return (
     <>
-      <p className="text-body text-ink-2">Choose your provider and sign in with them. Trace never sees your password.</p>
+      <p className="text-body text-ink-2">Choose your provider and sign in with them.</p>
       <Card as="ul" aria-label="Providers">
         {MOCK_PROVIDERS.map((p) => (
           <li key={p}>
@@ -160,10 +160,22 @@ function Connected({ connection: c, onDisconnected }: { connection: InsuranceCon
           )}
         </div>
       </section>
+      {c.via === "manual" && (
+        <Link
+          href="/profile/insurance/manual?edit=1"
+          className="hit-area w-fit text-label font-semibold text-accent transition-colors duration-150 ease-out hovered:text-accent-alt"
+        >
+          Edit policy details
+        </Link>
+      )}
       <DeleteWithConfirm
-        label="Disconnect"
-        title={`Disconnect ${c.provider}?`}
-        body="Your plan details are removed from Trace. You can connect again any time."
+        label={c.via === "manual" ? "Remove" : "Disconnect"}
+        title={c.via === "manual" ? `Remove ${c.provider}?` : `Disconnect ${c.provider}?`}
+        body={
+          c.via === "manual"
+            ? "Your plan details are removed from Trace. You can add them again any time."
+            : "Your plan details are removed from Trace. You can connect again any time."
+        }
         onConfirm={async () => {
           const { error } = await createClient().from("insurance_connections").delete().eq("id", c.id);
           if (error) return false;

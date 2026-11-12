@@ -16,8 +16,10 @@ test.describe("Welcome and sign-up, signed out", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: "Your health record, owned by you." })).toBeVisible();
     await expect(page.getByRole("link", { name: "Create your record" })).toHaveAttribute("href", "/signup");
-    await expect(page.getByRole("link", { name: "I already have an account" })).toHaveAttribute("href", "/login");
+    await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
     await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
+    // Invite-only is said before the email step (H1).
+    await expect(page.getByText("Trace is invite-only for now.")).toBeVisible();
     await expect(page.getByText("Trace is a portfolio project by Aoife Randles, not a medical service.")).toBeVisible();
     await expectNoAxeViolations(page);
     await expectNoSideScroll(page);
@@ -39,6 +41,8 @@ test.describe("Welcome and sign-up, signed out", () => {
     await email.fill("not-invited@example.com");
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(page.getByText("Trace is invite-only for now.")).toBeVisible({ timeout: 20_000 });
+    // It points to the demo instead of ending there (A35).
+    await expect(page.getByRole("link", { name: "Try the demo instead" })).toHaveAttribute("href", "/");
     await expect(page).toHaveURL(/\/signup$/);
     await expectNoAxeViolations(page);
   });
@@ -49,7 +53,7 @@ test.describe("Welcome and sign-up, signed out", () => {
 
     await page.evaluate(() => sessionStorage.setItem("trace:pending-email", "someone@example.com"));
     await page.goto("/signup/verify");
-    await expect(page.getByRole("heading", { level: 1, name: "Check your email." })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Check your email" })).toBeVisible();
     await expect(page.getByText("We sent a 6-digit code to someone@example.com")).toBeVisible();
     await expect(page.getByText("Or open the link in the email on this device.")).toBeVisible();
     const code = page.getByRole("textbox", { name: "6-digit code" });
@@ -62,7 +66,7 @@ test.describe("Welcome and sign-up, signed out", () => {
 
   test("sign in refuses an email with no account", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { level: 1, name: "Welcome back." })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Welcome back" })).toBeVisible();
     await expectNoAxeViolations(page);
     await page.getByRole("textbox", { name: "Email address" }).fill("no-account@example.com");
     await page.getByRole("button", { name: "Continue" }).click();

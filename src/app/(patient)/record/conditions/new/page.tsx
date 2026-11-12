@@ -1,24 +1,23 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { useId, useState } from "react";
+import { useBack } from "@/lib/back";
 import { ConditionForm } from "../../../_components/forms/ConditionForm";
-import { SaveButton } from "../../../_components/forms/FormBits";
+import { SaveButton, useFormScreen } from "../../../_components/forms/FormBits";
 import { SubScreen } from "../../../_components/Screens";
 
 /** Add a condition (no Figma frame), reached from Ongoing conditions on the record. */
 function NewConditionScreen() {
-  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
+  const back = useBack("/record?tab=conditions");
   return (
     <SubScreen
       title="Add a condition"
-      backHref="/record?tab=conditions"
-      backLabel="Back to Record"
+      backHref={back}
+      backLabel="Back"
       footer={<SaveButton form={formId} busy={busy}>Save condition</SaveButton>}
     >
-      <ConditionForm formId={formId} onSaving={setBusy} />
+      <ConditionForm key={formKey} {...control} />
     </SubScreen>
   );
 }

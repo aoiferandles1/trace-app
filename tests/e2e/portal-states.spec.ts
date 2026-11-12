@@ -5,7 +5,7 @@ import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
 
 /**
  * Portal screens and states that need no patient: the loading and name
- * steps, wrong and locked codes (against the real database, each with a
+ * steps, wrong and locked codes (against the local database, each with a
  * fresh portal token and its own test IP so nothing locks anyone else out),
  * the about page, and, through stand-in /api/portal responses (made-up
  * data, never the seed), the states that take real minutes to reach
@@ -70,8 +70,7 @@ test("wrong code, then too many attempts, against the database", async ({ browse
   // Codes are random, so a guess could in theory match someone's live code.
   // If it ever does, cancel at once so nobody's phone keeps the request.
   async function guess(code: string) {
-    await input.fill(code);
-    await page.getByRole("button", { name: "Continue" }).click();
+    await input.fill(code); // the fourth digit submits
     const waiting = page.getByRole("heading", { name: WAITING });
     const wrong = page.getByText(/That code doesn't match|Too many attempts/);
     await expect(waiting.or(wrong)).toBeVisible();
@@ -178,7 +177,7 @@ test("mocked: the countdown reaches zero and the record leaves at once", async (
   });
   await page.goto("/view/session");
   await expect(page.getByRole("heading", { level: 1, name: "Test Patient" })).toBeVisible();
-  await expect(page.getByText("Latex").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Latex").filter({ visible: true }).first()).toBeVisible();
 
   await page.waitForFunction((t) => Date.now() >= t + 500, expiresAt);
   await expect(page.getByText("Test Patient")).toHaveCount(0);
@@ -200,7 +199,7 @@ test("mocked: access pauses, the record disappears, then comes back", async ({ b
   const set = await mockPortal(page, active);
   await page.goto("/view/session");
   await expect(page.getByRole("heading", { level: 1, name: "Test Patient" })).toBeVisible();
-  await expect(page.getByText("Latex").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Latex").filter({ visible: true }).first()).toBeVisible();
 
   set({ status: () => statusOf("paused"), record: null });
   await expect(page.getByRole("heading", { name: "Time's up on this share." })).toBeVisible({ timeout: 7000 });
@@ -213,7 +212,7 @@ test("mocked: access pauses, the record disappears, then comes back", async ({ b
 
   set(active);
   await expect(page.getByRole("heading", { level: 1, name: "Test Patient" })).toBeVisible({ timeout: 7000 });
-  await expect(page.getByText("Latex").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Latex").filter({ visible: true }).first()).toBeVisible();
   await context.close();
 });
 
@@ -280,16 +279,17 @@ test("mocked: notes typed but not saved when the patient ends stay on screen to 
   await context.close();
 });
 
-test("mocked: notes not allowed shows the panel read-only, with one line", async ({ browser, viewport }) => {
+test("mocked: notes not allowed: no notes column, one fact in the header (C7)", async ({ browser, viewport }) => {
   const { context, page } = await newDoctor(browser, { viewport: viewport ?? undefined });
   await mockPortal(page, { status: () => statusOf("active", { allow_notes: false, notes: null }) });
   await page.goto("/view/session");
   await expect(page.getByRole("heading", { level: 1, name: "Test Patient" })).toBeVisible();
-  const notes = page.getByRole("complementary", { name: "Session notes" });
-  await expect(notes.getByRole("heading", { name: "Session notes" })).toBeVisible();
-  await expect(notes).toContainText("Test did not allow notes for this session.");
-  await expect(notes.getByRole("textbox")).toHaveCount(0);
-  await expect(notes.getByRole("button", { name: "Save notes" })).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "Session notes" })).toHaveCount(0);
+  await expect(page.getByRole("separator", { name: /Resize session notes/ })).toHaveCount(0);
+  const fact = page.locator("dl > div").filter({ hasText: "Session notes" });
+  await expect(fact).toHaveText(/Session notes\s*Not allowed/);
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Go to notes" })).toHaveCount(0);
   await expectNoAxeViolations(page);
   await context.close();
 });

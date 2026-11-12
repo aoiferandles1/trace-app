@@ -27,6 +27,7 @@ export function PortalShell({
   footer,
   children,
   tone = "ground",
+  skipLabel = "Skip to the main content",
   className,
 }: {
   header?: ReactNode;
@@ -35,6 +36,8 @@ export function PortalShell({
   footer?: ReactNode;
   children: ReactNode;
   tone?: "ground" | "surface" | "session";
+  /** The skip link's words. These steps have no record, so not "Skip to the record". */
+  skipLabel?: string;
   className?: string;
 }) {
   const hasSidebar = Boolean(sidebar);
@@ -43,7 +46,7 @@ export function PortalShell({
   return (
     <div
       className={cn(
-        "desk flex min-h-dvh flex-col",
+        "desk flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom)]",
         tone === "session" && "on-session bg-session text-white",
         tone === "ground" && "bg-ground text-ink",
         tone === "surface" && "bg-surface text-ink",
@@ -54,7 +57,7 @@ export function PortalShell({
         href="#main"
         className="sr-only-focusable absolute left-4 top-4 z-50 rounded-button border border-border-control bg-surface px-4 py-2 text-caption font-semibold text-accent"
       >
-        Skip to the record
+        {skipLabel}
       </a>
       {header}
       <div

@@ -1,12 +1,43 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { CodeInput } from "@/components/ui/CodeInput";
 import { TextField } from "@/components/ui/TextField";
 import { createClient } from "@/lib/supabase/client";
-import { authErrorMessage, looksLikeEmail, pathForStep } from "@/lib/patient/auth";
+import { authErrorMessage, INVITE_ONLY, LOGIN_EMAIL_KEY, looksLikeEmail, NO_ACCOUNT, pathForStep } from "@/lib/patient/auth";
+
+const link = "font-semibold text-accent underline underline-offset-2 hovered:text-accent-alt";
+
+/** An error with somewhere to go next: invite-only points to the demo (A35), no account to sign-up or the demo (B20). */
+function withWayOut(message: string): ReactNode {
+  if (message === INVITE_ONLY)
+    return (
+      <>
+        {message}{" "}
+        <Link href="/" className={link}>
+          Try the demo instead
+        </Link>
+      </>
+    );
+  if (message === NO_ACCOUNT)
+    return (
+      <>
+        {message}{" "}
+        <Link href="/signup" className={link}>
+          Create your record
+        </Link>{" "}
+        or{" "}
+        <Link href="/" className={link}>
+          try the demo
+        </Link>
+        .
+      </>
+    );
+  return message;
+}
 
 /**
  * The email and code steps, shared by sign-up (p-create, p-verify) and sign in
@@ -35,11 +66,13 @@ export async function sendEmailCode(email: string, mode: "signup" | "login") {
 export function EmailForm({
   mode,
   onSent,
+  initialEmail = "",
 }: {
   mode: "signup" | "login";
   onSent: (email: string) => void;
+  initialEmail?: string;
 }) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +108,7 @@ export function EmailForm({
         placeholder="janedoe@example.ie"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        error={error}
+        error={error ? withWayOut(error) : undefined}
       />
       <Button type="submit" size="lg" fullWidth loading={busy} className="mt-7">
         Continue
@@ -91,6 +124,12 @@ export function CodeForm({ email, mode }: { email: string; mode: "signup" | "log
   const [busy, setBusy] = useState(false);
   const [resent, setResent] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const codeId = useId();
+  // After a wrong code: the boxes are cleared and focus goes back to them, ready for the next try (A36).
+  const [refocus, setRefocus] = useState(0);
+  useEffect(() => {
+    if (refocus) document.getElementById(codeId)?.focus();
+  }, [refocus, codeId]);
 
   async function verify(value: string) {
     if (value.length !== 6) {
@@ -103,8 +142,15 @@ export function CodeForm({ email, mode }: { email: string; mode: "signup" | "log
     const { data, error: verifyError } = await supabase.auth.verifyOtp({ email, token: value, type: "email" });
     if (verifyError || !data.user) {
       setBusy(false);
+      setCode("");
       setError(verifyError ? authErrorMessage(verifyError, "verify") : "That code didn't work. Check it, or ask for a new code.");
+      setRefocus((n) => n + 1);
       return;
+    }
+    try {
+      sessionStorage.removeItem(LOGIN_EMAIL_KEY);
+    } catch {
+      // Storage blocked: nothing was kept.
     }
     const { data: profile } = await supabase
       .from("profiles")
@@ -132,6 +178,7 @@ export function CodeForm({ email, mode }: { email: string; mode: "signup" | "log
       className="flex flex-col gap-6"
     >
       <CodeInput
+        id={codeId}
         length={6}
         value={code}
         onChange={(v) => {

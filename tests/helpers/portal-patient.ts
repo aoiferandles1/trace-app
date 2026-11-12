@@ -1,7 +1,7 @@
+import { test as base } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import type { Database } from "../../src/lib/supabase/database.types";
+import { LOCAL_ENV } from "../support/local-env";
 
 /**
  * The patient side for the redesigned portal's tests: an anonymous demo
@@ -9,10 +9,9 @@ import type { Database } from "../../src/lib/supabase/database.types";
  * through the new `create_share_code` overload so any mix of the eleven
  * scopes can be granted (supabase/README.md sections 4, 6 and 11).
  *
- * Kept apart from helpers/patient.ts (the patient app's helper, which seeds
- * the old record) so the two can change independently. Same rules: one
- * sign-in per spec file (anonymous sign-ins are capped at 30 an hour for this
- * machine), `reset()` between tests, `dispose()` once at the end.
+ * Runs against the local stand-in for Supabase (tests/support/local-supabase/),
+ * which has no sign-in cap: use the `test` exported here, whose `patient`
+ * fixture is a fresh, seeded patient for every test, so tests run in parallel.
  */
 
 export type ScopeOptions = {
@@ -52,14 +51,6 @@ export type Session = {
   [key: string]: unknown;
 };
 
-let envLoaded = false;
-function loadEnv() {
-  if (envLoaded) return;
-  envLoaded = true;
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return;
-  const file = path.resolve(__dirname, "../../.env.local");
-  if (existsSync(file)) process.loadEnvFile(file);
-}
 
 function fail(what: string, error: { message: string; details?: string | null } | null): never {
   throw new Error(`${what} failed: ${error?.message ?? "no data"}${error?.details ? ` (${error.details})` : ""}`);
@@ -81,13 +72,9 @@ export class PortalPatient {
     public appointmentEntryId: string,
   ) {}
 
-  /** Signs in anonymously (one of the 30 an hour) and seeds the boards' Jane Doe. */
+  /** Signs in anonymously and seeds the boards' Jane Doe. */
   static async signIn(): Promise<PortalPatient> {
-    loadEnv();
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-    if (!url || !key) throw new Error("Supabase env missing: copy .env.local into the repo root.");
-    const client = createClient<Database>(url, key, {
+    const client = createClient<Database>(LOCAL_ENV.NEXT_PUBLIC_SUPABASE_URL, LOCAL_ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false },
     });
     const { data, error } = await client.auth.signInAnonymously();
@@ -211,10 +198,18 @@ export class PortalPatient {
     if (res.error) fail("update medication_periods", res.error);
   }
 
-  /** Deletes this anonymous user and everything it owns. Call once, at the end. */
+  /** Deletes this anonymous user and everything it owns. */
   async dispose(): Promise<void> {
     const { error } = await this.client.rpc("delete_my_account");
     if (error) console.warn(`delete_my_account failed: ${error.message}`);
     await this.client.auth.signOut({ scope: "local" }).catch(() => {});
   }
 }
+
+/** Playwright's test with `patient`: a fresh, seeded demo patient for every test. */
+export const test = base.extend<{ patient: PortalPatient }>({
+  patient: async ({}, provide) => {
+    await provide(await PortalPatient.signIn());
+  },
+});
+export { expect } from "@playwright/test";

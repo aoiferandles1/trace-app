@@ -31,7 +31,17 @@ import { AccessRequestSheet } from "./AccessRequestSheet";
  * - Announces the moments that matter in one polite live region (PLAN.md
  *   section 10): sharing started, 5 minutes left, 1 minute left, Time's up,
  *   ended. Never the ticking time.
+ * - Keeps one visible line (`notice`) for an outcome the patient may not
+ *   have been looking at: the share ended, a request was denied or timed
+ *   out. LiveBannerSlot draws it at the top of every signed-in screen until
+ *   it is dismissed or a new share starts.
  */
+
+export type ShareNotice = {
+  sessionId: string;
+  text: string;
+  link?: { href: string; label: string };
+};
 
 export type ShareContextValue = {
   /** The live session, or else the most recent one, or null if the user never shared. */
@@ -46,6 +56,9 @@ export type ShareContextValue = {
   setSession: (session: ShareSession | null) => void;
   /** Says something in the polite live region. */
   announce: (text: string) => void;
+  /** The visible line about how the last share or request ended, if any. */
+  notice: ShareNotice | null;
+  dismissNotice: () => void;
 };
 
 const noop = async () => null;
@@ -56,6 +69,8 @@ const FALLBACK: ShareContextValue = {
   refresh: noop,
   setSession: () => {},
   announce: () => {},
+  notice: null,
+  dismissNotice: () => {},
 };
 
 const Ctx = createContext<ShareContextValue>(FALLBACK);
@@ -104,6 +119,8 @@ export function ShareSessionProvider({
   const [loaded, setLoaded] = useState(initial !== undefined);
   const [failed, setFailed] = useState(false);
   const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<ShareNotice | null>(null);
+  const dismissNotice = useCallback(() => setNotice(null), []);
 
   // The gate hands over its first read once it has it (adjusted during
   // render, React's pattern for state that follows a prop).
@@ -185,8 +202,8 @@ export function ShareSessionProvider({
   }, [userId, refresh]);
 
   const value = useMemo<ShareContextValue>(
-    () => ({ session, loaded, failed, refresh, setSession, announce }),
-    [session, loaded, failed, refresh, setSession, announce],
+    () => ({ session, loaded, failed, refresh, setSession, announce, notice, dismissNotice }),
+    [session, loaded, failed, refresh, setSession, announce, notice, dismissNotice],
   );
 
   return (
@@ -194,7 +211,7 @@ export function ShareSessionProvider({
       {children}
       {userId && (
         <>
-          <StatusAnnouncer session={session} announce={announce} />
+          <StatusAnnouncer session={session} announce={announce} setNotice={setNotice} />
           <CountdownAnnouncer session={session} announce={announce} />
           <AccessRequestSheet />
         </>
@@ -206,8 +223,16 @@ export function ShareSessionProvider({
   );
 }
 
-/** Announces changes of state, but not the state found on first load. */
-function StatusAnnouncer({ session, announce }: { session: ShareSession | null; announce: (t: string) => void }) {
+/** Announces changes of state, but not the state found on first load, and keeps the visible notice. */
+function StatusAnnouncer({
+  session,
+  announce,
+  setNotice,
+}: {
+  session: ShareSession | null;
+  announce: (t: string) => void;
+  setNotice: (n: ShareNotice | null) => void;
+}) {
   const prev = useRef<{ id: string; status: string } | null | undefined>(undefined);
   useEffect(() => {
     const before = prev.current;
@@ -217,8 +242,16 @@ function StatusAnnouncer({ session, announce }: { session: ShareSession | null; 
     if (sameSession && before.status === session.status) return;
     const name = clinicianName(session);
     const was = sameSession ? before.status : null;
+    const id = session.id;
     switch (session.status) {
+      case "code_issued":
+      case "requested":
+        setNotice(null);
+        if (session.status === "code_issued" && was === "requested")
+          announce("The doctor cancelled their request. Your code still works.");
+        break;
       case "active":
+        setNotice(null);
         announce(
           was === "paused" ? `${name} can see your record again.` : `Sharing started. ${name} can see your record.`,
         );
@@ -228,17 +261,32 @@ function StatusAnnouncer({ session, announce }: { session: ShareSession | null; 
         break;
       case "ended":
         announce(`Sharing ended. ${name} no longer has access to your record.`);
+        if (was === "active" || was === "paused")
+          setNotice({
+            sessionId: id,
+            text: `${name} no longer has access to your record.`,
+            link: { href: `/session/ended?id=${id}`, label: "View summary" },
+          });
+        break;
+      case "denied":
+        if (was === "requested") {
+          announce(`You denied access. ${name} can't see your record.`);
+          setNotice({ sessionId: id, text: `You denied access. ${name} can't see your record.` });
+        }
         break;
       case "expired":
         announce(was === "requested" ? `The request from ${name} timed out.` : "Your share code expired.");
-        break;
-      case "code_issued":
-        if (was === "requested") announce("The doctor cancelled their request. Your code still works.");
+        if (was === "requested")
+          setNotice({
+            sessionId: id,
+            text: `The request from ${name} timed out. They can't see your record.`,
+            link: { href: "/share", label: "Make a new code" },
+          });
         break;
       default:
         break;
     }
-  }, [session, announce]);
+  }, [session, announce, setNotice]);
   return null;
 }
 

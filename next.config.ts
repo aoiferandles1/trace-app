@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The end-to-end tests build the app against a local stand-in for Supabase
+  // (playwright.config.ts sets TRACE_E2E=1). That build goes in its own
+  // folder, so it can never be mistaken for, or overwrite, a real build.
+  distDir: process.env.TRACE_E2E === "1" ? ".next-e2e" : ".next",
   cacheComponents: true,
   // Only Trace itself may frame Trace (the /demo page frames the patient app
   // and the portal). Everyone else is refused, against clickjacking.

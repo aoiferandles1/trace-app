@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -21,7 +22,8 @@ export function DetailBlock({
 }: {
   label: string;
   children?: ReactNode;
-  items?: Array<{ name: string; detail?: string }>;
+  /** `href` makes the item's name a link (an event's prescription to its medication). */
+  items?: Array<{ name: string; detail?: string; href?: string }>;
   term?: boolean;
   className?: string;
 }) {
@@ -33,7 +35,13 @@ export function DetailBlock({
       {children !== undefined && <Value className="whitespace-pre-wrap break-words text-body-lg text-ink">{children}</Value>}
       {items?.map((i) => (
         <span key={i.name} className="flex flex-col">
-          <span className="text-row font-medium">{i.name}</span>
+          {i.href ? (
+            <Link href={i.href} className="w-fit text-row font-medium text-accent underline-offset-2 hovered:underline">
+              {i.name}
+            </Link>
+          ) : (
+            <span className="text-row font-medium">{i.name}</span>
+          )}
           {i.detail && <span className="text-caption text-ink-2">{i.detail}</span>}
         </span>
       ))}

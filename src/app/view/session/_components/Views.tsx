@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Card";
 import { DetailBlock } from "@/components/ui/DetailBlock";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -29,6 +30,7 @@ import {
   documentSub,
   entryFields,
   entryMeta,
+  entryTitle,
   entryType,
   eventMeta,
   eventSub,
@@ -40,7 +42,7 @@ import {
   medicationSub,
   periodRange,
 } from "../../_lib/format";
-import { useNow } from "../../_lib/hooks";
+import { prefersReducedMotion, useNow } from "../../_lib/hooks";
 import { useSection, useSession } from "./SessionContext";
 
 /**
@@ -52,8 +54,15 @@ import { useSection, useSession } from "./SessionContext";
  * Two-pane views (Recent visits, Medications, Full timeline) put the list
  * and the detail side by side when the record area has room for both
  * (600px), and stack them otherwise. Side by side, each pane scrolls inside
- * itself, as on the board.
+ * itself, as on the board. Stacked, choosing a row brings its detail into
+ * view. The chosen visit, medication or event is in the address (?id=), so
+ * other views can link straight to it.
  */
+
+/** Puts `?id=` in the address without a navigation (Next keeps its router in step). */
+function selectInUrl(path: string, id: string) {
+  window.history.replaceState(null, "", `${path}?id=${encodeURIComponent(id)}`);
+}
 
 /* ------------------------------------------------------------ shared bits */
 
@@ -91,11 +100,14 @@ function Loading() {
   );
 }
 
-function LoadFailed() {
+function LoadFailed({ onRetry }: { onRetry: () => void }) {
   return (
-    <p role="alert" className="pt-8.5 text-body-lg text-ink-2">
-      This part of the record could not be loaded. Reload the page to try again.
-    </p>
+    <div role="alert" className="flex flex-col items-start gap-2 pt-8.5">
+      <p className="text-body-lg text-ink-2">This part of the record could not be loaded.</p>
+      <Button variant="text" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
   );
 }
 
@@ -104,17 +116,33 @@ function TwoPane({
   listWidth = 272,
   gap = 18,
   detail,
+  picked = 0,
 }: {
   list: ReactNode;
   listWidth?: 272 | 292;
   /** Between the pieces of each pane: 18px for Recent visits, 16px for Medications and Full timeline (the board). */
   gap?: 16 | 18;
   detail: ReactNode;
+  /** Goes up each time the doctor chooses a row: stacked, the detail is brought into view. */
+  picked?: number;
 }) {
   const gapClass = gap === 16 ? "gap-4" : "gap-4.5";
+  const listRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const l = listRef.current;
+    const d = detailRef.current;
+    if (!picked || !l || !d) return;
+    // Stacked (the detail under the list): show the detail and move focus to it.
+    if (d.getBoundingClientRect().top >= l.getBoundingClientRect().bottom - 1) {
+      d.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+      d.focus({ preventScroll: true });
+    }
+  }, [picked]);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-7 pt-8.5 @min-[600px]:flex-row">
       <div
+        ref={listRef}
         className={cn(
           "flex flex-col @min-[600px]:min-h-0 @min-[600px]:shrink-0 @min-[600px]:overflow-y-auto",
           gapClass,
@@ -125,11 +153,12 @@ function TwoPane({
       </div>
       {/* Focusable: side by side it scrolls on its own, and keyboard users must be able to scroll it. */}
       <section
+        ref={detailRef}
         aria-live="polite"
         aria-label="Details"
         tabIndex={0}
         className={cn(
-          "flex min-w-0 flex-1 flex-col border-t border-border-row pt-6 focus-visible:-outline-offset-2 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0",
+          "flex min-w-0 flex-1 scroll-mt-36 flex-col border-t border-border-row pt-6 focus-visible:-outline-offset-2 @min-[600px]:min-h-0 @min-[600px]:overflow-y-auto @min-[600px]:border-l @min-[600px]:border-t-0 @min-[600px]:pl-7 @min-[600px]:pt-0",
           // Full timeline's detail keeps 18px; Medications' is 16px.
           listWidth === 292 ? "gap-4.5" : gapClass,
         )}
@@ -207,18 +236,24 @@ export function OverviewView() {
           {ledger === null ? (
             <NotSharedLine />
           ) : ledger.length === 0 ? (
-            <Quiet>No visits recorded.</Quiet>
+            <Quiet>None recorded.</Quiet>
           ) : (
             <ul className="flex flex-col gap-3.5">
               {ledger.map((e) => {
                 const dm = dayMonth(e.occurs_at);
                 return (
-                  <li key={e.id} className="grid grid-cols-[64px_1fr_auto] items-baseline gap-x-3">
-                    <DayMonth day={dm.day} month={dm.month} accent={e.upcoming} dateTime={isoDay(e.occurs_at)} />
-                    <span className="text-row font-medium">{e.title}</span>
-                    <span className={e.upcoming ? "text-caption text-accent" : "text-caption text-ink-2"}>
-                      {e.upcoming ? "Upcoming" : entryType(e)}
-                    </span>
+                  <li key={e.id}>
+                    <Link
+                      href={`/view/session/visits?id=${encodeURIComponent(e.id)}`}
+                      className="grid grid-cols-[64px_1fr_auto_18px] items-baseline gap-x-3 text-ink hovered:text-accent-alt"
+                    >
+                      <DayMonth day={dm.day} month={dm.month} accent={e.upcoming} dateTime={isoDay(e.occurs_at)} />
+                      <span className="text-row font-medium">{entryTitle(e)}</span>
+                      <span className={e.upcoming ? "text-caption text-accent" : "text-caption text-ink-2"}>
+                        {e.upcoming ? "Upcoming" : entryType(e)}
+                      </span>
+                      <Icon name="chevron-right" size={18} className="self-center text-ink-2" />
+                    </Link>
                   </li>
                 );
               })}
@@ -305,25 +340,51 @@ export function OverviewView() {
 
 /* ------------------------------------------------------- recent visits */
 
-function EntryDetail({ entry }: { entry: Entry }) {
+/** The same test in earlier shared results, newest first ("Before: 2.1 on 3 Oct 2026"). */
+function earlierValues(name: string, entry: Entry, others: Entry[]): string | null {
+  const key = name.trim().toLowerCase();
+  const before = others
+    .filter((o) => o.id !== entry.id && o.detail?.kind === "result" && o.occurs_at < entry.occurs_at)
+    .sort((a, b) => (a.occurs_at < b.occurs_at ? 1 : -1))
+    .flatMap((o) => {
+      const r = o.detail?.kind === "result" ? o.detail.results.find((x) => x.name.trim().toLowerCase() === key) : null;
+      if (!r) return [];
+      const dm = dayMonth(o.occurs_at);
+      return [`${`${r.value} ${r.unit ?? ""}`.trim()} on ${dm.day} ${dm.month} ${dm.year}`];
+    })
+    .slice(0, 3);
+  return before.length ? `Before: ${before.join(", ")}` : null;
+}
+
+function EntryDetail({ entry, others = [], firstName }: { entry: Entry; others?: Entry[]; firstName: string }) {
   const fields = entryFields(entry);
   const results = entry.detail?.kind === "result" ? entry.detail.results : null;
+  const source =
+    entry.source === "clinician_session"
+      ? `Written in a Trace session${entry.clinician ? ` by ${entry.clinician}` : ""}`
+      : `Added by ${firstName === "the patient" ? "the patient" : firstName}`;
   return (
     <>
-      <DetailTitle title={entry.title} meta={entryMeta(entry)} />
+      <DetailTitle title={entryTitle(entry)} meta={entryMeta(entry)} />
       {results ? (
         <div className="flex flex-col gap-4">
           {results.length === 0 && <Quiet>No results recorded.</Quiet>}
-          {results.map((r) =>
-            r.ref_low != null && r.ref_high != null ? (
-              <ResultRow key={r.id} name={r.name} value={r.value} unit={r.unit ?? ""} low={r.ref_low} high={r.ref_high} />
-            ) : (
-              <div key={r.id} className="flex flex-col">
-                <span className="text-row font-medium">{r.name}</span>
-                <span className="text-caption text-ink-2">{`${r.value} ${r.unit ?? ""}`.trim()}</span>
+          {results.map((r) => {
+            const trend = earlierValues(r.name, entry, others);
+            return (
+              <div key={r.id} className="flex flex-col gap-1">
+                {r.ref_low != null && r.ref_high != null ? (
+                  <ResultRow name={r.name} value={r.value} unit={r.unit ?? ""} low={r.ref_low} high={r.ref_high} />
+                ) : (
+                  <div className="flex flex-col">
+                    <span className="text-row font-medium">{r.name}</span>
+                    <span className="text-caption text-ink-2">{`${r.value} ${r.unit ?? ""}`.trim()}</span>
+                  </div>
+                )}
+                {trend && <span className="text-meta text-ink-2">{trend}</span>}
               </div>
-            ),
-          )}
+            );
+          })}
           {results.some((r) => r.ref_low != null && r.ref_high != null) && (
             <p className="text-meta text-ink-2">The shaded part of each bar is the normal range.</p>
           )}
@@ -341,6 +402,7 @@ function EntryDetail({ entry }: { entry: Entry }) {
       ) : (
         <Quiet>No details recorded.</Quiet>
       )}
+      <p className="text-meta text-ink-2">{source}</p>
     </>
   );
 }
@@ -352,30 +414,37 @@ function VisitRow({ e, selected, onPick }: { e: Entry; selected: boolean; onPick
       selected={selected}
       onClick={onPick}
       leading={<DayMonth day={dm.day} month={dm.month} dateTime={isoDay(e.occurs_at)} />}
-      title={e.title}
+      title={entryTitle(e)}
       caption={entryType(e)}
     />
   );
 }
 
 export function VisitsView() {
-  const { status } = useSession();
+  const { status, firstName } = useSession();
   const fullTimeline = Boolean(status.scope?.full_timeline);
   const recent = useSection("recent_visits");
   // Older visits only when the patient also shared the full timeline.
   const full = useSection("full_timeline", fullTimeline);
-  const [selected, setSelected] = useState<string | null>(null);
+  const selected = useSearchParams().get("id");
+  const [picked, setPicked] = useState(0);
+  const pick = (id: string) => {
+    selectInUrl("/view/session/visits", id);
+    setPicked((n) => n + 1);
+  };
 
   if (recent.state === "loading") return <Loading />;
-  if (recent.state === "error") return <LoadFailed />;
+  if (recent.state === "error") return <LoadFailed onRetry={recent.retry} />;
   const { past, upcoming } = recent.record.data;
   const pastIds = new Set(past.map((e) => e.id));
   const older = full.state === "ready" ? full.record.data.visits.filter((e) => !pastIds.has(e.id)) : [];
   const all = [...past, ...older];
-  const current = all.find((e) => e.id === selected) ?? all[0] ?? null;
+  // An upcoming visit opens too when it is in the address (Overview links to every row).
+  const current = all.find((e) => e.id === selected) ?? upcoming.find((e) => e.id === selected) ?? all[0] ?? null;
 
   return (
     <TwoPane
+      picked={picked}
       list={
         <>
           <PaneTitle>Recent visits</PaneTitle>
@@ -391,7 +460,7 @@ export function VisitsView() {
                   return (
                     <li key={e.id} className="grid grid-cols-[64px_1fr] items-center py-1.5 pl-3.75">
                       <DayMonth day={dm.day} month={dm.month} accent dateTime={isoDay(e.occurs_at)} />
-                      <span className="text-label font-medium">{e.title}</span>
+                      <span className="text-label font-medium">{entryTitle(e)}</span>
                     </li>
                   );
                 })}
@@ -400,23 +469,23 @@ export function VisitsView() {
           )}
           <div className="flex flex-col gap-0.5">
             <h3 className="mb-1 text-meta leading-4 text-ink-2">{past.length === 3 ? "Last 3" : "Past"}</h3>
-            {past.length === 0 && <Quiet>No past visits.</Quiet>}
+            {past.length === 0 && <Quiet>None recorded.</Quiet>}
             {past.map((e) => (
-              <VisitRow key={e.id} e={e} selected={current?.id === e.id} onPick={() => setSelected(e.id)} />
+              <VisitRow key={e.id} e={e} selected={current?.id === e.id} onPick={() => pick(e.id)} />
             ))}
           </div>
           {older.length > 0 && (
             <div className="flex flex-col gap-0.5">
               <h3 className="mb-1 text-meta leading-4 text-ink-2">Earlier</h3>
               {older.map((e) => (
-                <VisitRow key={e.id} e={e} selected={current?.id === e.id} onPick={() => setSelected(e.id)} />
+                <VisitRow key={e.id} e={e} selected={current?.id === e.id} onPick={() => pick(e.id)} />
               ))}
             </div>
           )}
           {!fullTimeline && <NotSharedLine>Older visits are in the full timeline.</NotSharedLine>}
         </>
       }
-      detail={current ? <EntryDetail entry={current} /> : <Quiet>Nothing to show.</Quiet>}
+      detail={current ? <EntryDetail entry={current} others={all} firstName={firstName} /> : null}
     />
   );
 }
@@ -425,6 +494,12 @@ export function VisitsView() {
 
 function MedicationDetail({ m, firstName }: { m: Medication; firstName: string }) {
   const periods = chartPeriods(m);
+  const taken = [m.form, m.frequency, m.timing].filter(Boolean).join(", ");
+  const refill = m.refill_due_on
+    ? `${formatDateOnly(m.refill_due_on)}${
+        m.supply_days_left != null ? `, ${m.supply_days_left} ${m.supply_days_left === 1 ? "day" : "days"} of supply left` : ""
+      }`
+    : null;
   return (
     <>
       <div className="flex flex-col gap-0.5">
@@ -458,6 +533,25 @@ function MedicationDetail({ m, firstName }: { m: Medication; firstName: string }
           ))}
         </ul>
       )}
+      {(taken || m.prescriber || (m.status === "current" && refill)) && (
+        <dl className="mt-1 flex flex-col gap-4">
+          {taken && (
+            <DetailBlock label="How it is taken" term>
+              {capitalise(taken)}
+            </DetailBlock>
+          )}
+          {m.prescriber && (
+            <DetailBlock label="Prescriber" term>
+              {m.prescriber}
+            </DetailBlock>
+          )}
+          {m.status === "current" && refill && (
+            <DetailBlock label="Refill due" term>
+              {refill}
+            </DetailBlock>
+          )}
+        </dl>
+      )}
     </>
   );
 }
@@ -477,8 +571,10 @@ export function MedicationsView() {
     setTab(null);
   }
 
+  const [picked, setPicked] = useState(0);
+
   if (meds.state === "loading") return <Loading />;
-  if (meds.state === "error") return <LoadFailed />;
+  if (meds.state === "error") return <LoadFailed onRetry={meds.retry} />;
   const { current, past } = meds.record.data;
   const chosen = [...current, ...past].find((m) => m.id === selected);
   const activeTab = tab ?? (chosen?.status === "past" ? "past" : "current");
@@ -488,6 +584,7 @@ export function MedicationsView() {
   return (
     <TwoPane
       gap={16}
+      picked={picked}
       list={
         <>
           <PaneTitle>Medications</PaneTitle>
@@ -510,7 +607,10 @@ export function MedicationsView() {
               <SelectableRow
                 key={m.id}
                 selected={sel?.id === m.id}
-                onClick={() => setSelected(m.id)}
+                onClick={() => {
+                  setSelected(m.id);
+                  setPicked((n) => n + 1);
+                }}
                 titleSize="lg"
                 title={m.name}
                 caption={medicationSub(m) || undefined}
@@ -520,7 +620,7 @@ export function MedicationsView() {
           </div>
         </>
       }
-      detail={sel ? <MedicationDetail m={sel} firstName={firstName} /> : <Quiet>Nothing to show.</Quiet>}
+      detail={sel ? <MedicationDetail m={sel} firstName={firstName} /> : null}
     />
   );
 }
@@ -570,10 +670,11 @@ export function TimelineView() {
   const now = useNow(offset, 60_000);
   const full = useSection("full_timeline");
   const [filter, setFilter] = useState<EventFilter>("all");
-  const [selected, setSelected] = useState<string | null>(null);
+  const selected = useSearchParams().get("id");
+  const [picked, setPicked] = useState(0);
 
   if (full.state === "loading") return <Loading />;
-  if (full.state === "error") return <LoadFailed />;
+  if (full.state === "error") return <LoadFailed onRetry={full.retry} />;
   const events = full.record.data.events;
   const list = events.filter((e) => filter === "all" || e.kind === filter);
   const sel = list.find((e) => e.id === selected) ?? list[0] ?? null;
@@ -583,6 +684,7 @@ export function TimelineView() {
     <TwoPane
       listWidth={292}
       gap={16}
+      picked={picked}
       list={
         <>
           <PaneTitle>Full timeline</PaneTitle>
@@ -594,14 +696,11 @@ export function TimelineView() {
               { value: "condition", label: "Conditions" },
             ]}
             value={filter}
-            onChange={(v) => {
-              setFilter(v);
-              setSelected(null);
-            }}
+            onChange={(v) => setFilter(v)}
             className="shrink-0"
           />
           <div className="flex flex-col gap-0.5">
-            {list.length === 0 && <Quiet>Nothing recorded.</Quiet>}
+            {list.length === 0 && <Quiet>None recorded.</Quiet>}
             {list.map((e, i) => {
               const year = eventYear(e);
               const first = i === 0 || eventYear(list[i - 1]) !== year;
@@ -609,7 +708,10 @@ export function TimelineView() {
                 <SelectableRow
                   key={e.id}
                   selected={sel?.id === e.id}
-                  onClick={() => setSelected(e.id)}
+                  onClick={() => {
+                    selectInUrl("/view/session/timeline", e.id);
+                    setPicked((n) => n + 1);
+                  }}
                   leadingWidth={56}
                   leading={
                     <span
@@ -632,7 +734,7 @@ export function TimelineView() {
           </div>
         </>
       }
-      detail={sel ? <EventDetail e={sel} /> : <Quiet>Nothing to show.</Quiet>}
+      detail={sel ? <EventDetail e={sel} /> : null}
     />
   );
 }
@@ -643,14 +745,14 @@ export function CareTeamView() {
   const { status } = useSession();
   const team = useSection("care_team");
   if (team.state === "loading") return <Loading />;
-  if (team.state === "error") return <LoadFailed />;
+  if (team.state === "error") return <LoadFailed onRetry={team.retry} />;
   const me = status.clinician?.name?.trim().toLowerCase();
   const people = team.record.data.care_team;
   return (
     <div className="flex flex-col gap-7 pt-8.5">
       <PaneTitle>Care team</PaneTitle>
       {people.length === 0 ? (
-        <Quiet>No one recorded.</Quiet>
+        <Quiet>None recorded.</Quiet>
       ) : (
         <ul className="grid gap-x-12 gap-y-8 @min-[560px]:grid-cols-2">
           {people.map((p) => (
@@ -782,7 +884,7 @@ export function FamilyView() {
   const [filter, setFilter] = useState("all");
 
   if (family.state === "loading") return <Loading />;
-  if (family.state === "error") return <LoadFailed />;
+  if (family.state === "error") return <LoadFailed onRetry={family.retry} />;
   const relatives = family.record.data.relatives;
   const categories = Object.keys(CATEGORY_WORDS).filter((c) =>
     relatives.some((r) => r.conditions.some((x) => x.category === c)),
@@ -834,7 +936,7 @@ export function FamilyView() {
         <p className="text-caption text-ink-2">Contains other people&apos;s health information.</p>
       </div>
       {relatives.length === 0 ? (
-        <Quiet>No relatives recorded.</Quiet>
+        <Quiet>None recorded.</Quiet>
       ) : (
         <>
           {categories.length > 0 && (
@@ -899,8 +1001,17 @@ function DocumentRows({ docs }: { docs: DocumentItem[] }) {
               <span className="text-row font-medium">{d.title}</span>
               <span className="text-caption text-ink-2">{documentSub(d)}</span>
             </span>
-            <Icon name="external" size={18} className="shrink-0 text-ink-2" />
-            <span className="sr-only">(opens in a new tab)</span>
+            {d.content_type === "application/pdf" ? (
+              <>
+                <Icon name="download" size={18} className="shrink-0 text-ink-2" />
+                <span className="sr-only">(downloads)</span>
+              </>
+            ) : (
+              <>
+                <Icon name="external" size={18} className="shrink-0 text-ink-2" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </>
+            )}
           </a>
         </li>
       ))}
@@ -911,12 +1022,12 @@ function DocumentRows({ docs }: { docs: DocumentItem[] }) {
 export function DocumentsView() {
   const docs = useSection("documents");
   if (docs.state === "loading") return <Loading />;
-  if (docs.state === "error") return <LoadFailed />;
+  if (docs.state === "error") return <LoadFailed onRetry={docs.retry} />;
   const list = docs.record.data.documents;
   return (
     <div className="flex max-w-170 flex-col gap-4 pt-8.5">
       <PaneTitle>Documents</PaneTitle>
-      {list.length === 0 ? <Quiet>No documents shared.</Quiet> : <DocumentRows docs={list} />}
+      {list.length === 0 ? <Quiet>None recorded.</Quiet> : <DocumentRows docs={list} />}
     </div>
   );
 }
@@ -924,9 +1035,13 @@ export function DocumentsView() {
 /* -------------------------------------------------------- mental health */
 
 export function MentalHealthView() {
+  const { status } = useSession();
   const mh = useSection("mental_health");
   if (mh.state === "loading") return <Loading />;
-  if (mh.state === "error") return <LoadFailed />;
+  if (mh.state === "error") return <LoadFailed onRetry={mh.retry} />;
+  // Rows open where the rest of their section is, when that section was shared.
+  const visitsOpen = Boolean(status.scope?.recent_visits);
+  const eventsOpen = Boolean(status.scope?.full_timeline);
   const { conditions, visits, events, documents } = mh.record.data;
   const empty = conditions.length + visits.length + events.length + documents.length === 0;
   return (
@@ -945,14 +1060,29 @@ export function MentalHealthView() {
           <ul className="flex flex-col gap-3.5">
             {visits.map((e) => {
               const dm = dayMonth(e.occurs_at);
-              return (
-                <li key={e.id} className="grid grid-cols-[64px_1fr_auto] items-baseline gap-x-3">
+              const row = (
+                <>
                   <DayMonth day={dm.day} month={dm.month} accent={e.upcoming} dateTime={isoDay(e.occurs_at)} />
                   <span className="flex flex-col">
-                    <span className="text-row font-medium">{e.title}</span>
+                    <span className="text-row font-medium">{entryTitle(e)}</span>
                     <span className="text-caption text-ink-2">{entryMeta(e)}</span>
                   </span>
                   <span className="text-caption text-ink-2">{e.upcoming ? "Upcoming" : entryType(e)}</span>
+                </>
+              );
+              return (
+                <li key={e.id}>
+                  {visitsOpen ? (
+                    <Link
+                      href={`/view/session/visits?id=${encodeURIComponent(e.id)}`}
+                      className="grid grid-cols-[64px_1fr_auto_18px] items-baseline gap-x-3 text-ink hovered:text-accent-alt"
+                    >
+                      {row}
+                      <Icon name="chevron-right" size={18} className="self-center text-ink-2" />
+                    </Link>
+                  ) : (
+                    <div className="grid grid-cols-[64px_1fr_auto] items-baseline gap-x-3">{row}</div>
+                  )}
                 </li>
               );
             })}
@@ -963,12 +1093,29 @@ export function MentalHealthView() {
         <section aria-labelledby="mh-events" className="flex flex-col gap-3">
           <SectionTitle id="mh-events">Timeline</SectionTitle>
           <ul className="flex flex-col gap-4.5">
-            {events.map((e) => (
-              <li key={e.id} className="flex flex-col">
-                <span className="text-row-lg font-medium">{e.title}</span>
-                <span className="text-caption text-ink-2">{[eventMeta(e), e.seen_by].filter(Boolean).join(", ")}</span>
-              </li>
-            ))}
+            {events.map((e) => {
+              const body = (
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-row-lg font-medium">{e.title}</span>
+                  <span className="text-caption text-ink-2">{[eventMeta(e), e.seen_by].filter(Boolean).join(", ")}</span>
+                </span>
+              );
+              return (
+                <li key={e.id}>
+                  {eventsOpen ? (
+                    <Link
+                      href={`/view/session/timeline?id=${encodeURIComponent(e.id)}`}
+                      className="flex items-center justify-between gap-2 text-ink hovered:text-accent-alt"
+                    >
+                      {body}
+                      <Icon name="chevron-right" size={18} className="shrink-0 text-ink-2" />
+                    </Link>
+                  ) : (
+                    body
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -989,6 +1136,9 @@ function ConditionList({ items }: { items: Condition[] }) {
         <li key={c.id} className="flex flex-col">
           <span className="text-row-lg font-medium">{c.name}</span>
           <span className="text-caption text-ink-2">{conditionSub(c)}</span>
+          {(c.clinician || c.specialty) && (
+            <span className="text-meta text-ink-2">{[c.clinician, c.specialty].filter(Boolean).join(", ")}</span>
+          )}
         </li>
       ))}
     </ul>

@@ -1,22 +1,20 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { useParams } from "next/navigation";
-import { useId, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { isUuid, type Condition } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../../_components/DetailList";
 import { ConditionForm } from "../../../../_components/forms/ConditionForm";
-import { SaveButton } from "../../../../_components/forms/FormBits";
+import { DeleteWithConfirm, SaveButton, useFormScreen } from "../../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 
-/** Edit a condition (no Figma frame). */
+/** Edit a condition (no Figma frame), with Delete at the bottom as on every Edit form. */
 function EditConditionScreen() {
-  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
-  const formId = useId();
   const { id } = useParams<{ id: string }>();
-  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+  const { formId, busy, formKey, control } = useFormScreen();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     const { data, error } = await createClient().from("conditions").select("*").eq("id", id).maybeSingle();
@@ -36,7 +34,22 @@ function EditConditionScreen() {
       ) : !c ? (
         <NotFound what="condition" />
       ) : (
-        <ConditionForm formId={formId} condition={c} onSaving={setBusy} />
+        <>
+          <ConditionForm key={`${formKey}-${c.updated_at}`} {...control} condition={c} />
+          <div className="px-5 pb-8">
+            <DeleteWithConfirm
+              label="Delete condition"
+              title="Delete this condition?"
+              body="It will be removed from your record. You can't undo this."
+              onConfirm={async () => {
+                const { error } = await createClient().from("conditions").delete().eq("id", c.id);
+                if (error) return false;
+                router.replace("/record?tab=conditions");
+                return true;
+              }}
+            />
+          </div>
+        </>
       )}
     </SubScreen>
   );

@@ -2,12 +2,11 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams, useRouter } from "next/navigation";
-import { useId, useState } from "react";
 import { isUuid, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
-import { DeleteWithConfirm, SaveButton } from "../../../_components/forms/FormBits";
+import { DeleteWithConfirm, SaveButton, useFormScreen } from "../../../_components/forms/FormBits";
 import { MedicationForm } from "../../../_components/forms/MedicationForm";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
@@ -17,11 +16,9 @@ import { LoadStatus, SubScreen } from "../../../_components/Screens";
  * confirm sheet, is for mistakes.
  */
 function EditMedicationScreen() {
-  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
-  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     const supabase = createClient();
@@ -49,7 +46,7 @@ function EditMedicationScreen() {
         <NotFound what="medication" />
       ) : (
         <>
-          <MedicationForm formId={formId} medication={m} hasPeriods={found?.hasPeriods} onSaving={setBusy} />
+          <MedicationForm key={`${formKey}-${m.updated_at}`} {...control} medication={m} hasPeriods={found?.hasPeriods} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Delete medication"

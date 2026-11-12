@@ -2,7 +2,7 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { PageHeader } from "@/components/patient/PageHeader";
@@ -26,6 +26,7 @@ import {
 } from "@/lib/patient/share";
 import { useShareSummary, type SummaryRow } from "@/lib/patient/useShareSummary";
 import { createClient } from "@/lib/supabase/client";
+import { useLoad } from "@/lib/useLoad";
 import { useNow } from "@/lib/useNow";
 import { DemoMarker, LoadStatus } from "../../_components/Screens";
 
@@ -54,6 +55,8 @@ function CodeScreen() {
   const { session, loaded, failed, setSession, refresh, announce } = useShareSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useLayoutEffect(() => () => setBusy(false), []);
+  const doctor = useVisitClinician(session?.appointment_entry_id ?? null);
 
   // Where this screen is not the right one any more.
   useEffect(() => {
@@ -93,13 +96,11 @@ function CodeScreen() {
         <>
           <ThemeColor tone="session" />
           <PageHeader
-            title="Share your record"
+            title={doctor ? `Share with ${doctor}` : "Share your record"}
             size="md"
             tone="session"
-            backHref={
-              session?.appointment_entry_id ? `/share?appointment=${session.appointment_entry_id}` : "/share"
-            }
-            backLabel="Back to Share confirm"
+            backHref={session?.appointment_entry_id ? `/share?appointment=${session.appointment_entry_id}` : "/share"}
+            backLabel="Back to what you share"
           />
         </>
       }
@@ -107,17 +108,30 @@ function CodeScreen() {
       {!showable ? (
         <LoadStatus tone="session" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
       ) : (
-        <CodeBody
-          session={session}
-          rows={rows}
-          busy={busy}
-          error={error}
-          onRegenerate={() => regenerate(session)}
-          onExpire={refresh}
-        />
+        <CodeBody session={session} rows={rows} busy={busy} error={error} onRegenerate={() => regenerate(session)} onExpire={refresh} />
       )}
     </PatientShell>
   );
+}
+
+/** The doctor of the visit the share was started from, to name them in the title. */
+function useVisitClinician(id: string | null): string | null {
+  const data = useLoad(async () => {
+    if (!id) return null;
+    const { data } = await createClient().from("entries").select("clinician").eq("id", id).maybeSingle();
+    return data?.clinician?.trim() || null;
+  }, [id]);
+  return data.status === "ready" ? data.data : null;
+}
+
+/** Copies text; false when the browser refuses. */
+async function copy(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function CodeBody({
@@ -139,6 +153,29 @@ function CodeBody({
   const counting = session.status === "code_issued";
   const now = useNow(counting);
   const left = msUntil(session.code_expires_at, now);
+  const [copied, setCopied] = useState<"code" | "address" | null>(null);
+  useEffect(() => {
+    if (!copied) return;
+    const id = window.setTimeout(() => setCopied(null), 2500);
+    return () => window.clearTimeout(id);
+  }, [copied]);
+
+  async function copyCode() {
+    if (await copy(session.code)) setCopied("code");
+  }
+
+  async function sendAddress() {
+    const url = `https://${portalAddress()}`;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: "Trace Portal", url });
+        return;
+      } catch {
+        // Cancelled, or not allowed here: copy it instead.
+      }
+    }
+    if (await copy(url)) setCopied("address");
+  }
 
   // At zero, ask the database (it decides whether the code has expired).
   useEffect(() => {
@@ -159,44 +196,66 @@ function CodeBody({
     <div className="flex flex-col gap-4.5 px-5 pb-8 pt-4.5">
       <div className="flex flex-col gap-3.5">
         {finished ? (
-          <div className="flex flex-col gap-1">
-            <h2 className="font-display text-heading font-light">{finished}</h2>
-            <p className="text-caption text-on-session-2">Make a new code when your doctor is ready.</p>
-          </div>
+          <h2 className="font-display text-heading font-light">{finished}</h2>
         ) : (
-          <p className="text-caption text-on-session-2">Enter this at {portalAddress()}</p>
+          <p className="text-caption text-on-session-2">
+            Your doctor enters this code at{" "}
+            <button type="button" onClick={sendAddress} className="font-semibold text-white underline underline-offset-2 hit-area">
+              {portalAddress()}
+              <span className="sr-only">. Send the address</span>
+            </button>
+          </p>
         )}
 
-        <CodeDisplay code={session.code} className={finished ? "opacity-50" : undefined} />
+        {finished ? (
+          <CodeDisplay code={session.code} className="opacity-50" />
+        ) : (
+          <CodeDisplay code={session.code} onCopy={copyCode} />
+        )}
+        <p role="status" className="sr-only">
+          {copied === "code" ? "Code copied." : copied === "address" ? "Address copied." : ""}
+        </p>
 
-        <div className="flex min-h-11 items-center justify-between gap-3 border-y border-on-session-border">
-          <p className="text-label font-normal">
-            {session.status === "requested" ? (
-              <>
-                Code entered. <span className="font-semibold">{clinicianName(session)} is asking</span>
-              </>
-            ) : usable ? (
-              <>
-                Expires in{" "}
-                <b aria-hidden="true" className="font-semibold tabular-nums">
-                  {formatCountdown(left)}
-                </b>
-                <span className="sr-only">{formatCountdownSpoken(left)}</span>
-              </>
+        {!finished && (
+          <div className="flex min-h-11 items-center justify-between gap-3 border-y border-on-session-border">
+            <p className="text-label font-normal">
+              {session.status === "requested" ? (
+                <>
+                  Code entered. <span className="font-semibold">{clinicianName(session)} is asking</span>
+                </>
+              ) : usable ? (
+                <>
+                  Expires in{" "}
+                  <b aria-hidden="true" className="font-semibold tabular-nums">
+                    {formatCountdown(left)}
+                  </b>
+                  <span className="sr-only">{formatCountdownSpoken(left)}</span>
+                </>
+              ) : null}
+            </p>
+            {copied ? (
+              <span aria-hidden="true" className="text-label font-semibold">
+                {copied === "code" ? "Copied" : "Address copied"}
+              </span>
             ) : (
-              <span className="font-semibold">No longer works</span>
+              <Button variant="text" tone="session" size="md" onClick={onRegenerate} loading={busy}>
+                Regenerate
+              </Button>
             )}
-          </p>
-          {finished ? null : (
-            <Button variant="text" tone="session" size="md" onClick={onRegenerate} loading={busy}>
-              Regenerate
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {finished && (
-        <Button variant="primary" tone="session" size="lg" fullWidth onClick={onRegenerate} loading={busy} iconLeft={<Icon name="refresh" size={18} />}>
+        <Button
+          variant="primary"
+          tone="session"
+          size="lg"
+          fullWidth
+          onClick={onRegenerate}
+          loading={busy}
+          iconLeft={<Icon name="refresh" size={18} />}
+        >
           Make a new code
         </Button>
       )}

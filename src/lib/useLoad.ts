@@ -39,7 +39,12 @@ export function useLoad<T>(load: () => Promise<T>, deps: unknown[] = []): Loaded
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
 
-  const reload = useCallback(() => setTick((t) => t + 1), []);
+  // After a failure, "Try again" shows the loading state again, so the tap visibly does something.
+  // A reload after an edit keeps the old data on screen until the new arrives.
+  const reload = useCallback(() => {
+    setState((s) => (s.status === "error" ? { status: "loading" } : s));
+    setTick((t) => t + 1);
+  }, []);
   if (state.status === "ready") return { status: "ready", data: state.data as T, reload };
   return { status: state.status as "loading" | "error", reload };
 }

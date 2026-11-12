@@ -17,7 +17,7 @@ export type CareKind = "gp" | "specialist" | "pharmacy";
 
 /** Kinds a patient can add by hand. Not `session_notes` (the database refuses it). */
 export const PATIENT_ENTRY_KINDS: { value: EntryKind; label: string }[] = [
-  { value: "visit", label: "Visit or appointment" },
+  { value: "visit", label: "Visit" },
   { value: "result", label: "Test result" },
   { value: "prescription", label: "Prescription" },
   { value: "letter", label: "Letter" },
@@ -44,11 +44,27 @@ export function medicationSummary(m: Pick<Medication, "form" | "frequency" | "ti
   return [m.form, m.frequency, m.timing].filter(Boolean).join(" · ");
 }
 
+/**
+ * "Penicillin allergy" for an allergy as typed. Words that already say
+ * allergy are kept as they are ("Nut allergy"), and "None" or "No known
+ * allergies" give null: nothing to warn about.
+ */
+export function allergyLabel(text: string): string | null {
+  const t = text.trim();
+  if (!t || /^(none|no|nil|n\/?a|nka|nkda|no known( drug)? allergies|not known)\.?$/i.test(t)) return null;
+  return /allerg/i.test(t) ? t : `${t} allergy`;
+}
+
+/** Allergy labels for a profile, leaving out "None". */
+export function allergyLabels(allergies: string[]): string[] {
+  return allergies.map(allergyLabel).filter((a): a is string => a !== null);
+}
+
 /** The critical strip's pills: "Penicillin allergy", "A+ Blood Type", implants as typed. */
 export function criticalItems(p: Pick<Profile, "allergies" | "blood_type" | "implants"> | null): string[] {
   if (!p) return [];
   return [
-    ...p.allergies.map((a) => `${a} allergy`),
+    ...allergyLabels(p.allergies),
     ...(p.blood_type ? [`${p.blood_type} Blood Type`] : []),
     ...p.implants,
   ];

@@ -11,12 +11,12 @@ import { DateTile, DateTileRow } from "@/components/ui/DateTile";
 import type { IconName } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
 import { Notice } from "@/components/ui/Notice";
-import { StateMessage } from "@/components/ui/StateMessage";
 import { dayKey, daysUntil, formatShortDate, formatTime, greetingFor } from "@/lib/dates";
 import { formatCountdown, formatCountdownSpoken, initialsOf } from "@/lib/format";
 import {
   ENTRY_KIND_LABEL,
   entryIcon,
+  entryTitle,
   loadSections,
   URGENT_REFILL_DAYS,
   type RecordEntry,
@@ -68,9 +68,10 @@ function upcomingIcon(e: RecordEntry): IconName {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** "8 days", "1 day", "Today". */
+/** "8 days", "1 day", "Today", "Overdue". */
 function daysText(days: number): string {
-  if (days <= 0) return "Today";
+  if (days < 0) return "Overdue";
+  if (days === 0) return "Today";
   return `${days} ${days === 1 ? "day" : "days"}`;
 }
 
@@ -83,7 +84,7 @@ function daysText(days: number): string {
  * - a share in progress (active, or paused at Time's up): the same card
  *   shows who has access and the time left, and leads to /session. It takes
  *   the live banner's place on this screen, so the two do not repeat.
- * On other days sharing starts from Profile's "Share my record".
+ * On other days sharing starts from Profile's "Share your record".
  *
  * After a share ends, /session sends the patient here with `?ended=<id>`
  * and one line says so.
@@ -106,7 +107,16 @@ function HomeScreen() {
           variant="greeting"
           subtitle={greetingFor(now)}
           title={profile.first_name || "Welcome"}
-          action={name ? <Avatar initials={initialsOf(name)} size={40} tone="outline" /> : undefined}
+          action={
+            name ? (
+              <Link href="/profile" className="rounded-full">
+                <span aria-hidden="true">
+                  <Avatar initials={initialsOf(name)} size={40} tone="outline" />
+                </span>
+                <span className="sr-only">Profile</span>
+              </Link>
+            ) : undefined
+          }
         />
       }
     >
@@ -140,7 +150,8 @@ function HomeBody({
 
   const comingUp = [
     ...data.current
-      .filter((m) => m.refill_due_on && m.refill_due_on >= today)
+      // An overdue refill stays, first, until it is marked refilled on the medication.
+      .filter((m) => m.refill_due_on)
       .map((m) => ({ kind: "refill" as const, day: m.refill_due_on!, med: m })),
     ...data.upcoming
       .filter((e) => e.id !== featured?.id)
@@ -166,12 +177,7 @@ function HomeBody({
         />
       ) : null}
 
-      {isEmpty && (
-        <StateMessage
-          message="Your record is empty. Start with a medication, an appointment or a note."
-          action={{ label: "Add to my record", href: "/add" }}
-        />
-      )}
+      {isEmpty && <FirstSteps />}
 
       {comingUp.length > 0 && (
         <section aria-labelledby="coming-up" className="flex flex-col gap-2">
@@ -204,7 +210,7 @@ function HomeBody({
                     month={MONTHS[mm - 1]}
                     dateTime={item.day}
                     title={item.entry.title}
-                    href={`/record/${item.entry.id}`}
+                    href={`/record/${item.entry.id}?back=/home`}
                   />
                 </li>
               );
@@ -221,10 +227,11 @@ function HomeBody({
               <li key={e.id}>
                 <ListRow
                   icon={entryIcon(e)}
-                  title={e.title}
+                  title={entryTitle(e)}
                   caption={ENTRY_KIND_LABEL[e.kind]}
                   value={<time dateTime={dayKey(e.occurs_at)}>{formatShortDate(e.occurs_at)}</time>}
-                  href={`/record/${e.id}`}
+                  href={`/record/${e.id}?back=/home`}
+                  chevron
                   padY={12}
                 />
               </li>
@@ -233,6 +240,33 @@ function HomeBody({
         </section>
       )}
     </div>
+  );
+}
+
+/** An empty record: the first things to add, as links (sign-up's last step lists the same). */
+function FirstSteps() {
+  const { profile } = usePatientSession();
+  const noSafety = !profile.blood_type && profile.allergies.length === 0 && profile.implants.length === 0;
+  return (
+    <section aria-labelledby="first-steps" className="flex flex-col gap-2">
+      <SectionHeading id="first-steps">Start your record</SectionHeading>
+      <Card as="ul">
+        {noSafety && (
+          <li>
+            <ListRow icon="shield-alert" title="Add your critical safety details" caption="Blood type, allergies and implants" href="/profile/edit" chevron />
+          </li>
+        )}
+        <li>
+          <ListRow icon="pill" title="Add a medication" href="/add/medication" chevron />
+        </li>
+        <li>
+          <ListRow icon="calendar" title="Add a visit" href="/add/appointment" chevron />
+        </li>
+        <li>
+          <ListRow icon="pencil" title="Log a note" href="/add/note" chevron />
+        </li>
+      </Card>
+    </section>
   );
 }
 
@@ -252,7 +286,7 @@ function LiveCard({ session }: { session: ShareSession }) {
       name={paused ? "Your record is hidden" : manual ? "Until you end it" : `Ends at ${formatTime(session.expires_at!)}`}
       place={session.clinician_practice ?? undefined}
       initials={initialsOf(name)}
-      action={{ href: "/session", label: paused ? "Decide now" : "View session", icon: "clock" }}
+      action={{ href: "/session", label: paused ? "Decide now" : "Manage sharing", icon: "clock" }}
     />
   );
 }
@@ -260,7 +294,10 @@ function LiveCard({ session }: { session: ShareSession }) {
 /** "Dr Hennessy no longer has access to your record." once, after a share ends (`?ended=<id>`). */
 function EndedLine({ session }: { session: ShareSession | null }) {
   const params = useSearchParams();
+  const { notice } = useShareSession();
   const id = params.get("ended");
+  // The strip at the top already says it (ShareSession's notice).
+  if (notice?.sessionId === id) return null;
   if (!id || !isUuid(id) || !session || session.id !== id || session.status !== "ended") return null;
   return (
     <Notice tone="neutral" icon="tick">

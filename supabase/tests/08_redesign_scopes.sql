@@ -178,10 +178,13 @@ begin
     pg_temp.changed(base, r));
 
   r := pg_temp.share_all('{"documents": true}');
-  perform pg_temp.ok('Documents on: only the documents section changes; the flagged document stays out',
+  -- The seed's own two letters: the cardiology one comes through, the flagged ADHD summary does not.
+  perform pg_temp.ok('Documents on: only the documents section changes; the flagged documents stay out',
     pg_temp.changed(base, r) = 'documents'
-    and jsonb_array_length(r -> 'documents' -> 'data' -> 'documents') = 1
-    and r -> 'documents' -> 'data' -> 'documents' -> 0 ->> 'title' = 'Discharge letter',
+    and jsonb_array_length(r -> 'documents' -> 'data' -> 'documents') = 2
+    and r -> 'documents' -> 'data' -> 'documents' -> 0 ->> 'title' = 'Discharge letter'
+    and r -> 'documents' -> 'data' -> 'documents' -> 1 ->> 'title' = 'Cardiology review letter'
+    and (r -> 'documents')::text not like '%ADHD assessment summary%',
     pg_temp.changed(base, r));
 
   r := pg_temp.share_all('{"family_history": true}');
@@ -261,11 +264,17 @@ begin
     (on_r -> 'conditions')::text like '%Anxiety%' and (on_r -> 'recent_visits')::text like '%Counselling session%'
     and (on_r -> 'full_timeline')::text like '%Panic attacks%' and (on_r -> 'documents')::text like '%Therapy letter%'
     and (on_r -> 'family_history')::text like '%Depression%', 'ok');
+  -- The seed's own flagged items (ADHD, ADHD diagnosed, ADHD assessment summary) come with the ones added here.
   perform pg_temp.ok('Mental health on: the mental health section collects the flagged items',
-    on_r -> 'mental_health' -> 'data' -> 'conditions' -> 0 ->> 'name' = 'Anxiety'
+    (select array_agg(c ->> 'name' order by c ->> 'name')
+       from jsonb_array_elements(on_r -> 'mental_health' -> 'data' -> 'conditions') c) = array['ADHD', 'Anxiety']
+    and jsonb_array_length(on_r -> 'mental_health' -> 'data' -> 'visits') = 1
     and on_r -> 'mental_health' -> 'data' -> 'visits' -> 0 ->> 'title' = 'Counselling session'
-    and on_r -> 'mental_health' -> 'data' -> 'events' -> 0 ->> 'title' = 'Panic attacks'
-    and on_r -> 'mental_health' -> 'data' -> 'documents' -> 0 ->> 'title' = 'Therapy letter',
+    and (select array_agg(e ->> 'title' order by e ->> 'title')
+           from jsonb_array_elements(on_r -> 'mental_health' -> 'data' -> 'events') e) = array['ADHD diagnosed', 'Panic attacks']
+    and (select array_agg(d ->> 'title' order by d ->> 'title')
+           from jsonb_array_elements(on_r -> 'mental_health' -> 'data' -> 'documents') d)
+        = array['ADHD assessment summary', 'Therapy letter'],
     (on_r -> 'mental_health' -> 'data')::text);
 
   nodocs := pg_temp.share_all('{"mental_health": true}');

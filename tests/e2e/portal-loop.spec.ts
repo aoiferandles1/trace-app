@@ -1,37 +1,20 @@
-import { expect, test as base } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { expectChartLabelsClear } from "./helpers/chart";
 import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
-import { PortalPatient } from "../helpers/portal-patient";
+import { expect, test } from "../helpers/portal-patient";
+import { SUPABASE_URL } from "../support/local-env";
 
 /**
- * The share loop, portal side, against the real database. The patient is
+ * The share loop, portal side, against the local database (tests/support/local-supabase). The patient is
  * driven from test code with the redesign's seed and share call
  * (tests/helpers/portal-patient.ts); the doctor is a real browser on /view.
  *
- * One anonymous patient for the whole file (sign-ins are capped at 30 an
- * hour), re-seeded before each test. Tests run in order in one worker, since
- * a patient has at most one live share. Desktop project only.
+ * Every test has its own seeded patient (the `patient` fixture), so the tests
+ * run in parallel. Desktop project only.
  */
 
-const test = base.extend<object, { patient: PortalPatient }>({
-  patient: [
-    async ({}, use) => {
-      const patient = await PortalPatient.signIn();
-      await use(patient);
-      await patient.dispose();
-    },
-    { scope: "worker" },
-  ],
-});
-
-test.describe.configure({ mode: "serial" });
 // Only in the desktop project. Checked from a built-in fixture, so the skipped project never signs in.
 test.skip(({ viewport }) => (viewport?.width ?? 0) < 1024, "The loop runs once, in the desktop project");
-
-test.beforeEach(async ({ patient }) => {
-  await patient.reset();
-});
 
 const WAITING = "Waiting for the patient to approve";
 
@@ -43,18 +26,13 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   const hosts = new Set<string>();
   context.on("request", (r) => hosts.add(new URL(r.url()).host));
 
-  // Name step, pre-filled by the demo flag.
+  // The demo starts at the code, as Dr Hennessy (no name step: CLAUDE.md, "Doctor's portal").
   await page.goto("/view?demo=1");
-  await expect(page.getByRole("heading", { name: "Who is asking?" })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByLabel("Your name")).toHaveValue(DOCTOR.name);
-  await page.getByRole("button", { name: "Continue" }).click();
-
-  // Code step.
-  await expect(page.getByRole("heading", { name: "Enter the patient's code" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Enter the patient's code" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("banner")).toContainText(DOCTOR.name);
   await expect(page.getByText("Requesting as Dr Hennessy.")).toBeVisible();
   await expectNoAxeViolations(page);
-  await page.getByRole("textbox", { name: "Patient's share code" }).fill(share.code);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Patient's share code" }).fill(share.code); // the fourth digit submits
 
   // Waiting, and the patient sees exactly who typed it.
   await expect(page.getByRole("heading", { name: WAITING })).toBeVisible();
@@ -108,7 +86,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await nav.getByRole("link", { name: "Recent visits" }).click();
   await expect(nav.getByRole("link", { name: "Recent visits" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { level: 3, name: "GP visit" })).toBeVisible();
-  await expect(main.getByText("Tired for three weeks").filter({ visible: true })).toBeVisible();
+  await expect(main.getByText("Go through the blood results").filter({ visible: true })).toBeVisible();
   await expect(main.getByRole("button", { name: /INR blood test/ })).toHaveCount(0);
   await expect(main.getByText("INR blood test").filter({ visible: true })).toBeVisible();
   await main.getByRole("button", { name: /Blood count and INR/ }).click();
@@ -127,7 +105,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await expect(page.getByRole("heading", { level: 3, name: "Concerta" })).toBeVisible();
   await expect(main.getByText("Now 36mg, since Feb 2025").filter({ visible: true })).toBeVisible();
   const chart = main.locator("table").filter({ hasText: "Strength" });
-  await expect(chart.locator("tbody tr td:first-child")).toHaveText(["18mg", "27mg", "36mg", "45mg", "36mg"]);
+  await expect(chart.locator("tbody tr td:first-child")).toHaveText(["18mg", "27mg", "36mg", "54mg", "36mg"]);
   await expectChartLabelsClear(page);
   await expect(main.getByText("Prescribed by Dr Hennessy").filter({ visible: true }).first()).toBeVisible();
   await expect(main.getByText('Jane: "Back on 36. Smoother and sleeping better."').filter({ visible: true })).toBeVisible();
@@ -169,7 +147,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   // Notes autosave.
   await page.getByLabel("Chief complaint").fill("Ongoing fatigue over the past 6 weeks");
   await page.getByLabel("Plan").fill("Repeat INR in 2 weeks");
-  await expect(page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
 
   // End session: the step before, then the end.
   await main.getByRole("link", { name: "End session" }).click();
@@ -201,7 +179,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
     expect(await (await page.request.get(`/api/portal/record?section=${section}`)).json()).toEqual({ record: null });
   }
 
-  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).host;
+  const supabaseHost = new URL(SUPABASE_URL).host;
   expect([...hosts]).not.toContain(supabaseHost);
   expect([...hosts].filter((h) => h.includes("supabase"))).toEqual([]);
   await context.close();
@@ -219,7 +197,7 @@ test("deny: the portal says the patient chose not to share", async ({ browser, p
   });
   await expectNoAxeViolations(page);
   expect(await (await page.request.get("/api/portal/record?section=overview")).json()).toEqual({ record: null });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: "Try with a new code" }).click();
   await expect(page.getByRole("textbox", { name: "Patient's share code" })).toBeFocused();
   await context.close();
 });
@@ -238,8 +216,7 @@ test("cancel and withdraw: the doctor cancels, then the patient withdraws the co
   expect(kept.code).toBe(share.code);
 
   // The doctor tries again; the patient withdraws before answering.
-  await page.getByRole("textbox", { name: "Patient's share code" }).fill(share.code);
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Patient's share code" }).fill(share.code); // the fourth digit submits
   await expect(page.getByRole("heading", { name: WAITING })).toBeVisible();
   await patient.waitForStatus("requested");
   await patient.end();
@@ -256,7 +233,7 @@ test("the patient ends early: the portal loses the record within 5 seconds", asy
   await patient.respond(true);
   await expect(page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 10_000 });
   await page.getByLabel("Assessment").fill("Rate controlled");
-  await expect(page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
 
   await patient.end();
   const endedAt = Date.now();

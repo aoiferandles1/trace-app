@@ -120,10 +120,12 @@ function FamilyBody({
   const tree = layoutTree(relatives);
   const tagsOf = (n: TreeNode): Category[] =>
     n.relative ? (n.relative.conditions.map((c) => c.category).filter(Boolean) as Category[]) : you.categories;
-  const filtering = filter !== "all";
   const label = (n: TreeNode) => (n.relative ? n.relative.label : "You");
-  const hits = filtering ? tree.nodes.filter((n) => tagsOf(n).includes(filter)).map(label) : [];
-  const groupName = groups.find((g) => g.value === filter)?.label ?? "";
+  // A group left with nobody in it (its only relative deleted) falls back to All (A45).
+  const shown = filter !== "all" && !groups.some((g) => g.value === filter) ? "all" : filter;
+  const groupName = groups.find((g) => g.value === shown)?.label ?? "";
+  const filtering = shown !== "all";
+  const hits = filtering ? tree.nodes.filter((n) => tagsOf(n).includes(shown)).map(label) : [];
 
   return (
     <>
@@ -131,7 +133,7 @@ function FamilyBody({
         <SegmentedControl
           label="Show relatives with"
           options={[{ value: "all" as const, label: "All" }, ...groups]}
-          value={filter}
+          value={shown}
           onChange={onFilter}
           fill={groups.length <= 3}
         />
@@ -155,7 +157,7 @@ function FamilyBody({
             </g>
           </svg>
           {tree.nodes.map((n) => {
-            const match = filtering && tagsOf(n).includes(filter);
+            const match = filtering && tagsOf(n).includes(shown);
             const dim = filtering && !match;
             return (
               <li key={n.key} className="absolute" style={{ left: n.x - NODE_W / 2, top: n.y - 26, width: NODE_W }}>
@@ -167,7 +169,7 @@ function FamilyBody({
       </div>
 
       <p aria-live="polite" className="min-h-5 text-caption text-ink-2">
-        {filtering ? `${groupName}: ${hits.length ? hits.join(", ") : "nobody yet"}` : relatives.length ? "Tap a condition to see who has it." : "Add your parents, grandparents and siblings to build your tree."}
+        {filtering ? `${groupName}: ${hits.length ? hits.join(", ") : "nobody yet"}` : relatives.length ? "Choose a condition to see who has it." : "Add your parents, grandparents and siblings to build your tree."}
       </p>
     </>
   );

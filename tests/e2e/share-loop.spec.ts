@@ -1,6 +1,7 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { type Page, type Route } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { clientAs, expect, expectNoSideScroll, sessionFromState, test } from "./helpers/patient";
+import { sql } from "./helpers/sql";
 import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
 
 /**
@@ -8,37 +9,22 @@ import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
  * patient app at phone size, and the doctor's portal in a second browser
  * context. Runs once, in the desktop project.
  *
- * One demo patient for the file (anonymous sign-ins are capped at 30 an hour
- * for this machine), signed in through "Try the demo" and reused; the record
- * is reset with seed_demo_record_v2() before each test. Each doctor is a fresh
+ * Every test has its own demo patient with Jane Doe's record
+ * (helpers/patient.ts), so the tests run in parallel. Each doctor is a fresh
  * context, so a fresh portal token and a made-up IP (tests/helpers/doctor.ts).
  *
- * Time's up cannot be reached against the real database (the shortest share
- * is 30 minutes and tests cannot move its clock), so that screen is tested
- * with stand-in session data at the end of this file.
+ * Time's up is reached for real by moving the share's expiry into the past in
+ * the local database (helpers/sql.ts); the timer announcements and a wrong
+ * device clock still use stand-in session data, at the end of this file.
  */
 
-test.describe.configure({ mode: "serial" });
-
 const PHONE = { width: 390, height: 844 };
-let file = "";
 
-test.beforeAll(async ({ browser }, info) => {
-  if ((info.project.use.viewport?.width ?? 0) < 1024) return;
-  file = statePath(`share-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  if (file) await deleteUser(file);
-});
-
-test.use({ viewport: PHONE, storageState: async ({}, provide) => provide(file || undefined!) });
+test.use({ viewport: PHONE });
 
 test.beforeEach(async ({}, info) => {
   // Once, in the desktop project (the patient pages are drawn at phone size by test.use).
   test.skip((info.project.use.viewport?.width ?? 0) < 1024, "Runs once, in the desktop project");
-  await reseed(clientFor(file));
 });
 
 async function home(page: Page) {
@@ -60,7 +46,7 @@ async function generateFrom(page: Page, entry: "card" | "profile"): Promise<stri
     await expect(page.getByRole("heading", { level: 1, name: "Share with Dr Hennessy" })).toBeVisible();
   } else {
     await page.goto("/profile");
-    await page.getByRole("link", { name: "Share my record" }).click();
+    await page.getByRole("link", { name: "Share your record" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Share your record" })).toBeVisible();
   }
   await page.getByRole("button", { name: "Create share code" }).click();
@@ -89,7 +75,8 @@ test("happy path: the today card to notes on the timeline and in the share histo
   // The code (CodeA2): what is shared and what is not, from this share's own scopes.
   await page.waitForURL(/\/share\/code$/);
   const code = await readCode(page);
-  await expect(page.getByText(/^Enter this at .+\/view$/)).toBeVisible();
+  await expect(page.getByText("Your doctor enters this code at")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^localhost:\d+\/view\b/ })).toBeVisible();
   const sharing = page.getByRole("region", { name: "Sharing" });
   await expect(sharing.getByRole("listitem")).toHaveText([
     /Safety info.*Allergies, blood type/,
@@ -127,7 +114,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
     "Full timeline",
     "Care team",
     "Medication notes",
-    "Can add session notes",
+    "Can add notes to your record",
   ]);
   await expect(sheet.getByText("Not shared: Documents, Family history, Mental health.")).toBeVisible();
   await expect(sheet.getByText("Name and practice are as typed. Trace does not check them.")).toBeVisible();
@@ -161,22 +148,22 @@ test("happy path: the today card to notes on the timeline and in the share histo
   // Home while sharing: the card shows who has access and leads back; no today card, no banner on Home.
   await page.getByRole("link", { name: "Back to Home" }).click();
   const live = page.getByRole("region", { name: "Dr Hennessy has access" });
-  await expect(live.getByRole("link", { name: "View session" })).toBeVisible();
+  await expect(live.getByRole("link", { name: "Manage sharing" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Share record" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Dr Hennessy can see your record/ })).toHaveCount(0);
   await expectNoAxeViolations(page);
-  // The banner is on other screens, and Profile hides "Share my record".
+  // The banner is on other screens, and Profile hides "Share your record".
   await page.goto("/profile");
   await expect(page.getByRole("link", { name: /Dr Hennessy can see your record/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("link", { name: "Share history" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Share my record" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Share your record" })).toHaveCount(0);
 
   // The doctor writes notes and ends; the patient's /session moves on by itself.
   await page.getByRole("link", { name: /Dr Hennessy can see your record/ }).click();
   await page.waitForURL(/\/session$/);
   await doctor.page.getByLabel("Chief complaint").fill("Ongoing fatigue over the past 6 weeks");
   await doctor.page.getByLabel("Plan").fill("Repeat INR in 2 weeks");
-  await expect(doctor.page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(doctor.page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
   await doctor.page.getByRole("main").getByRole("link", { name: "End session" }).click();
   await expect(doctor.page.getByRole("heading", { level: 2, name: "End session with Jane Doe" })).toBeVisible();
   await doctor.page.getByRole("main").getByRole("button", { name: "End session" }).click();
@@ -184,41 +171,44 @@ test("happy path: the today card to notes on the timeline and in the share histo
 
   // Back to the bright app, with one line; the summary is a link away.
   await page.waitForURL(/\/home\?ended=/, { timeout: 10_000 });
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./).filter({ visible: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Share record" })).toHaveCount(0);
   await expect(page.getByRole("list", { name: "Coming up" }).getByRole("link", { name: /INR blood test/ })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "View summary" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Session ended" })).toBeVisible();
-  await expect(page.getByText("Dr Hennessy ended the session and no longer has access to your record.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sharing ended" })).toBeVisible();
+  await expect(page.getByText("Dr Hennessy ended sharing and no longer has access to your record.")).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "Dr Hennessy · GP" })).toBeVisible();
   await expectNoAxeViolations(page);
 
   // Session notes, from the summary.
-  await page.getByRole("link", { name: "View session notes" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Session notes" })).toBeVisible();
+  await page.getByRole("link", { name: "View the doctor's notes" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Notes from Dr Hennessy" })).toBeVisible();
   await expect(page.getByText("Ongoing fatigue over the past 6 weeks").filter({ visible: true })).toBeVisible();
 
   // On the timeline.
   await page.goto("/record");
-  await expect(page.getByRole("link", { name: /Session notes/ })).toBeVisible({ timeout: 20_000 });
+  // Today's notes, newest first, above the seed's notes from the tiredness visit 16 days ago.
+  await expect(page.getByRole("link", { name: /Doctor's notes/ })).toHaveCount(2, { timeout: 20_000 });
+  await page.getByRole("link", { name: /Doctor's notes/ }).first().click();
+  await expect(page.getByText("Ongoing fatigue over the past 6 weeks").filter({ visible: true })).toBeVisible();
 
   // Share history.
   await page.goto("/access-log");
-  const entry = page.getByRole("article", { name: /Dr Hennessy · GP/ }).first();
+  const entry = page.getByRole("article", { name: /^Dr Hennessy, GP, / }).first();
   await expect(entry).toBeVisible({ timeout: 20_000 });
   await expect(entry.getByText("Ended", { exact: true })).toBeVisible();
   await expect(entry.getByText("Safety info, Medications, Conditions, Recent visits, Full timeline, Care team, Medication notes")).toBeVisible();
-  for (const line of ["You made a share code", "Dr Hennessy typed the code and asked for access", "You allowed access", "Viewed the overview", "Session notes added to your record", "Dr Hennessy ended the session"]) {
+  for (const line of ["You made a share code", "Dr Hennessy typed the code and asked for access", "You allowed access", "Viewed the overview", "Their notes were added to your record", "Dr Hennessy ended sharing"]) {
     await expect(entry.getByText(line)).toBeVisible();
   }
   await expectNoAxeViolations(page);
   await doctor.context.close();
 });
 
-test("scope tiles: the defaults, the locked tiles, and the new scopes reaching the session", async ({ page, browser }) => {
+test("scope tiles: the defaults, the locked tiles, and the new scopes reaching the session", async ({ page, browser, demo }) => {
   await page.goto("/profile");
-  await page.getByRole("link", { name: "Share my record" }).click({ timeout: 20_000 });
+  await page.getByRole("link", { name: "Share your record" }).click({ timeout: 20_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Share your record" })).toBeVisible();
   const tiles = page.getByRole("region", { name: "What your doctor can see" });
 
@@ -266,7 +256,7 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
   // The session row carries exactly those switches.
   await page.waitForURL(/\/share\/code$/);
   const code = await readCode(page);
-  const { data: row } = await clientFor(file).rpc("my_share_session");
+  const { data: row } = await demo.db.rpc("my_share_session");
   expect(row).toMatchObject({
     status: "code_issued",
     duration_kind: "1h",
@@ -309,7 +299,7 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
     "Recent visits",
     "Family history",
     "Medication notes",
-    "Can add session notes",
+    "Can add notes to your record",
   ]);
   await expect(sheet.getByText("Not shared: Full timeline, Care team, Documents, Mental health.")).toBeVisible();
   await sheet.getByRole("button", { name: "Allow access" }).click();
@@ -323,12 +313,14 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
     "Medication notes",
   ]);
   await page.getByRole("button", { name: "End sharing now" }).click();
+  // It asks once before ending (A17).
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await doctor.context.close();
 });
 
-test("deny, with the request arriving over another screen", async ({ page, browser }) => {
-  const db = clientFor(file);
+test("deny, with the request arriving over another screen", async ({ page, browser, demo }) => {
+  const db = demo.db;
   const { data: share, error } = await db.rpc("create_share_code", {
     share_documents: false,
     share_family_history: false,
@@ -367,9 +359,13 @@ test("the patient ends early: the portal closes within seconds", async ({ page, 
   await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   const endedAt = Date.now();
   await page.waitForURL(/\/home\?ended=/);
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./).filter({ visible: true })).toBeVisible();
   await expect(doctor.page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
   expect(Date.now() - endedAt).toBeLessThan(6_000);
   await expect(doctor.page.getByText("Penicillin")).toHaveCount(0);
@@ -399,15 +395,19 @@ test("the patient ends after the doctor's notes autosaved: the ended screen and 
 
   // The doctor types; the draft autosaves. The patient has not left /session.
   await doctor.page.getByLabel("Chief complaint").fill("Tired for six weeks");
-  await expect(doctor.page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(doctor.page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
   await page.waitForTimeout(1_500); // the autosave's realtime update reaches the phone first
 
   await page.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await page.getByRole("link", { name: "View summary" }).click();
   await page.waitForURL(/\/session\/ended\?id=/);
   // The end writes the notes in the same transaction: the screen must say so, and keep saying so.
-  const notesRow = page.getByRole("definition").filter({ has: page.getByRole("link", { name: "View session notes" }) });
+  const notesRow = page.getByRole("definition").filter({ has: page.getByRole("link", { name: "View the doctor's notes" }) });
   await expect(notesRow).toBeVisible();
   await page.waitForTimeout(2_000);
   await expect(page.getByText("None written")).toHaveCount(0);
@@ -416,15 +416,15 @@ test("the patient ends after the doctor's notes autosaved: the ended screen and 
 
   // A reload reads the same thing.
   await page.reload();
-  await expect(page.getByRole("link", { name: "View session notes" })).toBeVisible({ timeout: 20_000 });
-  await page.getByRole("link", { name: "View session notes" }).click();
+  await expect(page.getByRole("link", { name: "View the doctor's notes" })).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("link", { name: "View the doctor's notes" }).click();
   await expect(page.getByText("Tired for six weeks").filter({ visible: true })).toBeVisible();
   await doctor.context.close();
 });
 
-test("share from Profile on a day with no appointment", async ({ page, browser }) => {
+test("share from Profile on a day with no appointment", async ({ page, browser, demo }) => {
   // Remove today's visit: no appointment today.
-  const db = clientFor(file);
+  const db = demo.db;
   const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
   const todays = (visits ?? []).filter(
@@ -439,7 +439,7 @@ test("share from Profile on a day with no appointment", async ({ page, browser }
   await expect(page.getByRole("button", { name: /share/i })).toHaveCount(0);
 
   await page.goto("/profile");
-  await expect(page.getByRole("link", { name: "Share my record" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("link", { name: "Share your record" })).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   const code = await generateFrom(page, "profile");
 
@@ -455,6 +455,8 @@ test("share from Profile on a day with no appointment", async ({ page, browser }
   await expect(page.getByText("Rathmines Medical Centre", { exact: true })).toBeVisible();
   await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "End sharing now" }).click();
+  // It asks once before ending (A17).
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await page.waitForURL(/\/home\?ended=/);
   await expect(doctor.page.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
   await doctor.context.close();
@@ -472,45 +474,43 @@ test("regenerate replaces the code; the old one stops working", async ({ page, b
   await doctor.context.close();
 });
 
-test("a second demo visitor gets a separate record", async ({ page, browser }, info) => {
+test("a second demo visitor gets a separate record", async ({ page, browser, demo }) => {
   // A note only the first visitor has.
-  const db = clientFor(file);
+  const db = demo.db;
   const { error } = await db.from("entries").insert({ kind: "note", title: "Only in sandbox one", occurs_at: new Date().toISOString() });
   expect(error).toBeNull();
 
   // A brand-new visitor: an empty browser (contexts made in a test inherit test.use's storageState).
-  const other = statePath(`share-second-${info.project.name}`);
   const fresh = await browser.newContext({ viewport: PHONE, storageState: { cookies: [], origins: [] } });
   const welcome = await fresh.newPage();
   await welcome.goto("/");
   await welcome.getByRole("button", { name: "Try the demo" }).click();
   await welcome.waitForURL("**/home", { timeout: 60_000 });
-  await fresh.storageState({ path: other });
+  const other = await fresh.storageState();
+  const otherDb = clientAs(sessionFromState(other));
   await fresh.close();
-  try {
+  {
     const ctx = await browser.newContext({ viewport: PHONE, storageState: other });
     const second = await ctx.newPage();
     await second.goto("/record");
     await expect(second.getByRole("heading", { level: 1, name: "Record" })).toBeVisible({ timeout: 20_000 });
     await expect(second.getByRole("link", { name: /Fatigue symptoms/ })).toBeVisible();
     await expect(second.getByText("Only in sandbox one")).toHaveCount(0);
-    const me = (await db.auth.getUser()).data.user!.id;
-    const them = (await clientFor(other).auth.getUser()).data.user!.id;
+    const me = demo.userId;
+    const them = sessionFromState(other).user.id;
     expect(them).not.toBe(me);
     // Reading the first visitor's rows directly returns nothing.
-    const { data: theirs } = await clientFor(other).from("entries").select("id").eq("user_id", me);
+    const { data: theirs } = await otherDb.from("entries").select("id").eq("user_id", me);
     expect(theirs).toEqual([]);
     await ctx.close();
 
     await page.goto("/record");
     await expect(page.getByRole("link", { name: /Only in sandbox one/ })).toBeVisible({ timeout: 20_000 });
-  } finally {
-    await deleteUser(other);
   }
 });
 
-test("reset demo puts Jane's record back", async ({ page }) => {
-  const db = clientFor(file);
+test("reset demo puts Jane's record back", async ({ page, demo }) => {
+  const db = demo.db;
   await db.from("entries").insert({ kind: "note", title: "Remove me on reset", occurs_at: new Date().toISOString() });
   await page.goto("/profile");
   await page.getByRole("button", { name: "Reset demo" }).click();
@@ -527,8 +527,8 @@ test("reset demo puts Jane's record back", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Remove me on reset/ })).toHaveCount(0);
 });
 
-test("/demo runs the loop inside its two frames", async ({ browser }) => {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, storageState: file, extraHTTPHeaders: { "x-forwarded-for": "198.19.200.7" } });
+test("/demo runs the loop inside its two frames", async ({ browser, demo }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, storageState: demo.storageState, extraHTTPHeaders: { "x-forwarded-for": "198.19.200.7" } });
   const page = await ctx.newPage();
   const res = await page.goto("/demo");
   // Only Trace may frame Trace.
@@ -548,12 +548,11 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   const text = await phone.getByText(/^Your code: \d \d \d \d$/).textContent({ timeout: 15_000 });
   const code = text!.replace(/\D/g, "");
 
-  // The portal's name step is pre-filled in the demo.
-  await expect(laptop.getByLabel("Your name")).toHaveValue(DOCTOR.name, { timeout: 15_000 });
-  await expect(laptop.getByLabel(/Practice/)).toHaveValue(DOCTOR.practice);
-  await laptop.getByRole("button", { name: "Continue" }).click();
-  await laptop.getByRole("textbox", { name: "Patient's share code" }).fill(code);
-  await laptop.getByRole("button", { name: "Continue" }).click();
+  // The portal's demo starts at the code, as Dr Hennessy of Rathmines Medical Centre.
+  await expect(laptop.getByRole("heading", { name: "Enter the patient's code" })).toBeVisible({ timeout: 15_000 });
+  await expect(laptop.getByRole("banner")).toContainText(DOCTOR.name);
+  await expect(laptop.getByRole("banner")).toContainText(DOCTOR.practice);
+  await laptop.getByRole("textbox", { name: "Patient's share code" }).fill(code); // the fourth digit submits
 
   await phone.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click({ timeout: 10_000 });
   await expect(laptop.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
@@ -562,6 +561,10 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   await expectNoAxeViolations(page);
 
   await phone.getByRole("button", { name: "End sharing now" }).click();
+
+  // It asks once before ending (A17).
+
+  await phone.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
   await expect(laptop.getByRole("heading", { name: "Your patient ended the session." })).toBeVisible({ timeout: 6_000 });
 
   // Narrower than 1100px: the phone alone, with the portal one tab away.
@@ -582,7 +585,50 @@ test("the cleanup cron refuses callers without the secret", async ({ request }) 
   expect((await request.get("/api/cron/cleanup", { headers: { authorization: "Bearer not-the-secret" } })).status()).toBe(401);
 });
 
-/* ---------- Time's up and the timer announcements: stand-in session data ---------- */
+test("Time's up for real: the doctor's access pauses at the expiry, and more time brings it back on both sides", async ({ page, browser, demo }) => {
+  const code = await generateFrom(page, "card");
+  const doctor = await newDoctor(browser);
+  await submitCode(doctor.page, code);
+  await page.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click();
+  await page.waitForURL(/\/session$/);
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
+
+  // The 30 minutes run out: move the expiry into the past in the database. The
+  // database pauses the share the next time either side asks (lazily, as live).
+  const [row] = await sql<{ id: string }>(
+    "update public.share_sessions set expires_at = now() - interval '1 second' where patient_id = $1 and status = 'active' returning id",
+    [demo.userId],
+  );
+  expect(row?.id).toBeTruthy();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Time's up" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Dr Hennessy's access has been paused. Your record is no longer visible until you decide.")).toBeVisible();
+  await expect(page.getByText(/^If you don't decide, the session closes at /)).toBeVisible();
+  await expectNoAxeViolations(page);
+  // The portal hides the record.
+  await expect(doctor.page.getByText("Access paused", { exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toHaveCount(0);
+  expect(await (await doctor.page.request.get("/api/portal/record?section=overview")).json()).toEqual({ record: null });
+  const { data: paused } = await demo.db.rpc("my_share_session");
+  expect(paused).toMatchObject({ status: "paused" });
+
+  // More time: both sides are live again.
+  await page.getByRole("button", { name: "Add 15 min" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
+  const { data: active } = await demo.db.rpc("my_share_session");
+  expect(active).toMatchObject({ status: "active" });
+  const minutesLeft = (Date.parse((active as { expires_at: string }).expires_at) - Date.now()) / 60_000;
+  expect(minutesLeft).toBeGreaterThan(13);
+  expect(minutesLeft).toBeLessThanOrEqual(15);
+
+  await page.getByRole("button", { name: "End sharing now" }).click();
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
+  await page.waitForURL(/\/home\?ended=/);
+  await doctor.context.close();
+});
+
+/* ---------- Time's up (state from stand-in data) and the timer announcements ---------- */
 
 function standIn(overrides: Record<string, unknown>) {
   const now = Date.now();
@@ -653,13 +699,13 @@ test("Time's up (stand-in data): extend brings the session back", async ({ page 
   await expectNoAxeViolations(page);
   // Other screens carry the strip.
   await page.goto("/record");
-  await expect(page.getByRole("link", { name: /Dr Hennessy's access is paused.*View session/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("link", { name: /Dr Hennessy's access is paused.*Manage sharing/ })).toBeVisible({ timeout: 20_000 });
 
   await page.goto("/session");
   await expect(page.getByRole("heading", { level: 1, name: "Time's up" })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Dr Hennessy's access has been paused. Your record is no longer visible until you decide.")).toBeVisible();
-  await expect(page.getByText("29 of 29 min")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Save and end.*Session notes saved · access closed/ })).toBeVisible();
+  await expect(page.getByText("29 min", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /End sharing.*notes are added to your record/ })).toBeVisible();
   await expect(page.getByText(/^If you don't decide, the session closes at /)).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);

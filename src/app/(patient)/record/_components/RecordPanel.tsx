@@ -10,6 +10,7 @@ import { usePatientSession } from "@/components/patient/PatientSession";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { IconLink } from "@/components/ui/IconButton";
 import { ListRow } from "@/components/ui/ListRow";
 import { SegmentedControl, tabPanelProps } from "@/components/ui/SegmentedControl";
 import { StateMessage } from "@/components/ui/StateMessage";
@@ -19,12 +20,13 @@ import {
   conditionCaption,
   ENTRY_KIND_LABEL,
   entryIcon,
+  entryTitle,
   loadSections,
   type RecordCondition,
   type RecordEntry,
   type Relative,
 } from "@/lib/patient/record";
-import type { Profile } from "@/lib/patient/types";
+import { allergyLabels, type Profile } from "@/lib/patient/types";
 import { useLoad } from "@/lib/useLoad";
 import { LoadStatus } from "../../_components/Screens";
 
@@ -32,7 +34,9 @@ export type RecordTab = "timeline" | "conditions" | "family";
 type Tab = RecordTab;
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: "timeline", label: "Timeline" },
+  // "Visits" (owner, Nov 2026), not the board's "Timeline": the screen behind "View full timeline"
+  // is a different list (illnesses and diagnoses), and two things cannot share one name.
+  { value: "timeline", label: "Visits" },
   { value: "conditions", label: "Conditions" },
   { value: "family", label: "Family" },
 ];
@@ -50,7 +54,7 @@ async function loadRecord() {
 /** The pinned facts in RecordA2's words: "Penicillin allergy", "Blood type A+", implants as typed. */
 function safetyFacts(p: Pick<Profile, "allergies" | "blood_type" | "implants">): string[] {
   return [
-    ...p.allergies.map((a) => `${a} allergy`),
+    ...allergyLabels(p.allergies),
     ...(p.blood_type ? [`Blood type ${p.blood_type}`] : []),
     ...p.implants,
   ];
@@ -88,9 +92,15 @@ export function RecordPanel({
   const { profile } = usePatientSession();
   const params = useSearchParams();
   const asked = params.get("tab");
-  const [tab, setTab] = useState<Tab>(
-    initialTab ?? (asked === "conditions" || asked === "family" ? asked : "timeline"),
-  );
+  const askedTab: Tab = asked === "conditions" || asked === "family" ? asked : "timeline";
+  const [tab, setTab] = useState<Tab>(initialTab ?? askedTab);
+  // Next.js keeps this screen alive: a later visit to /record?tab=... (after
+  // "Add a condition", say) must open that tab, not the one left showing.
+  const [seenAsked, setSeenAsked] = useState(asked);
+  if (syncUrl && !initialTab && asked !== seenAsked) {
+    setSeenAsked(asked);
+    setTab(askedTab);
+  }
   const data = useLoad(loadRecord);
   // Unique per screen: Next.js keeps earlier screens in the page, hidden.
   const tabIds = useId();
@@ -106,7 +116,13 @@ export function RecordPanel({
 
   return (
     <>
-      <PageHeader title="Record" height={48} level={level} />
+      <PageHeader
+        title="Record"
+        height={48}
+        level={level}
+        // Not on RecordA2: search over the whole record (F3).
+        action={level === 1 ? <IconLink href="/record/search" icon="search" label="Search your record" size={36} /> : undefined}
+      />
       <div className="flex flex-col gap-3.5 px-5 pb-6 pt-3.5">
         <div className="flex flex-col gap-1">
           <CriticalSafetyStrip items={facts} allergyIcon={false} />
@@ -152,8 +168,8 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
   if (entries.length === 0) {
     return (
       <StateMessage
-        message="Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here."
-        action={{ label: "Add to my record", href: "/add" }}
+        message="Nothing here yet. Visits, results, prescriptions and notes you add show up here."
+        action={{ label: "Add to your record", href: "/add" }}
       />
     );
   }
@@ -165,7 +181,7 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
           <li key={e.id}>
             <ListRow
               icon={entryIcon(e)}
-              title={e.title}
+              title={entryTitle(e)}
               caption={ENTRY_KIND_LABEL[e.kind]}
               value={<time dateTime={dayKey(e.occurs_at)}>{formatShortDate(e.occurs_at)}</time>}
               valueStyle={e.upcoming ? "accent" : "caption"}
@@ -178,15 +194,27 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
           </li>
         ))}
       </Card>
-      <ButtonLink
-        href="/record/timeline"
-        variant="text"
-        size="md"
-        className="w-fit"
-        iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
-      >
-        View full timeline
-      </ButtonLink>
+      <div className="flex flex-wrap gap-x-6">
+        <ButtonLink
+          href="/record/timeline"
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
+        >
+          View full timeline
+        </ButtonLink>
+        {/* Not on RecordA2: the way to the vitals (F1). */}
+        <ButtonLink
+          href="/record/vitals"
+          variant="text"
+          size="md"
+          className="w-fit"
+          iconRight={<Icon name="chevron-right" size={18} strokeWidth={2.25} />}
+        >
+          Vitals
+        </ButtonLink>
+      </div>
     </div>
   );
 }

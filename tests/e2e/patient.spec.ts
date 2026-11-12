@@ -1,32 +1,13 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, emptyRecord, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { emptyRecord, expect, expectNoSideScroll, test } from "./helpers/patient";
 
 /**
- * The signed-in patient app (Phase 3 steps 3 to 7, and Phase 4), driven as one
- * anonymous demo user per Playwright project. See helpers/patient.ts for why.
- * Tests in this file run one after another and reset the record first.
+ * The signed-in patient app (Phase 3 steps 3 to 7, and Phase 4). Every test
+ * has its own anonymous demo user with Jane Doe's record (helpers/patient.ts),
+ * so the tests run in parallel.
  */
-
-test.describe.configure({ mode: "default" });
-
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  file = statePath(info.project.name);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file) });
-
-test.beforeEach(async () => {
-  await reseed(clientFor(file));
-});
 
 async function gotoScreen(page: Page, path: string, heading: string | RegExp) {
   await page.goto(path);
@@ -53,7 +34,7 @@ test("home shows Jane's record", async ({ page }) => {
   await expect(recent.getByRole("link")).toHaveText([
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
-    /Warfarin renewed.*Prescription/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
   ]);
   await expect(page.getByText("Upload doc")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
@@ -69,21 +50,25 @@ test("record: safety facts and the three tabs", async ({ page }) => {
 
   // Timeline: upcoming first (dates in accent, "upcoming" in words), then the past.
   const tabs = page.getByRole("tablist", { name: "Record sections" });
-  await expect(tabs.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
-  const panel = page.getByRole("tabpanel", { name: "Timeline" });
+  await expect(tabs.getByRole("tab", { name: "Visits" })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel", { name: "Visits" });
   await expect(panel.getByRole("listitem")).toHaveText([
     /Cardiology follow-up.*Visit.*upcoming/,
     /INR blood test.*Visit.*upcoming/,
     /GP visit.*Visit/,
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
+    /GP visit for tiredness.*Visit/,
     /Warfarin renewed.*Prescription/,
   ]);
   // Past rows open their detail; upcoming ones are not clickable (BRIEF.md 4.3).
-  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" })).toHaveText([
+  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" }).filter({ hasNotText: /^Vitals$/ })).toHaveText([
     /GP visit.*Visit/,
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
+    /GP visit for tiredness.*Visit/,
     /Warfarin renewed.*Prescription/,
   ]);
   await expect(panel.getByRole("link", { name: /Cardiology follow-up/ })).toHaveCount(0);
@@ -93,7 +78,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   await expectNoSideScroll(page);
 
   // The tabs are a tablist: arrow keys move between them.
-  await tabs.getByRole("tab", { name: "Timeline" }).focus();
+  await tabs.getByRole("tab", { name: "Visits" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(tabs.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
   await expect(tabs.getByRole("tab", { name: "Conditions" })).toBeFocused();
@@ -129,7 +114,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Atrial fibrillation" })).toBeHidden();
   await expect(page.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
 
-  await page.getByRole("tab", { name: "Timeline" }).click();
+  await page.getByRole("tab", { name: "Visits" }).click();
   await page.getByRole("link", { name: /Blood count and INR/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeVisible();
   await expect(page.getByText("Mater Hospital").filter({ visible: true }).first()).toBeVisible();
@@ -167,8 +152,8 @@ test("meds: Current and Past (MedsA2)", async ({ page }) => {
   await expectNoSideScroll(page);
 });
 
-test("meds: a refill 5 days away or less is urgent, in words", async ({ page }) => {
-  const db = clientFor(file);
+test("meds: a refill 5 days away or less is urgent, in words", async ({ page, demo }) => {
+  const db = demo.db;
   const inThree = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() + 3 * 86_400_000));
   expect((await db.from("medications").update({ refill_due_on: inThree }).eq("name", "Warfarin")).error).toBeNull();
   await gotoScreen(page, "/meds", "Medications");
@@ -187,12 +172,15 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
     ["Upload a document", "/profile/documents/upload"],
     ["Log a note", "/add/note"],
     ["Add to your timeline", "/record/timeline/new"],
+    ["Log vitals", "/add/vitals"],
   ];
   // The address shows the rows as a screen (the desktop rail's Add goes here).
-  await gotoScreen(page, "/add", "Add to my record");
+  await gotoScreen(page, "/add", "Add to your record");
   const list = page.getByRole("list", { name: "What to add" });
   await expect(list.getByRole("link")).toHaveText(rows.map(([name]) => name));
-  for (const [name, href] of rows) await expect(list.getByRole("link", { name })).toHaveAttribute("href", href);
+  // Each row tells its form where Back goes (here, /add).
+  for (const [name, href] of rows)
+    await expect(list.getByRole("link", { name })).toHaveAttribute("href", `${href}?back=${encodeURIComponent("/add")}`);
   for (const hidden of ["Scan or photograph", "Record a vaccination", "Upload a receipt"]) {
     await expect(page.getByText(hidden)).toHaveCount(0);
   }
@@ -202,7 +190,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
     // On the phone the tab bar's plus opens the same rows as a sheet over the current screen.
     await gotoScreen(page, "/home", /^Good/);
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    const sheet = page.getByRole("dialog", { name: "Add to my record" });
+    const sheet = page.getByRole("dialog", { name: "Add to your record" });
     await expect(sheet).toBeVisible();
     await expect(sheet.getByRole("link")).toHaveText(rows.map(([name]) => name));
     await expectNoAxeViolations(page, "dialog");
@@ -228,7 +216,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await page.getByRole("link", { name: /Headaches after lunch/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch" })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "Three days this week." }).filter({ visible: true })).toBeVisible();
-  await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
+  await expect(page.getByText(/Left out of every share unless you include mental health/).filter({ visible: true })).toBeVisible();
   await expectNoAxeViolations(page);
 
   await page.getByRole("link", { name: "Edit Headaches after lunch" }).click();
@@ -237,22 +225,25 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch, better now" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Delete entry" }).click();
-  const sheet = page.getByRole("dialog", { name: "Delete this entry?" });
+  // Delete is on the Edit form, as on every other (A26).
+  await page.getByRole("link", { name: "Edit Headaches after lunch, better now" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit note" })).toBeVisible();
+  await page.getByRole("button", { name: "Delete note" }).click();
+  const sheet = page.getByRole("dialog", { name: "Delete this note?" });
   await expect(sheet).toBeVisible();
   await expectNoAxeViolations(page, "dialog");
-  await sheet.getByRole("button", { name: "Delete entry" }).click();
+  await sheet.getByRole("button", { name: "Delete note" }).click();
   await page.waitForURL(/\/record$/);
   await expect(page.getByRole("link", { name: /Headaches after lunch/ })).toHaveCount(0);
-  // Back to the deleted entry's screen (kept in memory by Next.js): the confirm sheet must not reopen.
+  // Back to the deleted entry's Edit screen (kept in memory by Next.js): the confirm sheet must not reopen.
   await page.goBack();
-  await expect(page.getByText(/isn't in your record/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/It may have been deleted/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
 });
 
-test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) => {
+test("add: an upcoming appointment shows in Home's Coming up", async ({ page, demo }) => {
   // On a day with no appointment (no today card).
-  const db = clientFor(file);
+  const db = demo.db;
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
   const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
   for (const v of visits ?? []) {
@@ -269,7 +260,7 @@ test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) 
   await page.getByLabel("Time").filter({ visible: true }).fill("10:15");
   await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill("Dr Byrne");
   await page.getByRole("textbox", { name: /Where/ }).fill("Ranelagh Dental");
-  await page.getByRole("button", { name: "Save to my record" }).click();
+  await page.getByRole("button", { name: "Save visit" }).click();
   await page.waitForURL(/\/record$/);
   await gotoScreen(page, "/home", /^Good/);
   await expect(page.getByRole("region", { name: /today$/ })).toHaveCount(0);
@@ -286,9 +277,11 @@ test("add, edit, end and delete a medication", async ({ page }) => {
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: "Name" }).fill("Vitamin D");
   await page.getByRole("textbox", { name: /^Strength/ }).fill("1000IU");
+  await page.getByRole("combobox", { name: /How often/ }).selectOption("once daily");
+  await page.getByRole("combobox", { name: /^When/ }).selectOption("morning");
+  // The rest is under More details (B8).
+  await page.getByRole("button", { name: "More details" }).click();
   await page.getByRole("textbox", { name: /^Form/ }).fill("Capsule");
-  await page.getByRole("textbox", { name: /How often/ }).fill("once daily");
-  await page.getByRole("textbox", { name: /^When/ }).fill("morning");
   await page.getByRole("button", { name: "Save medication" }).click();
   await page.waitForURL(/\/meds$/);
   // The strength became its first period (the unit was read from "1000IU").
@@ -322,12 +315,12 @@ test("add and edit a condition with the mental health switch", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1, name: "Add a condition" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: "Condition" }).fill("Anxiety");
-  await page.getByRole("textbox", { name: /Year diagnosed/ }).fill("2021");
+  await page.getByRole("textbox", { name: /Since when/ }).fill("2021");
   await page.getByRole("switch", { name: "About mental health" }).click();
   await page.getByRole("button", { name: "Save condition" }).click();
   await page.waitForURL(/\/record\?tab=conditions$/);
   await page.getByRole("link", { name: /Anxiety/ }).click();
-  await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
+  await expect(page.getByText(/Left out of every share unless you include mental health/).filter({ visible: true })).toBeVisible();
   await page.getByRole("link", { name: "Edit" }).click();
   await page.getByRole("combobox", { name: "Status" }).selectOption("resolved");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -342,12 +335,12 @@ test("profile: the list, details, edit with critical safety, care team, export",
   const list = page.getByRole("list", { name: "Your record and settings" });
   await expect(list.getByRole("link")).toHaveText([
     "Your details",
-    "Share my record",
+    "Share your record",
     "Insurance",
     "Documents",
     "Care team",
     "Share history",
-    "Privacy and security",
+    "Privacy and data",
   ]);
   await expect(list.getByRole("button", { name: "Reset demo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
@@ -357,14 +350,15 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
-  // Privacy and security: export (every table, version 2).
-  await list.getByRole("link", { name: "Privacy and security" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Privacy and security" })).toBeVisible();
+  // Privacy and data: export (every table, version 2).
+  await list.getByRole("link", { name: "Privacy and data" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy and data" })).toBeVisible();
   await expectNoAxeViolations(page);
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Export my data/ }).click();
+  await page.getByRole("button", { name: /Export your data/ }).click();
   const file = await (await download).path();
   const exported = JSON.parse(readFileSync(file, "utf8"));
+  await expect(page.getByText(/^Saved as trace-export-.*\.json in your downloads\.$/)).toBeVisible();
   expect(exported.version).toBe(2);
   expect(exported.profile.first_name).toBe("Jane");
   expect(exported.medications).toHaveLength(8);
@@ -375,7 +369,7 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expect(page.getByText("12 March 1991")).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "Edit details" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit details" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: /Known allergies/ }).fill("Penicillin, Latex");
   await page.getByRole("textbox", { name: /Implants or devices/ }).fill("Pacemaker");
@@ -410,18 +404,19 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expect(page.getByRole("link", { name: /Dr Byrne/ })).toHaveCount(0);
 });
 
-test("a brand-new record shows empty states", async ({ page }) => {
-  await emptyRecord(clientFor(file));
+test("a brand-new record shows empty states", async ({ page, demo }) => {
+  await emptyRecord(demo);
   await gotoScreen(page, "/home", /^Good/);
-  await expect(page.getByText("Your record is empty.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add to my record" })).toBeVisible();
+  // An empty record lists the first things to add, as links (B22).
+  const first = page.getByRole("region", { name: "Start your record" });
+  await expect(first.getByRole("link")).toHaveText([/Add your critical safety details/, "Add a medication", "Add a visit", "Log a note"]);
   await expect(page.getByRole("heading", { name: "Coming up" })).toHaveCount(0);
   await expectNoAxeViolations(page);
 
   await gotoScreen(page, "/record", "Record");
   await expect(page.getByText("No allergies or blood type recorded")).toBeVisible();
   // The record's four sections load together; under a full parallel run that can take longer than 5 s.
-  await expect(page.getByText(/Nothing on your timeline yet/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^Nothing here yet\. Visits, results, prescriptions and notes you add show up here\.$/)).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   await page.getByRole("tab", { name: "Conditions" }).click();
   await expect(page.getByText("No conditions yet.")).toBeVisible();
@@ -435,13 +430,12 @@ test("a brand-new record shows empty states", async ({ page }) => {
   await expectNoAxeViolations(page);
 });
 
-test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", async ({ page }) => {
-  const db = clientFor(file);
-  const { data: user } = await db.auth.getUser();
+test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", async ({ page, demo }) => {
+  const db = demo.db;
   await db
     .from("profiles")
     .update({ onboarding_step: "about", first_name: null, last_name: null, date_of_birth: null, blood_type: null, allergies: [], terms_accepted_at: null })
-    .eq("id", user.user!.id);
+    .eq("id", demo.userId);
 
   // An unfinished sign-up is sent back to its step, and cannot skip ahead.
   await page.goto("/home");
@@ -449,7 +443,7 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await page.goto("/signup/privacy");
   await page.waitForURL(/\/signup\/about$/);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Tell us a little about yourself." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Tell us about yourself" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Enter your first name.")).toBeVisible();
@@ -459,39 +453,38 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/medical$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Critical safety information." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Critical safety information" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("combobox", { name: "Blood type" }).selectOption("A+");
   await page.getByRole("textbox", { name: "Known allergies" }).fill("Penicillin");
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/privacy$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Your data, your rights." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Your data, your rights" })).toBeVisible();
   await expectNoAxeViolations(page);
-  await page.getByRole("button", { name: "I agree" }).click();
-  await expect(page.getByText("Turn on the agreement to continue.")).toBeVisible();
-  await page.getByRole("switch", { name: /I agree to Trace's Terms of Service/ }).click();
+  // One act of consent: the line says what "I agree" accepts (B21).
+  await expect(page.getByText("By agreeing you accept Trace's terms and privacy policy.")).toBeVisible();
   await page.getByRole("button", { name: "I agree" }).click();
 
   await page.waitForURL(/\/signup\/profiles$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Set up your first share profile." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "What a doctor sees when you share" })).toBeVisible();
   await expect(page.getByText("Add Emergency and Specialist profiles later")).toHaveCount(0);
   await expectNoAxeViolations(page);
 
   // Leaving and coming back resumes here.
   await page.goto("/home");
   await page.waitForURL(/\/signup\/profiles$/);
-  await page.getByRole("button", { name: "Set up GP visit profile" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/welcome$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Welcome to Trace, Jane!" })).toBeVisible();
-  await expect(page.getByText("Blood type A+ · Penicillin allergy")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Welcome to Trace, Jane" })).toBeVisible();
+  await expect(page.getByText("Blood type A+, Penicillin allergy")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
-  await page.getByRole("button", { name: "Go to my record" }).click();
+  await page.getByRole("button", { name: "Go to your record" }).click();
   await page.waitForURL(/\/home$/);
 
-  const { data: profile } = await db.from("profiles").select("*").eq("id", user.user!.id).single();
+  const { data: profile } = await db.from("profiles").select("*").eq("id", demo.userId).single();
   expect(profile!.onboarding_step).toBe("done");
   expect(profile!.date_of_birth).toBe("1991-03-12");
   expect(profile!.allergies).toEqual(["Penicillin"]);
@@ -508,19 +501,18 @@ function dublinDay(days: number): string {
  * record, enter the whole of Jane Doe's record by hand through the screens,
  * then check each screen shows it. Phone only, to keep the run short.
  */
-test("Jane Doe's record entered by hand shows on every screen", async ({ page }, info) => {
+test("Jane Doe's record entered by hand shows on every screen", async ({ page, demo }, info) => {
   test.skip(info.project.name !== "phone", "Runs once, at phone width");
   test.setTimeout(300_000);
-  const db = clientFor(file);
-  await emptyRecord(db);
-  const { data: user } = await db.auth.getUser();
+  const db = demo.db;
+  await emptyRecord(demo);
   await db
     .from("profiles")
     .update({ first_name: "Jane", last_name: "Doe", date_of_birth: null, sex: null, address: null, city: null, phone: null })
-    .eq("id", user.user!.id);
+    .eq("id", demo.userId);
 
   // Profile and critical safety.
-  await gotoScreen(page, "/profile/edit", "Edit profile");
+  await gotoScreen(page, "/profile/edit", "Edit details");
   await page.getByLabel(/Date of birth/).filter({ visible: true }).fill("1991-03-12");
   await page.getByRole("textbox", { name: /^Sex/ }).fill("Female");
   await page.getByRole("textbox", { name: /^Phone/ }).fill("+353 86 123 4567");
@@ -543,24 +535,27 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("combobox", { name: "Status" }).selectOption(status);
     await page.getByRole("textbox", { name: /^Doctor/ }).fill(doctor);
     await page.getByRole("textbox", { name: /^Specialty/ }).fill(specialty);
-    if (year) await page.getByRole("textbox", { name: /Year diagnosed/ }).fill(year);
-    if (note) await page.getByRole("textbox", { name: /Or when it started/ }).fill(note);
+    if (year || note) await page.getByRole("textbox", { name: /Since when/ }).fill(year || note);
     await page.getByRole("button", { name: "Save condition" }).click();
     await page.waitForURL(/\/record\?tab=conditions$/);
   }
 
   // Medications: three current, two expired.
   const meds = [
-    { Name: "Warfarin", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Drug class": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
-    { Name: "Levothyroxine", Strength: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
-    { Name: "Salbutamol", Strength: "100mcg", Form: "Inhaler", "How often": "as needed", "Drug class": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
-    { Name: "Clarithromycin", Strength: "500mg", Form: "Tablet", "How often": "twice daily", "Drug class": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
-    { Name: "Prednisolone", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
+    { Name: "Warfarin", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Type of medicine": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
+    { Name: "Levothyroxine", Strength: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Type of medicine": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
+    { Name: "Salbutamol", Strength: "100mcg", Form: "Inhaler", "How often": "as needed", "Type of medicine": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
+    { Name: "Clarithromycin", Strength: "500mg", Form: "Tablet", "How often": "twice daily", "Type of medicine": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
+    { Name: "Prednisolone", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Type of medicine": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
   ];
   for (const med of meds) {
     await gotoScreen(page, "/add/medication", "Add a medication");
+    await page.getByRole("button", { name: "More details" }).click();
     for (const [label, value] of Object.entries(med)) {
-      await page.getByLabel(new RegExp(`^${label.replace(/[?']/g, ".")}`)).filter({ visible: true }).fill(value);
+      const field = page.getByLabel(new RegExp(`^${label.replace(/[?']/g, ".")}`)).filter({ visible: true });
+      // How often and When are choices (B10).
+      if (label === "How often" || label === "When") await field.selectOption(value);
+      else await field.fill(value);
     }
     await page.getByRole("button", { name: "Save medication" }).click();
     await page.waitForURL(/\/meds$/);
@@ -580,16 +575,17 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("combobox", { name: "What kind" }).selectOption(e.kind);
     await page.getByRole("textbox", { name: "Title" }).fill(e.title);
     await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(e.day));
-    await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
-    if (e.doctor) await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
+    // Only a visit asks for a time (A8).
+    if (e.kind === "visit") await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
+    if (e.kind === "result") await page.getByRole("textbox", { name: /^Ordered by/ }).fill(e.doctor ?? "");
+    if (e.doctor && e.kind !== "result") await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
     await page.getByRole("textbox", { name: /^Where/ }).fill(e.where);
-    await page.getByRole("button", { name: "Save to my record" }).click();
+    await page.getByRole("button", { name: "Save visit" }).click();
     await page.waitForURL(/\/record$/);
   }
   await gotoScreen(page, "/add/note", "Log a note");
   await page.getByRole("textbox", { name: "Title" }).fill("Personal note added");
   await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(-11));
-  await page.getByLabel("Time").filter({ visible: true }).fill("20:00");
   await page.getByRole("textbox", { name: "Note" }).fill("Fatigue symptoms");
   await page.getByRole("button", { name: "Save note" }).click();
   await page.waitForURL(/\/record$/);
@@ -645,7 +641,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await page.screenshot({ path: info.outputPath("by-hand-meds.png"), fullPage: true });
 
   await gotoScreen(page, "/profile", "Profile");
-  await expect(page.getByText("Patient · Dublin, IE")).toBeVisible();
+  await expect(page.getByText("Dublin, Ireland", { exact: true })).toBeVisible();
   await gotoScreen(page, "/profile/details", "Your details");
   await expect(page.getByText("+353 86 123 4567")).toBeVisible();
   await gotoScreen(page, "/profile/care-team", "Care team");
@@ -654,14 +650,14 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await page.screenshot({ path: info.outputPath("by-hand-profile.png"), fullPage: true });
 });
 
-test("delete my account signs out and removes the user", async ({ page }) => {
-  await gotoScreen(page, "/profile/privacy", "Privacy and security");
-  await page.getByRole("button", { name: "Delete my account" }).click();
+test("delete my account signs out and removes the user", async ({ page, demo }) => {
+  await gotoScreen(page, "/profile/privacy", "Privacy and data");
+  await page.getByRole("button", { name: "Delete your account" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");
   await sheet.getByRole("button", { name: "Delete everything" }).click();
   await page.waitForURL((url) => url.pathname === "/");
   await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
-  const { data } = await clientFor(file).from("profiles").select("id");
+  const { data } = await demo.db.from("profiles").select("id");
   expect(data ?? []).toHaveLength(0);
 });

@@ -37,6 +37,8 @@ export function useStepSave(step: Exclude<OnboardingStep, "done">) {
       return false;
     }
     setProfile(data);
+    // Next.js may show this step again (Back): never leave it busy.
+    setBusy(false);
     router.push(goTo ?? pathForStep(next));
     return true;
   }

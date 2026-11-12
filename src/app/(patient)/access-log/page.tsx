@@ -92,57 +92,81 @@ function describe(e: AccessEvent, s: ShareSession): string {
     case "document_viewed":
       return "Opened a document";
     case "notes_saved":
-      return "Session notes added to your record";
+      return "Their notes were added to your record";
     case "ended":
       return d.by === "clinician"
-        ? `${clinicianName(s)} ended the session`
+        ? `${clinicianName(s)} ended sharing`
         : d.by === "timeout"
-          ? "The session closed after Time's up"
-          : "You ended the session";
+          ? "Sharing closed after Time's up"
+          : "You ended sharing";
     default:
       return e.event;
   }
+}
+
+/** Runs of the same line in a row become one ("Viewed medications, 3 times"), at the first one's time (B7). */
+function grouped(events: AccessEvent[], s: ShareSession): { id: number; at: string; text: string; times: number }[] {
+  const out: { id: number; at: string; text: string; times: number }[] = [];
+  for (const e of events) {
+    const text = describe(e, s);
+    const last = out[out.length - 1];
+    if (last && last.text === text) last.times += 1;
+    else out.push({ id: e.id, at: e.at, text, times: 1 });
+  }
+  return out;
+}
+
+/** A code nobody typed, now finished: not a share at all. */
+function unused(s: ShareSession): boolean {
+  return !s.requested_at && (s.status === "expired" || s.status === "cancelled");
 }
 
 /**
  * Share history (the access log; no board, PLAN.md section 8, item 7): every share,
  * newest first, with who asked, when, how long they had access, what was
  * shared, and the events inside it (from access_events, which only the
- * database writes).
+ * database writes). Codes nobody used are not shares: they are counted in
+ * one line at the end instead of a card each (A15).
  */
 function AccessLogScreen() {
   const data = useLoad(loadLog);
+  const shares = data.status === "ready" ? data.data.filter((x) => !unused(x.session)) : [];
+  const spare = data.status === "ready" ? data.data.length - shares.length : 0;
   return (
-    <SubScreen title="Share history" backHref="/profile" backLabel="Back to Profile">
+    <SubScreen title="Share history" backHref="/profile" backLabel="Back to Profile" tabBar>
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
-      ) : data.data.length === 0 ? (
+      ) : shares.length === 0 ? (
         <StateMessage
           className="px-5 py-6"
-          message="You haven't shared your record yet. Every share shows up here."
-          action={{ label: "Share my record", href: "/share" }}
+          message={`You haven't shared your record yet.${spare ? ` ${spareLine(spare)}` : ""} Every share shows up here.`}
+          action={{ label: "Share your record", href: "/share" }}
         />
       ) : (
         <div className="flex flex-col gap-4 px-5 pb-8 pt-2">
           <p className="text-caption text-ink-2">Every share, newest first. Only you can see this.</p>
           <ul className="flex flex-col gap-3">
-            {data.data.map(({ session, events }, i) => (
+            {shares.map(({ session, events }, i) => (
               <li key={session.id}>
                 <SessionCard session={session} events={events} open={i === 0} />
               </li>
             ))}
           </ul>
+          {spare > 0 && <p className="text-caption text-ink-2">{spareLine(spare)}</p>}
         </div>
       )}
     </SubScreen>
   );
 }
 
+/** "2 codes were made and never used." */
+function spareLine(n: number): string {
+  return n === 1 ? "1 code was made and never used." : `${n} codes were made and never used.`;
+}
+
 function SessionCard({ session: s, events, open }: { session: ShareSession; events: AccessEvent[]; open: boolean }) {
   const status = STATUS[s.status] ?? { label: s.status, urgent: false };
-  const who = s.clinician_name
-    ? [s.clinician_name, s.clinician_role].filter(Boolean).join(" · ")
-    : "No one used this code";
+  const who = s.clinician_name ? [s.clinician_name, s.clinician_role].filter(Boolean).join(", ") : "Waiting for a doctor";
   const when = s.approved_at ?? s.requested_at ?? s.created_at;
   const minutes = s.approved_at ? minutesBetween(s.approved_at, s.ended_at ?? s.paused_at ?? new Date(serverNow()).toISOString()) : null;
   return (
@@ -160,7 +184,7 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-caption">
         <dt className="text-ink-2">When</dt>
         <dd>
-          {formatWeekdayDate(when)} · {formatTime(when)}
+          {formatWeekdayDate(when)}, {formatTime(when)}
         </dd>
         {minutes !== null && (
           <>
@@ -175,7 +199,7 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
             <dt className="text-ink-2">Notes</dt>
             <dd>
               <Link href={`/record/${s.notes_entry_id}`} className="text-accent underline underline-offset-2">
-                Session notes
+                Doctor&apos;s notes
               </Link>
             </dd>
           </>
@@ -184,13 +208,16 @@ function SessionCard({ session: s, events, open }: { session: ShareSession; even
       {events.length > 0 && (
         <details open={open} className="group border-t border-border-row pt-1">
           <summary className="flex min-h-11 cursor-pointer items-center text-caption font-semibold text-accent">
-            What happened ({events.length})
+            What happened
           </summary>
           <ol className="flex flex-col gap-1.5 pb-1">
-            {events.map((e) => (
+            {grouped(events, s).map((e) => (
               <li key={e.id} className="flex gap-3 text-caption">
                 <span className="w-14 shrink-0 text-ink-2">{formatTime(e.at)}</span>
-                <span className="text-ink">{describe(e, s)}</span>
+                <span className="text-ink">
+                  {e.text}
+                  {e.times > 1 ? `, ${e.times} times` : ""}
+                </span>
               </li>
             ))}
           </ol>

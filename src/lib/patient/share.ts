@@ -65,6 +65,43 @@ export const GP_VISIT_DEFAULTS: SharePrefs = {
   duration_kind: "30m",
 };
 
+const PREFS_KEY = "trace.share.choices";
+
+/**
+ * The choices of the last share made in this browser (switches, duration,
+ * notes), or the GP visit defaults. Mental health always starts off: it is
+ * private by default, whatever was chosen last time. Only switches are kept,
+ * nothing about the record.
+ */
+export function rememberedPrefs(): SharePrefs {
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return GP_VISIT_DEFAULTS;
+    const saved = JSON.parse(raw) as Partial<SharePrefs>;
+    const next: SharePrefs = { ...GP_VISIT_DEFAULTS };
+    for (const key of Object.keys(GP_VISIT_DEFAULTS) as (keyof SharePrefs)[]) {
+      const v = saved[key];
+      if (key === "duration_kind") {
+        if (DURATION_OPTIONS.some((o) => o.value === v)) next.duration_kind = v as DurationKind;
+      } else if (typeof v === "boolean") {
+        (next as Record<string, unknown>)[key] = v;
+      }
+    }
+    next.share_mental_health = false;
+    return next;
+  } catch {
+    return GP_VISIT_DEFAULTS;
+  }
+}
+
+export function rememberPrefs(p: SharePrefs): void {
+  try {
+    window.localStorage.setItem(PREFS_KEY, JSON.stringify({ ...p, share_mental_health: false }));
+  } catch {
+    // Storage blocked: the next share starts from the defaults.
+  }
+}
+
 export type ScopeDef = {
   /** null for the two that are always shared. */
   key: ScopeKey | null;
@@ -185,6 +222,9 @@ export const DURATION_OPTIONS: { value: DurationKind; label: string; description
   { value: "manual", label: "Manual", description: "I'll stop it" },
 ];
 
+/** The line under the duration choice: only Manual needs one. */
+export const MANUAL_DURATION_LINE = "No timer. Sharing lasts until you end it, 12 hours at most.";
+
 /** "Dr Hennessy" or a neutral stand-in when the name is missing. */
 export function clinicianName(s: Pick<ShareSession, "clinician_name">): string {
   return s.clinician_name?.trim() || "Your doctor";
@@ -241,15 +281,21 @@ export function hardEndOf(s: Pick<ShareSession, "approved_at">): string | null {
   return s.approved_at ? new Date(Date.parse(s.approved_at) + 12 * 3600_000).toISOString() : null;
 }
 
+/** True once a share has run 12 hours since Allow: no more time can be added. */
+export function extendLimitReached(s: Pick<ShareSession, "approved_at" | "expires_at">): boolean {
+  const end = hardEndOf(s);
+  return Boolean(end && s.expires_at && Date.parse(s.expires_at) >= Date.parse(end));
+}
+
 /** Words for a database error code from a patient function. */
 export function shareErrorMessage(code: string | undefined): string {
   switch (code) {
     case "session_live":
       return "A doctor can already see your record. End that session before you start a new share.";
     case "invalid_appointment":
-      return "That appointment isn't in your record any more. Share from your profile instead.";
+      return "That visit isn't in your record any more. Share from your profile instead.";
     case "session_limit_reached":
-      return "This share has reached its 12 hour limit. Save and end it.";
+      return "This share has reached its 12 hour limit. End it when you're ready.";
     case "no_live_session":
       return "This session has already closed.";
     case "not_requested":

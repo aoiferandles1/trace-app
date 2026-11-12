@@ -296,6 +296,22 @@ export const portalApi = {
   end: () => call<PortalStatus>("/api/portal/end", { method: "POST", body: "{}" }),
 };
 
+let firstLook: Promise<PortalStatus> | null = null;
+
+/**
+ * A screen's first status call. Calls made while one is on its way share
+ * it: React can mount a screen twice in a row (development, and the session
+ * frame starting afresh), and in a browser with no portal cookie yet a
+ * second call would mint a second token, so whichever answer landed last
+ * would replace the cookie. Polls use portalApi.status().
+ */
+export function firstStatus(): Promise<PortalStatus> {
+  firstLook ??= portalApi.status().finally(() => {
+    firstLook = null;
+  });
+  return firstLook;
+}
+
 /** Where a shared document opens (a new tab; the route serves the file itself). */
 export function documentUrl(id: string): string {
   return `/api/portal/document?id=${encodeURIComponent(id)}`;

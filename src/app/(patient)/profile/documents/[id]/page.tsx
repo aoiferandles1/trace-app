@@ -1,10 +1,11 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { IconLink } from "@/components/ui/IconButton";
 import { Notice } from "@/components/ui/Notice";
 import { SwitchRow } from "@/components/ui/Switch";
 import { documentCaption, formatBytes, loadSection, type RecordDocument } from "@/lib/patient/record";
@@ -12,25 +13,31 @@ import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
-import { DeleteWithConfirm } from "../../../_components/forms/FormBits";
+import { MENTAL_HEALTH_LINE } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /**
  * One document (no board; BRIEF.md section 7): its name, date, type and
  * size; "Open" (a photo) or "Download" (a PDF), which fetches the file from
  * /api/documents/<id> in a new tab, so it is never drawn into the app; the
- * mental health flag; Delete with a confirm sheet.
+ * mental health flag. The pencil opens Edit (name, date, Delete).
  */
 function DocumentScreen() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     return (await loadSection("documents")).data.documents.find((d) => d.id === id) ?? null;
   }, [id]);
   const d = data.status === "ready" ? data.data : null;
   return (
-    <SubScreen title={d?.title ?? "Document"} titleSize="md" backHref="/profile/documents" backLabel="Back to Documents" tabBar>
+    <SubScreen
+      title={d?.title ?? "Document"}
+      titleSize="md"
+      backHref="/profile/documents"
+      backLabel="Back to Documents"
+      action={d ? <IconLink href={`/profile/documents/${d.id}/edit`} label={`Edit ${d.title}`} icon="pencil" size={32} /> : undefined}
+      tabBar
+    >
       {data.status !== "ready" ? (
         <LoadStatus status={data.status} onRetry={data.reload} />
       ) : !d ? (
@@ -52,18 +59,7 @@ function DocumentScreen() {
             {d.content_type === "application/pdf" ? "Download" : "Open"}
             <span className="sr-only"> (opens in a new tab)</span>
           </ButtonLink>
-          <MentalHealthToggle document={d} />
-          <DeleteWithConfirm
-            label="Delete document"
-            title={`Delete ${d.title}?`}
-            body="The file is removed from Trace. You can't undo this."
-            onConfirm={async () => {
-              const { error } = await createClient().from("documents").delete().eq("id", d.id);
-              if (error) return false;
-              router.replace("/profile/documents");
-              return true;
-            }}
-          />
+          <MentalHealthToggle key={String(d.is_mental_health)} document={d} />
         </div>
       )}
     </SubScreen>
@@ -78,7 +74,7 @@ function MentalHealthToggle({ document: d }: { document: RecordDocument }) {
       <SwitchRow
         surface="tile"
         title="About mental health"
-        description="Kept out of every share unless you include mental health for that share."
+        description={MENTAL_HEALTH_LINE}
         checked={on}
         onCheckedChange={async (next) => {
           setOn(next);

@@ -13,8 +13,8 @@ export default function SignupEmailPage() {
   return (
     <PatientShell header={<ProgressHeader step={1} backHref="/" />}>
       <div className="flex flex-col gap-5 px-5 pb-10">
-        <StepIntro eyebrow="Create account" title="What's your email address?">
-          This is your account login. We&apos;ll send a verification code to confirm it&apos;s yours.
+        <StepIntro title="What's your email address?">
+          We&apos;ll send a code to confirm it&apos;s yours. Trace is invite-only for now: use the email your invite went to.
         </StepIntro>
         <EmailForm
           mode="signup"

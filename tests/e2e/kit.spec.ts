@@ -93,7 +93,8 @@ test.describe("UI kit", () => {
     await page.goto("/kit");
     const sw = page.getByRole("switch", { name: "Mental health history" });
     await expect(sw).toHaveAttribute("aria-checked", "false");
-    await page.getByText("Mental health history", { exact: true }).click();
+    // The production build keeps a hidden copy of the page's content too: click the label on screen.
+    await page.getByText("Mental health history", { exact: true }).filter({ visible: true }).click();
     await expect(sw).toHaveAttribute("aria-checked", "true");
   });
 });

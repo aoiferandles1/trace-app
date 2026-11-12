@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { IconButton } from "./IconButton";
 
@@ -92,6 +92,27 @@ export function BottomSheet({
     };
   }, [open, initialFocusId]);
 
+  // Drag the handle down to close (B18). A pointer convenience: the Close
+  // button and Escape stay the way for keyboards and screen readers.
+  const drag = useRef<{ startY: number; dy: number } | null>(null);
+  const [dragY, setDragY] = useState(0);
+  function onHandleDown(e: PointerEvent<HTMLDivElement>) {
+    if (!dismissible) return;
+    drag.current = { startY: e.clientY, dy: 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onHandleMove(e: PointerEvent<HTMLDivElement>) {
+    if (!drag.current) return;
+    drag.current.dy = Math.max(0, e.clientY - drag.current.startY);
+    setDragY(drag.current.dy);
+  }
+  function onHandleUp() {
+    const dy = drag.current?.dy ?? 0;
+    drag.current = null;
+    setDragY(0);
+    if (dy > 80) onClose();
+  }
+
   function trapTab(e: KeyboardEvent<HTMLDialogElement>) {
     if (e.key !== "Tab" || !ref.current) return;
     const focusable = Array.from(
@@ -124,8 +145,11 @@ export function BottomSheet({
       onClick={(e) => {
         if (dismissible && e.target === ref.current) onClose();
       }}
+      style={dragY ? { transform: `translateY(${dragY}px)` } : undefined}
       className={cn(
         "m-0 mx-auto mt-auto max-h-[75dvh] w-full max-w-[430px] overflow-hidden rounded-t-sheet bg-surface p-0 text-ink",
+        // A white sheet over a session indigo screen: the ink focus ring again, not the white one.
+        "[--focus-ring:var(--ink)]",
         // display: only while open, so a closed dialog stays hidden.
         "backdrop:bg-scrim open:flex open:animate-sheet-up open:flex-col",
         className,
@@ -136,10 +160,19 @@ export function BottomSheet({
         tabIndex={scrolls ? 0 : undefined}
         className={cn(
           "flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pt-3 focus-visible:-outline-offset-2",
-          actions ? "pb-1" : "pb-6",
+          actions ? "pb-1" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]",
         )}
       >
-        <span aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-border-control" />
+        <div
+          aria-hidden="true"
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+          onPointerCancel={onHandleUp}
+          className={cn("-mx-5 -mb-3 -mt-3 flex h-7 shrink-0 items-center justify-center", dismissible && "cursor-grab touch-none")}
+        >
+          <span className="h-1 w-10 rounded-full bg-border-control" />
+        </div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-0.5">
             {eyebrow && <p className="text-meta leading-4 font-semibold text-accent">{eyebrow}</p>}
@@ -152,8 +185,13 @@ export function BottomSheet({
         </div>
         {children}
       </div>
-      {/* 16px above the actions (the boards' 12px gap and 4px padding), 24px below. */}
-      {actions && <div className="flex shrink-0 flex-col items-center gap-1 px-5 pb-6 pt-3">{actions}</div>}
+      {/* 16px above the actions (the boards' 12px gap and 4px padding), 24px below (more on a phone
+          with a home indicator, when the app runs full screen). */}
+      {actions && (
+        <div className="flex shrink-0 flex-col items-center gap-1 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+          {actions}
+        </div>
+      )}
     </dialog>
   );
 }

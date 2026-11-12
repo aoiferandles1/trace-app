@@ -210,8 +210,14 @@ export function PatientSessionGate({
  * (hidden), and they hold the record that was on them; a full load drops
  * every one of them, the share session state and its Realtime channel, so
  * nothing of this person's is left in the tab for whoever uses it next.
+ *
+ * Called once per page: signing out also fires SIGNED_OUT, whose listener
+ * calls this too, and a second replace() cancelled the first load midway.
  */
+let leaving = false;
 export function leaveForWelcome() {
+  if (leaving) return;
+  leaving = true;
   window.location.replace("/");
 }
 

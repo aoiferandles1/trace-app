@@ -25,12 +25,19 @@ export function formatCountdownSpoken(ms: number): string {
   return parts.join(" ");
 }
 
-/** Initials for an avatar: "Jane Doe" gives "JD", "Dr Hennessy" gives "DH". */
+const TITLES = /^(dr|prof|professor|mr|mrs|ms|miss|mx|nurse|sr)\.?$/i;
+
+/**
+ * Initials for an avatar: "Jane Doe" gives "JD". A title counts only when
+ * there is one name after it, as the boards draw it: "Dr Hennessy" gives
+ * "DH", but "Dr Mary Hennessy" gives "MH", so not every doctor starts with D.
+ */
 export function initialsOf(name: string): string {
-  const words = name
+  let words = name
     .replace(/[^\p{L}\s'-]/gu, "")
     .split(/\s+/)
     .filter(Boolean);
+  if (words.length > 2 && TITLES.test(words[0])) words = words.slice(1);
   if (words.length === 0) return "";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[words.length - 1][0]).toUpperCase();

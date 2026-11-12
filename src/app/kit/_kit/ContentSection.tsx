@@ -238,6 +238,9 @@ export function MessagesSection() {
         <Specimen title="Share code (CodeA2)" surface="session" width="phone">
           <CodeDisplay code="9070" />
         </Specimen>
+        <Specimen title="Share code, tap to copy (onCopy)" surface="session" width="phone">
+          <CodeDisplay code="9070" onCopy={() => {}} />
+        </Specimen>
       </div>
     </KitSection>
   );

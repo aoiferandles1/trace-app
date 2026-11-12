@@ -13,3 +13,4 @@ next-env.d.ts
 
 # Agent worktrees (local only)
 .claude/worktrees/
+.next-e2e/

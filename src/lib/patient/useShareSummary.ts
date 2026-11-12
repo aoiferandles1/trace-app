@@ -47,8 +47,9 @@ async function loadCounts(): Promise<Counts> {
   };
 }
 
-/** "1 item", "3 items". */
+/** "1 item", "3 items", or "None yet": an empty section says so. */
 function count(n: number, one: string, many: string): string {
+  if (n === 0) return "None yet";
   return `${n} ${n === 1 ? one : many}`;
 }
 
@@ -94,7 +95,7 @@ export function useShareSummary(prefs: SharePrefs | null, profile: Profile): Sum
     if (!c) return undefined;
     switch (id) {
       case "medications":
-        return `${c.medications} active`;
+        return c.medications ? `${c.medications} active` : "None yet";
       case "conditions":
         return count(visible(c.conditions), "item", "items");
       case "recent_visits":

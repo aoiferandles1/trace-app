@@ -266,8 +266,19 @@ export const ENTRY_KIND_LABEL: Record<RecordEntryKind, string> = {
   letter: "Letter",
   imaging: "Scan",
   vaccination: "Vaccination",
-  session_notes: "Session notes",
+  session_notes: "Doctor's notes",
 };
+
+/**
+ * An entry's title as the patient app shows it. A doctor's session notes are
+ * all titled "Session notes" by the database, which only repeats their kind:
+ * they read "Notes from Dr Hennessy" instead.
+ */
+export function entryTitle(e: Pick<RecordEntry, "kind" | "title" | "clinician">): string {
+  if (e.kind === "session_notes" && e.title.trim().toLowerCase() === "session notes" && e.clinician?.trim())
+    return `Notes from ${e.clinician.trim()}`;
+  return e.title;
+}
 
 /** "Managed", "Ongoing" (outcomes and statuses arrive lower case). */
 export function capitalise(word: string | null | undefined): string {

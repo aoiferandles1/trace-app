@@ -1,28 +1,16 @@
-import { expect, test as base } from "@playwright/test";
 import path from "node:path";
 import { newDoctor, submitCode } from "../helpers/doctor";
-import { PortalPatient } from "../helpers/portal-patient";
+import { expect, test } from "../helpers/portal-patient";
 
 /**
  * Screenshots of the redesigned portal at the boards' size (1280 x 800),
- * against the real database, for comparison with PortalEntryB, PortalWaitB
+ * against the local database (tests/support/local-supabase), for comparison with PortalEntryB, PortalWaitB
  * and PortalRecordE. Opt-in: E2E_SCREENS=1 (they overwrite the files in
  * docs/redesign/screens/after/). Desktop project only.
  */
 
 const OUT = path.resolve(__dirname, "../../docs/redesign/screens/after");
 const SIZE = { width: 1280, height: 800 };
-
-const test = base.extend<object, { patient: PortalPatient }>({
-  patient: [
-    async ({}, use) => {
-      const patient = await PortalPatient.signIn();
-      await use(patient);
-      await patient.dispose();
-    },
-    { scope: "worker" },
-  ],
-});
 
 test.skip(({ viewport }) => (viewport?.width ?? 0) < 1024, "Desktop project only");
 test.skip(!process.env.E2E_SCREENS, "Set E2E_SCREENS=1 to write the screenshots");

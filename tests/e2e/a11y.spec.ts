@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { expect, expectNoSideScroll, test } from "./helpers/patient";
 import { newDoctor } from "../helpers/doctor";
 import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
 
@@ -14,27 +14,11 @@ import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
  *   on screen with a focus ring, and no ring may be clipped by a parent that
  *   hides its overflow.
  *
- * One demo patient for the file (sign-ins are capped), desktop project only;
- * each test sets its own viewport.
+ * Desktop project only; each test sets its own viewport and has its own demo
+ * patient (helpers/patient.ts).
  */
 
-test.describe.configure({ mode: "serial" });
-
 const NARROW = { width: 320, height: 640 };
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  if ((info.project.use.viewport?.width ?? 0) < 1024) return;
-  file = statePath(`a11y-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-  await reseed(clientFor(file));
-});
-
-test.afterAll(async () => {
-  if (file) await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file || undefined!) });
 
 test.beforeEach(async ({}, info) => {
   test.skip((info.project.use.viewport?.width ?? 0) < 1024, "Runs once, in the desktop project");
@@ -120,10 +104,10 @@ async function checkScreen(page: Page, path: string, heading: string | RegExp) {
   expect(stops, `${path}: nothing to Tab to`).toBeGreaterThan(0);
 }
 
-test("patient app: every screen reflows at 320px and works with the keyboard", async ({ page }) => {
+test("patient app: every screen reflows at 320px and works with the keyboard", async ({ page, demo }) => {
   test.setTimeout(420_000);
   await page.setViewportSize(NARROW);
-  const db = clientFor(file);
+  const db = demo.db;
   const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
   const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
   const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
@@ -131,6 +115,15 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
   const event = (await db.from("health_events").select("id").limit(1).single()).data!.id;
   const relative = (await db.from("relatives").select("id").eq("relation", "paternal_grandfather").single()).data!.id;
   const person = (await db.from("care_team").select("id").limit(1).single()).data!.id;
+  // The demo has no documents: add one (a 1 x 1 PNG) for the document screens.
+  const uploaded = await db.rpc("upload_document", {
+    title: "Test letter",
+    content_type: "image/png",
+    data_base64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  });
+  expect(uploaded.error, uploaded.error?.message).toBeNull();
+  const doc = (uploaded.data as { id: string }).id;
+  const reading = (await db.from("vitals").select("id").limit(1).single()).data!.id;
 
   const screens: [string, string | RegExp][] = [
     ["/home", /^Good (morning|afternoon|evening), Jane$/],
@@ -150,7 +143,7 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     [`/meds/${med}/notes/${period}`, /note/],
     ["/record/timeline", "Timeline"],
     ["/record/timeline/new", "Add to your timeline"],
-    [`/record/timeline/${event}/edit`, "Edit timeline"],
+    [`/record/timeline/${event}/edit`, "Edit event"],
     ["/record/family", "Family history"],
     ["/record/family/new", "Add a relative"],
     [`/record/family/${relative}/edit`, /^Edit/],
@@ -158,7 +151,15 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/profile/insurance/manual", "Policy details"],
     ["/profile/documents", "Documents"],
     ["/profile/documents/upload", "Upload a document"],
-    ["/add", "Add to my record"],
+    [`/profile/documents/${doc}`, "Test letter"],
+    [`/profile/documents/${doc}/edit`, "Edit document"],
+    ["/record/vitals", "Vitals"],
+    ["/add/vitals", "Log vitals"],
+    [`/record/vitals/${reading}/edit`, "Edit vitals"],
+    ["/record/search", "Search your record"],
+    ["/record/print", "Your record to print"],
+    ["/profile/email", "Change email"],
+    ["/add", "Add to your record"],
     ["/add/note", "Log a note"],
     ["/add/appointment", "Add a visit"],
     ["/add/medication", /medication/i],
@@ -168,7 +169,7 @@ test("patient app: every screen reflows at 320px and works with the keyboard", a
     ["/profile/care-team", "Care team"],
     ["/profile/care-team/new", /care team/i],
     [`/profile/care-team/${person}`, /./],
-    ["/profile/privacy", "Privacy and security"],
+    ["/profile/privacy", "Privacy and data"],
     ["/access-log", "Share history"],
     ["/share", "Share your record"],
     ["/terms", "Terms"],
@@ -200,10 +201,9 @@ async function desktopBoxes(page: Page) {
   });
 }
 
-test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe and the keyboard", async ({ page }) => {
+test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe and the keyboard", async ({ page, demo }) => {
   test.setTimeout(600_000);
-  const db = clientFor(file);
-  await reseed(db);
+  const db = demo.db;
   const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
   const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
   const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
@@ -218,13 +218,16 @@ test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe
     [`/meds/${med}`, "Concerta", "detail"],
     ["/record/timeline", "Timeline", "list"],
     ["/record/family", "Family history", "column"],
-    ["/add", "Add to my record", "column"],
+    ["/add", "Add to your record", "column"],
     ["/profile", "Profile", "column"],
     ["/profile/insurance", "Insurance", "column"],
     ["/profile/documents", "Documents", "column"],
     ["/profile/care-team", "Care team", "column"],
-    ["/profile/privacy", "Privacy and security", "column"],
+    ["/profile/privacy", "Privacy and data", "column"],
     ["/access-log", "Share history", "column"],
+    ["/record/vitals", "Vitals", "column"],
+    ["/record/search", "Search your record", "column"],
+    ["/record/print", "Your record to print", "focused"],
     ["/add/note", "Log a note", "focused"],
     ["/share", "Share your record", "focused"],
   ];
@@ -311,8 +314,7 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
   const code = (await page.getByText(/^Your code: \d \d \d \d$/).textContent())!.replace(/\D/g, "");
   const { context, page: doctor } = await newDoctor(page.context().browser()!);
   await doctor.goto("/view");
-  await doctor.getByRole("textbox", { name: "Patient's share code" }).fill(code);
-  await doctor.getByRole("button", { name: "Continue" }).click();
+  await doctor.getByRole("textbox", { name: "Patient's share code" }).fill(code); // the fourth digit submits
   const sheet = page.getByRole("dialog", { name: "Dr Hennessy wants access" });
   await expect(sheet).toBeVisible({ timeout: 10_000 });
   await expect(sheet.locator("#access-request-body")).toBeFocused();
@@ -343,9 +345,12 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
 
   await page.getByRole("button", { name: "End sharing now" }).focus();
   await page.keyboard.press("Enter");
+  // It asks once before ending (A17); the sheet's confirm, by keyboard too.
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).focus();
+  await page.keyboard.press("Enter");
   // Back to the bright app, with one line and the summary a link away.
   await page.waitForURL(/\/home\?ended=/);
-  await expect(page.getByRole("main").getByText("Dr Hennessy no longer has access to your record.")).toBeVisible();
+  await expect(page.getByText(/^Dr Hennessy no longer has access to your record\./)).toBeVisible();
   await expect(page.locator('[role="status"][aria-live="polite"]').last()).toHaveText(
     "Sharing ended. Dr Hennessy no longer has access to your record.",
   );
@@ -353,7 +358,7 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);
   await page.getByRole("link", { name: "View summary" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Session ended" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sharing ended" })).toBeVisible();
   await expectNoSideScroll(page);
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);
@@ -391,6 +396,8 @@ test("portal: every screen reflows at 320px and works with the keyboard (stand-i
     await check("/view/session", "Time's up on this share.");
     set({ status: () => statusOf("ended", { notes_saved_to_record: true }) });
     await check("/view/session", "Your patient ended the session.");
+    // The portal's own not-found page (review fix C25).
+    await check("/view/no-such-page", "There is nothing at this address.");
     await context.close();
   }
 });
@@ -401,7 +408,7 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
   await page.goto("/home");
   await expect(page.getByRole("heading", { level: 1, name: /, Jane$/ })).toBeVisible({ timeout: 20_000 });
   await page.goto("/profile/privacy");
-  await page.getByRole("button", { name: "Delete my account" }).click();
+  await page.getByRole("button", { name: "Delete your account" }).click();
   await expect(page.getByRole("dialog", { name: "Delete your account?" })).toBeVisible();
   const running = await page.evaluate(() =>
     document.getAnimations().filter((a) => {
@@ -410,7 +417,7 @@ test("reduced motion: a sheet opens without animating", async ({ page }) => {
     }).length,
   );
   expect(running).toBe(0);
-  await page.getByRole("button", { name: "Keep my account" }).click();
+  await page.getByRole("button", { name: "Keep your account" }).click();
 });
 
 test("signed out: welcome, sign in, sign up and the link-expired page at 320px with the keyboard", async ({ browser }) => {

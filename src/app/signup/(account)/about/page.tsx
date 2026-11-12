@@ -53,8 +53,8 @@ function AboutScreen() {
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="About you" title="Tell us a little about yourself.">
-          This information helps identify your record and is never shared without your permission.
+        <StepIntro title="Tell us about yourself">
+          Your name and date of birth tell a doctor the record is yours.
         </StepIntro>
         <form id="about-form" onSubmit={submit} noValidate className="flex flex-col gap-5">
           <TextField
@@ -63,7 +63,6 @@ function AboutScreen() {
             autoComplete="given-name"
             value={first}
             onChange={(e) => setFirst(e.target.value)}
-            hint="As it appears on your medical records"
             error={errors.first}
           />
           <TextField
@@ -72,7 +71,6 @@ function AboutScreen() {
             autoComplete="family-name"
             value={last}
             onChange={(e) => setLast(e.target.value)}
-            hint="As it appears on your medical records"
             error={errors.last}
           />
           <TextField
@@ -84,7 +82,6 @@ function AboutScreen() {
             max={today}
             value={dob}
             onChange={(e) => setDob(e.target.value)}
-            hint="Used to match your records with your providers"
             error={errors.dob}
           />
           <SelectField

@@ -35,10 +35,14 @@ export async function newDoctor(
   return { context, page };
 }
 
-/** From /view to the waiting screen with the given code. Assumes remembered details. */
+/**
+ * From /view to the waiting screen with the given code. Assumes remembered
+ * details. The fourth digit submits by itself (no Continue press): pressing
+ * Continue as well raced the submit, whose busy button is aria-disabled and
+ * then leaves the page.
+ */
 export async function submitCode(page: Page, code: string) {
   await page.goto("/view");
   const input = page.getByRole("textbox", { name: "Patient's share code" });
   await input.fill(code);
-  await page.getByRole("button", { name: "Continue" }).click();
 }

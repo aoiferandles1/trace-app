@@ -1,23 +1,22 @@
 "use client";
 
 import { SessionReady } from "@/components/patient/PatientSession";
-import { useId, useState } from "react";
+import { useBack } from "@/lib/back";
 import { EntryForm } from "../../_components/forms/EntryForm";
-import { SaveButton } from "../../_components/forms/FormBits";
+import { SaveButton, useFormScreen } from "../../_components/forms/FormBits";
 import { SubScreen } from "../../_components/Screens";
 
 /** Add a visit (no board; the Add sheet's row): a past or upcoming visit, or another dated entry. */
 function AddAppointmentScreen() {
-  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
+  const back = useBack("/add");
   return (
     <SubScreen
       title="Add a visit"
-      backHref="/add"
-      footer={<SaveButton form={formId} busy={busy}>Save to my record</SaveButton>}
+      backHref={back}
+      footer={<SaveButton form={formId} busy={busy}>Save visit</SaveButton>}
     >
-      <EntryForm formId={formId} variant="appointment" onSaving={setBusy} />
+      <EntryForm key={formKey} {...control} variant="appointment" />
     </SubScreen>
   );
 }

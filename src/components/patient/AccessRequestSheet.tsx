@@ -6,6 +6,7 @@ import { BottomSheet } from "@/components/ui/BottomSheet";
 import { ThemeColor } from "@/components/ui/ThemeColor";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { formatTime } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
 import {
   clinicianName,
@@ -66,11 +67,9 @@ export function AccessRequestSheet() {
     }
     const next = normaliseSession(data);
     setSession(next);
+    // Denying is confirmed by the share's own line at the top of every screen (ShareSession).
     if (allow) router.push("/session");
-    else {
-      announce(`You denied access. ${clinicianName(session)} cannot see your record.`);
-      router.push("/home");
-    }
+    else router.push("/home");
   }
 
   const prefs = prefsOf(session);
@@ -120,10 +119,13 @@ export function AccessRequestSheet() {
             practice: session.clinician_practice ?? undefined,
           }}
           duration={durationLabel(session.duration_kind)}
-          shared={[...sharedScopes(prefs).map((s) => s.label), ...(prefs.allow_notes ? ["Can add session notes"] : [])]}
+          shared={[...sharedScopes(prefs).map((s) => s.label), ...(prefs.allow_notes ? ["Can add notes to your record"] : [])]}
           notIncluded={joinLabels(notSharedScopes(prefs))}
         />
-        <p className="text-caption text-ink-2">Name and practice are as typed. Trace does not check them.</p>
+        <p className="text-caption text-ink-2">
+          Name and practice are as typed. Trace does not check them.
+          {session.request_expires_at ? ` If you don't answer, the request closes at ${formatTime(session.request_expires_at)}.` : ""}
+        </p>
         {error && (
           <Notice tone="critical" live="assertive">
             {error}
