@@ -5,20 +5,25 @@ import { Button } from "@/components/ui/Button";
 import { formatClock, formatDuration, patientFullName } from "../../_lib/format";
 import { useNow } from "../../_lib/hooks";
 import { useSession } from "./SessionContext";
+import { EndProblemNotice } from "./SessionFrame";
 
 /**
  * /view/session/end: the step before ending, inside the record frame (the
  * header's "End session" leads here). Ending closes access on both sides at
  * once and writes the notes to the patient's record, so the doctor sees
- * how long the session ran and what happens to their notes (the notes panel
- * is still beside it to check them), then "End session" or back.
+ * how long the session ran and that the patient can read the notes (the
+ * notes panel beside it already says where they go), then "End session" or
+ * back to the view they came from.
+ *
+ * If the latest notes cannot be saved first, the session stays open and
+ * says so, with a way to end it without them; if ending fails, it says so.
  */
 export function EndView() {
-  const { status, offset, overview, firstName, endSession, ending, saveState } = useSession();
+  const { status, offset, overview, firstName, endSession, ending, saveState, endProblem, returnTo } = useSession();
   const now = useNow(offset, 30_000);
   const name = overview ? patientFullName(overview.patient) : null;
   const started = status.approved_at;
-  const who = firstName === "the patient" ? "the patient" : firstName;
+  const who = firstName === "the patient" ? "The patient" : firstName;
 
   return (
     <div className="flex max-w-150 flex-col gap-7 pt-8.5">
@@ -40,21 +45,28 @@ export function EndView() {
       )}
       <p className="text-body-lg">
         {status.allow_notes
-          ? `Your session notes are added to ${who}’s record when the session ends, and ${who} can read them.`
-          : `${who === "the patient" ? "The patient" : who} did not allow notes, so nothing is added to the record.`}
+          ? `${who} can read everything you write.`
+          : `${who} did not allow notes, so nothing is added to the record.`}
       </p>
-      {saveState === "error" && (
+      {saveState === "error" && !endProblem && (
         <p role="alert" className="text-caption text-critical">
           Your latest notes could not be saved. Ending the session will try again.
         </p>
       )}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <Button size="lg" className="w-full sm:w-55" onClick={() => void endSession()} loading={ending}>
-          End session
-        </Button>
-        <Link href="/view/session" className="flex min-h-11 items-center text-label font-semibold text-accent hovered:underline">
-          Back to the record
-        </Link>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <Button size="lg" className="w-full sm:w-55" onClick={() => void endSession()} loading={ending}>
+            End session
+          </Button>
+          <Link href={returnTo} className="flex min-h-11 items-center text-label font-semibold text-accent hovered:underline">
+            Back to the record
+          </Link>
+        </div>
+        <EndProblemNotice
+          problem={endProblem}
+          ending={ending}
+          onEndAnyway={() => void endSession({ withoutLatestNotes: true })}
+        />
       </div>
     </div>
   );

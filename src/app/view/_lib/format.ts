@@ -98,15 +98,36 @@ export function formatDuration(ms: number): string {
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
 }
 
-/** The header's label over the time left ("Shared for 30 min"). */
-export function sharedForLabel(kind: string | null | undefined): string {
+/** "30 min", "1 hour", "1 hour 15 min". */
+function minutesWords(mins: number): string {
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h} ${h === 1 ? "hour" : "hours"}${m ? ` ${m} min` : ""}`;
+}
+
+/**
+ * The header's label over the time left ("Shared for 30 min"). With the
+ * session's start and end it follows time the patient added since
+ * ("Shared for 45 min").
+ */
+export function sharedForLabel(
+  kind: string | null | undefined,
+  approvedAt?: string | null,
+  expiresAt?: string | null,
+): string {
+  const total = approvedAt && expiresAt ? Math.round((Date.parse(expiresAt) - Date.parse(approvedAt)) / 60000) : null;
+  const nominal = kind === "30m" ? 30 : kind === "1h" ? 60 : null;
+  if (nominal !== null && total !== null && Number.isFinite(total) && Math.abs(total - nominal) > 1) {
+    return `Shared for ${minutesWords(total)}`;
+  }
   switch (kind) {
     case "30m":
       return "Shared for 30 min";
     case "1h":
       return "Shared for 1 hour";
     case "all_day":
-      return "Shared until 23:59";
+      return expiresAt ? `Shared until ${formatClock(expiresAt)}` : "Shared until 23:59";
     case "manual":
       return "Shared until ended";
     default:

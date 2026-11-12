@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { SaveState, SessionNotes } from "@/components/portal/SessionNotesPanel";
 import { portalApi, PortalApiError, type PortalRecord, type PortalStatus, type RecordSection } from "../../_lib/api";
 
@@ -15,11 +15,22 @@ export type SessionContextValue = {
   refreshStatus: () => Promise<void>;
   notes: SessionNotes;
   setNotes: (n: SessionNotes) => void;
-  saveNotes: () => Promise<boolean>;
+  /** `manual`: the doctor pressed Save notes (its button spins and its result is announced). */
+  saveNotes: (manual?: boolean) => Promise<boolean>;
   saveState: SaveState;
-  endSession: () => Promise<void>;
+  /**
+   * Saves notes that are not saved yet, then ends. If those notes cannot be
+   * saved it does not end (endProblem "notes") unless `withoutLatestNotes`.
+   */
+  endSession: (options?: { withoutLatestNotes?: boolean }) => Promise<void>;
   ending: boolean;
+  /** Why the last "End session" did not end it: "notes" (unsaved notes) or "failed". */
+  endProblem: EndProblem;
+  /** The view the doctor was reading before the End session step. */
+  returnTo: string;
 };
+
+export type EndProblem = "notes" | "failed" | null;
 
 export const SessionContext = createContext<SessionContextValue | null>(null);
 
@@ -29,10 +40,14 @@ export function useSession(): SessionContextValue {
   return ctx;
 }
 
-export type SectionState<S extends RecordSection> =
+export type SectionState<S extends RecordSection> = (
   | { state: "loading" }
   | { state: "ready"; record: PortalRecord<S> }
-  | { state: "error" };
+  | { state: "error" }
+) & {
+  /** Asks again after an error. */
+  retry: () => void;
+};
 
 /**
  * Loads one section of the record for a view. Views render only while the
@@ -47,7 +62,14 @@ export type SectionState<S extends RecordSection> =
  */
 export function useSection<S extends RecordSection>(section: S, enabled = true): SectionState<S> {
   const { refreshStatus } = useSession();
-  const [result, setResult] = useState<SectionState<S>>({ state: "loading" });
+  const [result, setResult] = useState<
+    { state: "loading" } | { state: "ready"; record: PortalRecord<S> } | { state: "error" }
+  >({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => {
+    setResult({ state: "loading" });
+    setAttempt((n) => n + 1);
+  }, []);
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
@@ -69,8 +91,8 @@ export function useSection<S extends RecordSection>(section: S, enabled = true):
     return () => {
       cancelled = true;
     };
-    // Load once per mount.
+    // Load once per mount, and again on retry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section, enabled]);
-  return result;
+  }, [section, enabled, attempt]);
+  return { ...result, retry };
 }
