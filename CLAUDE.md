@@ -23,6 +23,7 @@ In this container Chromium is preinstalled at `/opt/pw-browsers/chromium` and `p
 
 ```
 src/app/                 Routes (App Router). globals.css = tokens, fonts.ts = Inter + Sora, icon.svg = favicon (accent), not-found.tsx, error.tsx
+src/app/manifest.ts      The patient app's home screen manifest; the portal's is src/app/view/manifest.webmanifest/route.ts (see "Home screen")
 src/app/kit/             Dev-only UI kit (every component, every state, phone and desktop) + /kit/patient, /kit/portal shell demos
 src/components/ui/       Base components used by both apps (Icon, Button, Card, ListRow, Toggle, SegmentedControl, StepChart...)
 src/components/patient/  Patient app pieces (TabBar, PageHeader, TodayCard, TimelineItem, SharedSummaryCard...)
@@ -90,6 +91,14 @@ supabase/                Owned by the database work (migrations, SQL tests, gene
 ```
 
 Full width up to 480px, a centred 430px column above. No fake iOS status bar. The frame is one screen tall, as on the boards: the demo strip, banner, footer and tab bar stay put and only `<main>` (with the header inside it) scrolls, so nothing sits under the tab bar. Do not add `sticky` bars inside a screen; use the shell's slots. `tone="session"` for the sharing screens (share code, session active, Time's up): session indigo, white text, white focus rings. Add `<ThemeColor tone="session" />` on those screens so the browser chrome matches (the access request sheet sets it while open). Desktop slots (signed-in screens pass these through `TabScreen`/`SubScreen`, only from 1024px): `rail`, `aside`, `detail`; see "Patient app".
+
+### Home screen
+
+- Trace installs as two home screen apps: the patient app (`src/app/manifest.ts`, scope `/`, "Trace") and the portal (`src/app/view/manifest.webmanifest/route.ts`, scope `/view`, "Trace Portal"; `src/app/view/layout.tsx` points `/view/**` at it and sets its own `apple-icon.png`). Icons are PNGs in `public/icons/` and the two `apple-icon.png` files, drawn from the favicon's "t" by `node scripts/make-icons.mjs` (accent for the patient app, ink for the portal); change colours or the glyph there and re-run it.
+- The viewport is `viewport-fit=cover` (root layout), so anything at the bottom edge of a phone screen pads for the home indicator with `env(safe-area-inset-bottom)` (0 in a browser tab): `TabBar`, `PatientShell`'s footer (or `<main>` when a screen has neither), `BottomSheet`, `PortalShell`, `RecordFrame`. A new pinned bottom element does the same (`pb-[max(1.5rem,env(safe-area-inset-bottom))]` keeps the boards' 24px). `body` pads left and right for a notch in landscape.
+- Text in a field is never under 16px below 1024px (iOS zooms the page otherwise): `TextArea density="compact"` is 14px only from `lg`.
+- `/demo` under 700px (`OnAPhone` in `DemoStage.tsx`) has no frames: three steps and a button into each side, each in a named tab (`trace-patient`, `trace-portal`). From 700px it is unchanged.
+- `tests/e2e/pwa.spec.ts` covers the manifests, the iOS tags, the icons, the safe area and `/demo` on a phone; it needs no database.
 
 `PortalShell` takes `header`, `sidebar`, `notes`, `footer`, children, and sets `.desk`, so everything inside takes the desktop token values; `<main>` is a flex column. The portal uses it for the steps outside a session (code, waiting, paused with `notes`, ended): one column, `tone` `ground` (default) or `session` (waiting). The live record uses `RecordFrame` (`src/components/portal/RecordFrame.tsx`, also `.desk`): from 1024px it fills the window, the 232px rail full height, the record (header, then the view, which scrolls inside itself and is a size container, so views lay out by `@min-[600px]:` and the like), then `ResizableNotes` (14px handle and the panel, 300px by default, 56px collapsed). Below 1024px it stacks: the rail as a row of section tabs, the record, the notes. Both render the "Skip to the record" link.
 

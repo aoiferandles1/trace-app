@@ -56,7 +56,9 @@ export function TextArea({
           controlBase,
           controlBorder(Boolean(error)),
           "block resize-y",
-          density === "default" ? "min-h-32 px-4 py-3" : "min-h-18 px-3 py-2.5 text-caption",
+          // Compact is 14px in the portal's desktop notes; below 1024px it stays 16px (the base),
+          // because iOS Safari zooms the whole page when a field under 16px takes focus.
+          density === "default" ? "min-h-32 px-4 py-3" : "min-h-18 px-3 py-2.5 lg:text-caption",
           textareaClassName,
         )}
         {...rest}

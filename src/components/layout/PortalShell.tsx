@@ -43,7 +43,7 @@ export function PortalShell({
   return (
     <div
       className={cn(
-        "desk flex min-h-dvh flex-col",
+        "desk flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom)]",
         tone === "session" && "on-session bg-session text-white",
         tone === "ground" && "bg-ground text-ink",
         tone === "surface" && "bg-surface text-ink",

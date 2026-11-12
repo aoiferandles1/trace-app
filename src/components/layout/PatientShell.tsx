@@ -89,12 +89,26 @@ export function PatientShell({
       >
         {demo}
         {banner && <div className="shrink-0">{banner}</div>}
-        <main id="main" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <main
+          id="main"
+          className={cn(
+            "flex min-h-0 flex-1 flex-col overflow-y-auto",
+            // Whatever is last on screen clears the home indicator (0 outside a full screen
+            // home screen app): the tab bar and the footer pad themselves, else <main> does.
+            !footer && !tabBar && "pb-[env(safe-area-inset-bottom)]",
+          )}
+        >
           {header}
           {children}
         </main>
         {footer && (
-          <div className={cn("shrink-0 px-5 pb-6 pt-3", session ? "bg-session" : "border-t border-border-tabbar bg-ground")}>
+          <div
+            className={cn(
+              "shrink-0 px-5 pt-3",
+              tabBar ? "pb-6" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]",
+              session ? "bg-session" : "border-t border-border-tabbar bg-ground",
+            )}
+          >
             {footer}
           </div>
         )}

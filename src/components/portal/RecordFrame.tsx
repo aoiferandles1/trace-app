@@ -26,7 +26,7 @@ export function RecordFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="desk flex min-h-dvh flex-col bg-surface text-ink lg:h-dvh lg:flex-row lg:overflow-hidden">
+    <div className="desk flex min-h-dvh flex-col bg-surface pb-[env(safe-area-inset-bottom)] text-ink lg:h-dvh lg:flex-row lg:overflow-hidden">
       <a
         href="#main"
         className="sr-only-focusable absolute left-4 top-4 z-50 rounded-button border border-border-control bg-surface px-4 py-2 text-caption font-semibold text-accent"

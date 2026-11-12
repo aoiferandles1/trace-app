@@ -136,7 +136,7 @@ export function BottomSheet({
         tabIndex={scrolls ? 0 : undefined}
         className={cn(
           "flex min-h-0 flex-col gap-3 overflow-y-auto px-5 pt-3 focus-visible:-outline-offset-2",
-          actions ? "pb-1" : "pb-6",
+          actions ? "pb-1" : "pb-[max(1.5rem,env(safe-area-inset-bottom))]",
         )}
       >
         <span aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-border-control" />
@@ -152,8 +152,13 @@ export function BottomSheet({
         </div>
         {children}
       </div>
-      {/* 16px above the actions (the boards' 12px gap and 4px padding), 24px below. */}
-      {actions && <div className="flex shrink-0 flex-col items-center gap-1 px-5 pb-6 pt-3">{actions}</div>}
+      {/* 16px above the actions (the boards' 12px gap and 4px padding), 24px below (more on a phone
+          with a home indicator, when the app runs full screen). */}
+      {actions && (
+        <div className="flex shrink-0 flex-col items-center gap-1 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3">
+          {actions}
+        </div>
+      )}
     </dialog>
   );
 }

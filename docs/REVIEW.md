@@ -254,7 +254,10 @@ Each is built from the UI kit, matching the nearest existing screen. Redesign or
 - **Demo marker** on every signed-in screen of a demo account: a slim strip at the very top, peach on the light screens and indigo on the indigo ones. Real accounts never see it.
 - **Reset demo** row on My profile (demo accounts only), with a confirm sheet. It re-runs the sample record and goes to Home.
 - **The two-device demo page, 1100px and wider**: the patient app in a dark phone frame (390 wide) beside the portal in a laptop frame (drawn at 1100 by 760 and scaled to fit), on Surface/Sunken. The phone starts at Welcome, the laptop at the portal's name step, pre-filled.
-- **The two-device demo page, narrower**: the phone alone, with a button that opens the portal in a new tab.
+- **The two-device demo page, 700 to 1099px**: the phone alone, with a button that opens the portal in a new tab.
+- **The demo page on a phone (under 700px)**, new, no board: no framed phone (a phone drawn inside a phone scrolled twice and was hard to use). The wordmark, the title, the portfolio line, three numbered steps in the portal's "What happens next" style, then "Open Jane's app" (primary) and "Open the doctor's portal" (secondary), each opening in its own tab, and one line about the home screen. **Check:** the three steps' words and the two button labels.
+- **Trace on a phone's home screen**, new: "Add to Home Screen" from the patient app gives an icon named "Trace" (white "t" on accent, the favicon) that opens full screen at Welcome or Home. From `/view` it gives a second icon, "Trace Portal" (the same "t" on ink, so the two can be told apart), that opens the portal. The tab bar, pinned buttons and sheets leave room for the phone's home indicator. Android's long press on the Trace icon offers "Doctor's portal". **Check:** the two icons (`public/icons/`, drawn by `scripts/make-icons.mjs`; change the colours there), and the names "Trace" and "Trace Portal".
+- **Portal notes on a phone**: the four notes fields are 16px text below 1024px (14px on a computer, as before), because an iPhone zooms the whole page when a smaller field is tapped.
 - **Check:** at 1440 wide the portal is scaled to about 80% inside the laptop, so its small text is small. Opening it in a real second window always works.
 
 ---
@@ -353,6 +356,8 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 - "trace" · "Try both sides of a GP visit" · "Start on the phone: tap Try the demo and share Jane's record. Then type the code into the laptop. Sample data only. Trace is a portfolio project by Aoife Randles, not a medical service. Terms" · captions "Jane's phone", "Dr Hennessy's laptop" · frame names for screen readers "Patient app, on a phone", "Doctor's portal, on a laptop"
 - Narrower: "Start on the phone: tap Try the demo and share Jane's record. Then open the doctor's portal and type the code." · "Open the doctor's portal" (screen readers add "(opens in a new tab)")
+- On a phone (new): "Sample data only. Trace is a portfolio project by Aoife Randles, not a medical service. Terms" · steps "In Jane's app, tap Try the demo, then Share record. You get a four digit code." / "In the doctor's portal, type the code." / "Back in Jane's app, tap Allow access." (the list is named "How to try it" for screen readers) · "Open Jane's app" · "Open the doctor's portal" (screen readers add "(opens in its own tab)") · "Each side opens in its own tab. To keep them on your phone, open a side and add it to your home screen."
+- Home screen names (new): "Trace" · "Trace Portal" · Android shortcut "Doctor's portal"
 - Demo marker: "Demo with sample data" (the board's words)
 
 ### Doctor's portal
