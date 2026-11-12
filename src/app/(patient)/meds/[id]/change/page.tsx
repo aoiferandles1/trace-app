@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useParams } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { Notice } from "@/components/ui/Notice";
 import { SelectField } from "@/components/ui/SelectField";
@@ -14,7 +14,7 @@ import { orNull } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
-import { checkErrors, FormFrame, SAVE_FAILED, SaveButton, type FieldErrors } from "../../../_components/forms/FormBits";
+import { checkErrors, FormFrame, SaveButton, saveFailedMessage, useFormScreen, type FieldErrors, type FormControl } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 import { loadMedication } from "../_components/loadMedication";
 
@@ -29,8 +29,7 @@ function ChangeScreen() {
   const { id } = useParams<{ id: string }>();
   const data = useLoad(() => loadMedication(id), [id]);
   const m = data.status === "ready" ? data.data : null;
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   return (
     <SubScreen
       title="Log a strength change"
@@ -46,14 +45,13 @@ function ChangeScreen() {
       ) : m.status !== "current" ? (
         <p className="px-5 py-6 text-body text-ink-2">{m.name} has ended, so its strength can&apos;t change.</p>
       ) : (
-        <ChangeForm formId={formId} m={m} onSaving={setBusy} />
+        <ChangeForm key={formKey} {...control} m={m} />
       )}
     </SubScreen>
   );
 }
 
-function ChangeForm({ formId, m, onSaving }: { formId: string; m: RecordMedication; onSaving: (b: boolean) => void }) {
-  const router = useRouter();
+function ChangeForm({ formId, m, onSaving, onSaved }: FormControl & { m: RecordMedication }) {
   const current = m.periods.find((p) => p.end_date === null) ?? null;
   const [strength, setStrength] = useState("");
   const [unit, setUnit] = useState(m.unit ?? "mg");
@@ -105,20 +103,19 @@ function ChangeForm({ formId, m, onSaving }: { formId: string; m: RecordMedicati
       if (code === "same_strength") setErrors({ strength: "That's the strength you take now." });
       else if (code === "invalid_date") setErrors({ day: "Pick a date after the current strength started, and not in the future." });
       else if (code === "invalid_strength") setErrors({ strength: "Enter a strength above 0." });
-      else setSaveError(code === "medication_not_current" ? `${m.name} has ended, so its strength can't change.` : SAVE_FAILED);
+      else setSaveError(code === "medication_not_current" ? `${m.name} has ended, so its strength can't change.` : saveFailedMessage(error));
       return;
     }
-    onSaving(false); // Next.js may show this screen again: never leave it busy.
-    router.push(`/meds/${m.id}`);
+    onSaved(`/meds/${m.id}`);
   }
 
   return (
     <FormFrame id={formId} onSubmit={submit} error={saveError}>
-      <p className="text-body text-ink-2">
-        {current
-          ? `${m.name} ${current.strength_label} ends on the date you pick, and the new strength starts the same day. Earlier strengths stay in your history.`
-          : `Add the strength you take now. It starts on the date you pick.`}
-      </p>
+      {current && (
+        <p className="text-body text-ink-2">
+          Now {current.strength_label}, since {since}.
+        </p>
+      )}
       <div className={m.unit ? undefined : "grid grid-cols-2 gap-3"}>
         <TextField
           id={ids.strength}
@@ -147,7 +144,6 @@ function ChangeForm({ formId, m, onSaving }: { formId: string; m: RecordMedicati
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="e.g. Steadier through the afternoon."
-        hint="Your own note. You can add or change it later."
         maxLength={2000}
       />
       {note.trim() && (

@@ -126,6 +126,8 @@ export function BottomSheet({
       }}
       className={cn(
         "m-0 mx-auto mt-auto max-h-[75dvh] w-full max-w-[430px] overflow-hidden rounded-t-sheet bg-surface p-0 text-ink",
+        // A white sheet over a session indigo screen: the ink focus ring again, not the white one.
+        "[--focus-ring:var(--ink)]",
         // display: only while open, so a closed dialog stays hidden.
         "backdrop:bg-scrim open:flex open:animate-sheet-up open:flex-col",
         className,

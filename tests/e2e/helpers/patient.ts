@@ -46,6 +46,24 @@ export async function signInDemo(browser: Browser, file: string, baseURL: string
   await context.close();
 }
 
+/**
+ * Like signInDemo, but reuses the saved session while its token still works,
+ * so a spec run again within the hour does not spend another anonymous
+ * sign-in (they are capped). Pair it with `deleteUser` only in a spec that
+ * runs once.
+ */
+export async function signInDemoOnce(browser: Browser, file: string, baseURL: string) {
+  if (existsSync(file)) {
+    try {
+      const { data, error } = await clientFor(file).auth.getUser();
+      if (!error && data.user) return;
+    } catch {
+      // The file is unreadable or the token expired: sign in again.
+    }
+  }
+  await signInDemo(browser, file, baseURL);
+}
+
 /** The access token inside the saved @supabase/ssr cookie ("base64-" + base64url JSON, maybe chunked). */
 function accessToken(file: string): string {
   const state = JSON.parse(readFileSync(file, "utf8")) as { cookies: { name: string; value: string }[] };

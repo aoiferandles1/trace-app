@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AddLink } from "@/components/patient/AddLink";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +10,7 @@ import { dayKey } from "@/lib/dates";
 import type { HealthEvent } from "@/lib/patient/record";
 import { orNull } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, MentalHealthSwitch, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, MentalHealthSwitch, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 const KIND_OPTIONS = [
   { value: "infection", label: "Infection" },
@@ -44,12 +43,13 @@ export function EventForm({
   formId,
   event,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   event?: HealthEvent;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const e = event;
   const [kind, setKind] = useState<string>(e?.kind ?? "infection");
   const [title, setTitle] = useState(e?.title ?? "");
@@ -97,7 +97,7 @@ export function EventForm({
       : await supabase.from("health_events").insert(row).select("id").single();
     if (saved.error || !saved.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(saved.error));
       return;
     }
     const eventId = saved.data.id;
@@ -114,11 +114,10 @@ export function EventForm({
     ]);
     if (results.some((r) => r?.error)) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(results.find((r) => r?.error)?.error));
       return;
     }
-    onSaving(false); // Next.js may show this screen again: never leave it busy.
-    router.push(`/record/timeline?event=${eventId}`);
+    onSaved(`/record/timeline?event=${eventId}`);
   }
 
   return (

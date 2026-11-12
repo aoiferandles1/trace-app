@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
@@ -9,7 +8,7 @@ import type { EntryKind } from "@/components/patient/TimelineItem";
 import { dayKey, dublinToIso, timeKey } from "@/lib/dates";
 import { orNull, PATIENT_ENTRY_KINDS, type Entry } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, MentalHealthSwitch, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, MentalHealthSwitch, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 /**
  * Add or edit a timeline entry. No Figma frame (PLAN.md section 8):
@@ -25,13 +24,14 @@ export function EntryForm({
   variant,
   entry,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   variant: "note" | "appointment";
   entry?: Entry;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const now = new Date();
   const [kind, setKind] = useState<EntryKind>(entry?.kind ?? (variant === "note" ? "note" : "visit"));
   const [title, setTitle] = useState(entry?.title ?? "");
@@ -87,10 +87,10 @@ export function EntryForm({
       : await supabase.from("entries").insert(row).select("id").single();
     if (result.error || !result.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(result.error));
       return;
     }
-    router.push(entry ? `/record/${entry.id}` : "/record");
+    onSaved(entry ? `/record/${entry.id}` : "/record");
   }
 
   return (

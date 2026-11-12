@@ -9,6 +9,7 @@ import { useShareSession } from "@/components/patient/ShareSession";
 import { SharedSummaryCard } from "@/components/patient/SharedSummaryCard";
 import { IconLink } from "@/components/ui/IconButton";
 import { Avatar } from "@/components/ui/Card";
+import { BottomSheet } from "@/components/ui/BottomSheet";
 import { Button } from "@/components/ui/Button";
 import { Countdown } from "@/components/ui/Countdown";
 import { Notice } from "@/components/ui/Notice";
@@ -17,6 +18,7 @@ import { formatTime } from "@/lib/dates";
 import { initialsOf } from "@/lib/format";
 import {
   clinicianName,
+  extendLimitReached,
   hardEndOf,
   hasNotes,
   minutesBetween,
@@ -37,14 +39,18 @@ import { DemoMarker, LoadStatus } from "../_components/Screens";
  *
  * The countdown runs from expires_at; the database decides when access
  * pauses (ShareSessionProvider polls my_share_session every 3 seconds, and
- * the doctor's portal polls too). When the session ends, by either side or
- * the timer, this screen moves on to /session/ended.
+ * the doctor's portal polls too). When the share ends, by either side or
+ * the timer, this screen goes Home with one line linking to the summary.
+ *
+ * "End sharing now" is pinned at the bottom (the shell's footer) and asks
+ * once before it ends; "Add 15 min" gives more time before Time's up.
  */
 function SessionScreen() {
   const router = useRouter();
   const { session, loaded, failed, setSession, refresh } = useShareSession();
   const [busy, setBusy] = useState<"end" | 15 | 30 | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
 
   useEffect(() => {
     if (!loaded) return;
@@ -59,6 +65,7 @@ function SessionScreen() {
     setError(null);
     const { data, error: rpcError } = await createClient().rpc("end_session");
     setBusy(null);
+    setConfirmEnd(false);
     if (rpcError) {
       setError(shareErrorMessage(rpcError.message));
       return;
@@ -82,40 +89,100 @@ function SessionScreen() {
   }
 
   const open = session && (session.status === "active" || session.status === "paused") ? session : null;
+  const active = open?.status === "active" ? open : null;
 
   return (
-    <PatientShell tone="session" demo={<DemoMarker tone="session" />}>
+    <PatientShell
+      tone="session"
+      demo={<DemoMarker tone="session" />}
+      footer={
+        active ? (
+          <div className="flex flex-col items-center gap-2">
+            <Button variant="primary" tone="session" size="lg" fullWidth onClick={() => setConfirmEnd(true)}>
+              End sharing now
+            </Button>
+            <EndsAt session={active} />
+          </div>
+        ) : undefined
+      }
+    >
       <ThemeColor tone="session" />
       {!open ? (
         <LoadStatus tone="session" status={!loaded && failed ? "error" : "loading"} onRetry={() => void refresh()} />
-      ) : open.status === "active" ? (
-        <Active session={open} busy={busy === "end"} error={error} onEnd={end} onExpire={refresh} />
+      ) : active ? (
+        <Active session={active} busy={busy} error={error} onExtend={extend} onExpire={refresh} />
       ) : (
         <Paused session={open} busy={busy} error={error} onEnd={end} onExtend={extend} />
       )}
+      <BottomSheet
+        open={confirmEnd && Boolean(active)}
+        onClose={() => setConfirmEnd(false)}
+        title="End sharing now?"
+        actions={
+          <>
+            <Button size="lg" fullWidth onClick={end} loading={busy === "end"}>
+              End sharing
+            </Button>
+            <Button variant="text" onClick={() => setConfirmEnd(false)}>
+              Keep sharing
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink-2">
+          {active ? clinicianName(active) : "Your doctor"} will no longer see your record.
+          {active?.allow_notes ? " Any notes they wrote are added to your record." : ""}
+        </p>
+      </BottomSheet>
     </PatientShell>
   );
+}
+
+/** "Access ends at 3:37pm" under the pinned button ("at the latest" for a Manual share). */
+function EndsAt({ session }: { session: ShareSession }) {
+  const manual = session.duration_kind === "manual";
+  const endsAt = manual ? hardEndOf(session) : session.expires_at;
+  if (!endsAt) return null;
+  return (
+    <p className="text-center text-caption text-on-session-2">
+      Access ends at {formatTime(endsAt)}
+      {manual ? " at the latest" : ""}
+    </p>
+  );
+}
+
+/**
+ * The bar's full length: the share's own length, or, after time is added,
+ * the time left at that moment, so the bar starts full again and drains.
+ */
+function useBarTotal(session: ShareSession, left: number): number {
+  const fromStart = Math.max(1, Date.parse(session.expires_at ?? "") - Date.parse(session.approved_at ?? ""));
+  const [seen, setSeen] = useState<{ expires: string | null; total: number }>({ expires: session.expires_at, total: fromStart });
+  if (seen.expires !== session.expires_at) {
+    setSeen({ expires: session.expires_at, total: Math.max(1, left) });
+  }
+  return seen.total;
 }
 
 function Active({
   session,
   busy,
   error,
-  onEnd,
+  onExtend,
   onExpire,
 }: {
   session: ShareSession;
-  busy: boolean;
+  busy: "end" | 15 | 30 | null;
   error: string | null;
-  onEnd: () => void;
+  onExtend: (minutes: 15 | 30) => void;
   onExpire: () => unknown;
 }) {
   const name = clinicianName(session);
   const manual = session.duration_kind === "manual";
   const now = useNow(!manual);
   const left = msUntil(session.expires_at, now);
-  const total = Math.max(1, Date.parse(session.expires_at ?? "") - Date.parse(session.approved_at ?? ""));
-  const endsAt = manual ? hardEndOf(session) : session.expires_at;
+  const total = useBarTotal(session, left);
+  const atLimit = extendLimitReached(session);
   const visit = useAppointmentTitle(session.appointment_entry_id);
 
   useEffect(() => {
@@ -132,36 +199,31 @@ function Active({
           <br />
           has access
         </h1>
-        <p className="text-caption text-on-session-2">
-          {[session.clinician_practice, visit].filter(Boolean).join(", ")}
-        </p>
+        <p className="text-caption text-on-session-2">{[session.clinician_practice, visit].filter(Boolean).join(", ")}</p>
       </div>
 
       {manual ? (
         <p className="flex items-baseline justify-between text-caption">
           <span className="text-on-session-2">Time left</span>
-          <span className="font-semibold">Until you end it</span>
+          <span className="font-semibold">No timer</span>
         </p>
       ) : (
-        <Countdown msLeft={left} msTotal={total} tone="session" label="Time left" />
+        <div className="flex flex-col gap-1">
+          <Countdown msLeft={left} msTotal={total} tone="session" label="Time left" />
+          {!atLimit && (
+            <Button variant="text" tone="session" size="sm" className="self-end" onClick={() => onExtend(15)} loading={busy === 15}>
+              Add 15 min
+            </Button>
+          )}
+        </div>
       )}
 
-      <SharedSummaryCard
-        heading={`${name} can see`}
-        rows={sharedScopes(prefsOf(session)).map((s) => ({ label: s.label }))}
-      />
+      <SharedSummaryCard heading={`${name} can see`} rows={sharedScopes(prefsOf(session)).map((s) => ({ label: s.label }))} />
       {error && (
         <Notice tone="critical" live="assertive" surface="session">
           {error}
         </Notice>
       )}
-      <div className="flex-1" />
-      <div className="flex flex-col items-center gap-2">
-        <Button variant="primary" tone="session" size="lg" fullWidth onClick={onEnd} loading={busy}>
-          End sharing now
-        </Button>
-        {endsAt && <p className="text-center text-caption text-on-session-2">Access ends at {formatTime(endsAt)}</p>}
-      </div>
     </div>
   );
 }
@@ -205,6 +267,7 @@ function Paused({
   const name = clinicianName(session);
   const used = minutesBetween(session.approved_at, session.paused_at ?? session.expires_at);
   const notes = session.allow_notes && hasNotes(session);
+  const atLimit = extendLimitReached(session);
   return (
     <div className="flex flex-1 flex-col gap-5 px-5 pb-10 pt-1">
       <BackToHome />
@@ -218,41 +281,40 @@ function Paused({
 
       <p className="flex items-baseline justify-between border-y border-on-session-border py-3 text-caption">
         <span className="text-on-session-2">Time used</span>
-        <span className="font-semibold">
-          {used} of {used} min
-        </span>
+        <span className="font-semibold">{used} min</span>
       </p>
 
-      <section aria-labelledby="extend-title" className="flex flex-col gap-1">
-        <h2 id="extend-title" className="font-display text-heading font-light">
-          Extend access
-        </h2>
-        <p className="text-caption text-on-session-2">Give {name} more time</p>
-        <div className="mt-2 flex gap-2">
-          <Button
-            variant="primary"
-            tone="session"
-            size="md"
-            className="flex-1"
-            onClick={() => onExtend(15)}
-            loading={busy === 15}
-            disabled={busy !== null && busy !== 15}
-          >
-            Add 15 min
-          </Button>
-          <Button
-            variant="primary"
-            tone="session"
-            size="md"
-            className="flex-1"
-            onClick={() => onExtend(30)}
-            loading={busy === 30}
-            disabled={busy !== null && busy !== 30}
-          >
-            Add 30 min
-          </Button>
-        </div>
-      </section>
+      {!atLimit && (
+        <section aria-labelledby="extend-title" className="flex flex-col gap-1">
+          <h2 id="extend-title" className="font-display text-heading font-light">
+            Give {name} more time
+          </h2>
+          <div className="mt-2 flex gap-2">
+            <Button
+              variant="primary"
+              tone="session"
+              size="md"
+              className="flex-1"
+              onClick={() => onExtend(15)}
+              loading={busy === 15}
+              disabled={busy !== null && busy !== 15}
+            >
+              Add 15 min
+            </Button>
+            <Button
+              variant="primary"
+              tone="session"
+              size="md"
+              className="flex-1"
+              onClick={() => onExtend(30)}
+              loading={busy === 30}
+              disabled={busy !== null && busy !== 30}
+            >
+              Add 30 min
+            </Button>
+          </div>
+        </section>
+      )}
 
       <button
         type="button"
@@ -262,8 +324,8 @@ function Paused({
         className="flex min-h-16 items-center gap-3.5 border-y border-on-session-border py-2 text-left"
       >
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-row font-medium">Save and end</span>
-          <span className="text-caption text-on-session-2">{notes ? "Session notes saved · access closed" : "Access closed"}</span>
+          <span className="text-row font-medium">End sharing</span>
+          {notes && <span className="text-caption text-on-session-2">{name}&apos;s notes are added to your record</span>}
         </span>
         <Icon name="chevron-right" size={20} />
       </button>

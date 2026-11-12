@@ -1,25 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { CARE_KIND_OPTIONS } from "@/lib/patient/options";
 import { orNull, type CareMember } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 /** Add or edit someone on the care team (no Figma frame; PLAN.md section 8, item 6). */
 export function CareMemberForm({
   formId,
   member,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   member?: CareMember;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const [name, setName] = useState(member?.name ?? "");
   const [kind, setKind] = useState(member?.kind ?? "gp");
   const [role, setRole] = useState(member?.role ?? "");
@@ -42,10 +42,10 @@ export function CareMemberForm({
       : await supabase.from("care_team").insert(row).select("id").single();
     if (result.error || !result.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(result.error));
       return;
     }
-    router.push("/profile/care-team");
+    onSaved("/profile/care-team");
   }
 
   return (

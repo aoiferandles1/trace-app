@@ -1,14 +1,13 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useId, useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { loadSection } from "@/lib/patient/record";
 import { isUuid } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../../_components/DetailList";
-import { DeleteWithConfirm, SaveButton } from "../../../../_components/forms/FormBits";
+import { DeleteWithConfirm, SaveButton, useFormScreen } from "../../../../_components/forms/FormBits";
 import { RelativeForm } from "../../../../_components/forms/RelativeForm";
 import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 
@@ -16,8 +15,7 @@ import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 function EditRelativeScreen() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     return (await loadSection("family_history")).data.relatives.find((r) => r.id === id) ?? null;
@@ -37,7 +35,7 @@ function EditRelativeScreen() {
         <NotFound what="relative" />
       ) : (
         <>
-          <RelativeForm formId={formId} relative={r} onSaving={setBusy} />
+          <RelativeForm key={`${formKey}-${JSON.stringify(r)}`} {...control} relative={r} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Remove relative"

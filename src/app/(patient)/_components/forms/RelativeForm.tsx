@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AddLink } from "@/components/patient/AddLink";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +9,7 @@ import { TextField } from "@/components/ui/TextField";
 import { CONDITION_CATEGORIES, RELATION_OPTIONS, type Relative } from "@/lib/patient/record";
 import { orNull } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 type Row = { key: string; id?: string; name: string; age: string; category: string; mental: boolean };
 
@@ -31,12 +30,13 @@ export function RelativeForm({
   formId,
   relative,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   relative?: Relative;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const r = relative;
   const defaultLabel = (rel: string) => RELATION_OPTIONS.find((o) => o.value === rel)?.label ?? "";
   const [relation, setRelation] = useState(r?.relation ?? "mother");
@@ -81,7 +81,7 @@ export function RelativeForm({
       : await supabase.from("relatives").insert(values).select("id").single();
     if (saved.error || !saved.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(saved.error));
       return;
     }
     const relativeId = saved.data.id;
@@ -103,11 +103,10 @@ export function RelativeForm({
     ]);
     if (results.some((x) => x?.error)) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(results.find((x) => x?.error)?.error));
       return;
     }
-    onSaving(false); // Next.js may show this screen again: never leave it busy.
-    router.push("/record/family");
+    onSaved("/record/family");
   }
 
   return (

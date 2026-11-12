@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady, usePatientSession } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
@@ -20,7 +20,10 @@ import {
   DURATION_OPTIONS,
   GP_VISIT_DEFAULTS,
   isOpen,
+  MANUAL_DURATION_LINE,
   normaliseSession,
+  rememberedPrefs,
+  rememberPrefs,
   SCOPES,
   shareErrorMessage,
   type DurationKind,
@@ -55,7 +58,10 @@ async function loadContext(appointmentId: string | null): Promise<Context> {
  * every scope named (it replaces any unused code).
  *
  * Reached from Home's today card (`?appointment=<visit id>`, which names the
- * doctor) or from Profile's "Share my record" on any day.
+ * doctor) or from Profile's "Share my record" on any day. The switches start
+ * from the last share made in this browser (Mental health always off).
+ * While a doctor has access this screen opens the session instead; while a
+ * code is waiting it points to that code (a new one replaces it).
  */
 function ShareConfirmScreen() {
   const router = useRouter();
@@ -68,6 +74,20 @@ function ShareConfirmScreen() {
   const [prefs, setPrefs] = useState<SharePrefs>(GP_VISIT_DEFAULTS);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Each visit starts from the last share's choices (after mount: storage is browser only).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPrefs(rememberedPrefs());
+  }, []);
+  // Next.js keeps this screen alive after "Create share code": never come back busy.
+  useLayoutEffect(() => () => setBusy(false), []);
+
+  // A doctor already has access: there is nothing to set up here.
+  const open = isOpen(session);
+  useEffect(() => {
+    if (open) router.replace("/session");
+  }, [open, router]);
 
   const ctx = context.status === "ready" ? context.data : null;
   const effective = prefs;
@@ -85,13 +105,15 @@ function ShareConfirmScreen() {
       setError(rpcError?.message ?? "unknown");
       return;
     }
+    rememberPrefs(effective);
     setSession(normaliseSession(data));
+    setBusy(false);
     router.push("/share/code");
   }
 
   const doctor = ctx?.clinician ?? null;
   const shared = SCOPES.filter((s) => s.key === null || effective[s.key]).length;
-  const alreadyOpen = isOpen(session);
+  const waiting = session && (session.status === "code_issued" || session.status === "requested") ? session : null;
   const backHref = appointmentId ? "/home" : "/profile";
 
   return (
@@ -147,11 +169,11 @@ function ShareConfirmScreen() {
           </h1>
         </header>
 
-        {alreadyOpen && (
-          <Notice tone="urgent">
-            A doctor can already see your record.{" "}
-            <Link href="/session" className="underline underline-offset-2">
-              View session
+        {waiting && (
+          <Notice tone="neutral">
+            Your code {waiting.code} still works. A new code replaces it.{" "}
+            <Link href="/share/code" className="font-semibold text-accent underline underline-offset-2">
+              View code
             </Link>
           </Notice>
         )}
@@ -192,6 +214,7 @@ function ShareConfirmScreen() {
             value={prefs.duration_kind}
             onChange={(v) => setPrefs((p) => ({ ...p, duration_kind: v }))}
           />
+          {prefs.duration_kind === "manual" && <p className="text-caption text-ink-2">{MANUAL_DURATION_LINE}</p>}
         </section>
 
         <SwitchRow

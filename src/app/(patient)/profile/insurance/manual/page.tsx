@@ -1,13 +1,21 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { TextField } from "@/components/ui/TextField";
 import { errorCode } from "@/lib/patient/record";
 import { orNull } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, SAVE_FAILED, SaveButton, type FieldErrors } from "../../../_components/forms/FormBits";
+import {
+  checkErrors,
+  FormFrame,
+  SaveButton,
+  saveFailedMessage,
+  useFormScreen,
+  type FieldErrors,
+  type FormControl,
+} from "../../../_components/forms/FormBits";
 import { SubScreen } from "../../../_components/Screens";
 
 /**
@@ -17,10 +25,26 @@ import { SubScreen } from "../../../_components/Screens";
  * field: Trace never asks for one.
  */
 function ManualScreen() {
-  const formId = useId();
-  const router = useRouter();
   const other = useSearchParams().get("other") === "1";
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
+  return (
+    <SubScreen
+      title={other ? "Other provider" : "Policy details"}
+      titleSize="md"
+      backHref="/profile/insurance"
+      backLabel="Back to Insurance"
+      footer={
+        <SaveButton form={formId} busy={busy}>
+          Save policy
+        </SaveButton>
+      }
+    >
+      <ManualForm key={formKey} {...control} />
+    </SubScreen>
+  );
+}
+
+function ManualForm({ formId, onSaving, onSaved }: FormControl) {
   const [provider, setProvider] = useState("");
   const [member, setMember] = useState("");
   const [plan, setPlan] = useState("");
@@ -37,7 +61,7 @@ function ManualScreen() {
     };
     setErrors(next);
     if (!checkErrors(next, ids)) return;
-    setBusy(true);
+    onSaving(true);
     setSaveError(null);
     const { error } = await createClient().rpc("save_insurance", {
       provider: provider.trim(),
@@ -47,40 +71,39 @@ function ManualScreen() {
       via: "manual",
     });
     if (error) {
-      setBusy(false);
-      if (errorCode(error) === "invalid_member_number") setErrors({ member: "Enter your member number. It has at least 4 letters or numbers." });
-      else setSaveError(SAVE_FAILED);
+      onSaving(false);
+      if (errorCode(error) === "invalid_member_number")
+        setErrors({ member: "Enter your member number. It has at least 4 letters or numbers." });
+      else setSaveError(saveFailedMessage(error));
       return;
     }
-    setBusy(false); // Next.js may show this screen again: never leave it busy.
-    router.push("/profile/insurance");
+    onSaved("/profile/insurance");
   }
 
   return (
-    <SubScreen
-      title={other ? "Other provider" : "Policy details"}
-      titleSize="md"
-      backHref="/profile/insurance"
-      backLabel="Back to Insurance"
-      footer={<SaveButton form={formId} busy={busy}>Save policy</SaveButton>}
-    >
-      <FormFrame id={formId} onSubmit={submit} error={saveError}>
-        <TextField id={ids.provider} label="Provider" value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="e.g. VHI" maxLength={100} error={errors.provider} />
-        <TextField
-          id={ids.member}
-          label="Member number"
-          value={member}
-          onChange={(e) => setMember(e.target.value)}
-          autoComplete="off"
-          hint="Trace keeps only the last four characters."
-          maxLength={40}
-          error={errors.member}
-        />
-        <TextField label="Plan" optional value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="e.g. Comprehensive plan" maxLength={100} />
-        <TextField label="Renewal date" optional type="date" value={renews} onChange={(e) => setRenews(e.target.value)} />
-        <p className="text-caption text-ink-2">Read only. You can remove it any time.</p>
-      </FormFrame>
-    </SubScreen>
+    <FormFrame id={formId} onSubmit={submit} error={saveError}>
+      <TextField
+        id={ids.provider}
+        label="Provider"
+        value={provider}
+        onChange={(e) => setProvider(e.target.value)}
+        placeholder="e.g. VHI"
+        maxLength={100}
+        error={errors.provider}
+      />
+      <TextField
+        id={ids.member}
+        label="Member number"
+        value={member}
+        onChange={(e) => setMember(e.target.value)}
+        autoComplete="off"
+        hint="Trace keeps only the last four characters."
+        maxLength={40}
+        error={errors.member}
+      />
+      <TextField label="Plan" optional value={plan} onChange={(e) => setPlan(e.target.value)} maxLength={100} />
+      <TextField label="Renewal date" optional type="date" value={renews} onChange={(e) => setRenews(e.target.value)} />
+    </FormFrame>
   );
 }
 

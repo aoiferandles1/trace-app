@@ -1,25 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { CONDITION_STATUS_OPTIONS } from "@/lib/patient/options";
 import { orNull, type Condition } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, MentalHealthSwitch, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, MentalHealthSwitch, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 /** Add or edit a condition (no Figma frame; PLAN.md section 8, item 3). */
 export function ConditionForm({
   formId,
   condition,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   condition?: Condition;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const [name, setName] = useState(condition?.name ?? "");
   const [status, setStatus] = useState(condition?.status ?? "ongoing");
   const [clinician, setClinician] = useState(condition?.clinician ?? "");
@@ -58,10 +58,10 @@ export function ConditionForm({
       : await supabase.from("conditions").insert(row).select("id").single();
     if (result.error || !result.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(result.error));
       return;
     }
-    router.push(condition ? `/record/conditions/${condition.id}` : "/record?tab=conditions");
+    onSaved(condition ? `/record/conditions/${condition.id}` : "/record?tab=conditions");
   }
 
   return (

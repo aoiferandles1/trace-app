@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useParams } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { SwitchRow } from "@/components/ui/Switch";
 import { TextArea } from "@/components/ui/TextArea";
@@ -10,7 +10,7 @@ import { orNull } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../../_components/DetailList";
-import { FormFrame, SAVE_FAILED, SaveButton } from "../../../../_components/forms/FormBits";
+import { FormFrame, SaveButton, saveFailedMessage, useFormScreen, type FormControl } from "../../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 import { loadMedication } from "../../_components/loadMedication";
 
@@ -28,8 +28,7 @@ function NoteScreen() {
     return m && p ? { name: m.name, period: p } : null;
   }, [id, periodId]);
   const found = data.status === "ready" ? data.data : null;
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   return (
     <SubScreen
       title={found?.period.note ? "Edit note" : "Add a note"}
@@ -44,8 +43,12 @@ function NoteScreen() {
       ) : (
         <NoteForm
           // Next.js may keep this screen in memory: start again from the saved note.
-          key={`${found.period.id}:${found.period.note}:${found.period.note_shared}`}
-          formId={formId} medicationId={id} name={found.name} period={found.period} onSaving={setBusy} />
+          key={`${formKey}:${found.period.id}:${found.period.note}:${found.period.note_shared}`}
+          {...control}
+          medicationId={id}
+          name={found.name}
+          period={found.period}
+        />
       )}
     </SubScreen>
   );
@@ -57,14 +60,12 @@ function NoteForm({
   name,
   period: p,
   onSaving,
-}: {
-  formId: string;
+  onSaved,
+}: FormControl & {
   medicationId: string;
   name: string;
   period: MedicationPeriod;
-  onSaving: (b: boolean) => void;
 }) {
-  const router = useRouter();
   const [note, setNote] = useState(p.note ?? "");
   const [shared, setShared] = useState(p.note ? Boolean(p.note_shared) : true);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -80,11 +81,10 @@ function NoteForm({
       .eq("id", p.id);
     if (error) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(error));
       return;
     }
-    onSaving(false); // Next.js may show this screen again: never leave it busy.
-    router.push(`/meds/${medicationId}`);
+    onSaved(`/meds/${medicationId}`);
   }
 
   return (

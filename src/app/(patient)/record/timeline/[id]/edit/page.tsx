@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useId, useState } from "react";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { loadSection } from "@/lib/patient/record";
 import { isUuid } from "@/lib/patient/types";
@@ -9,15 +8,14 @@ import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../../_components/DetailList";
 import { EventForm } from "../../../../_components/forms/EventForm";
-import { DeleteWithConfirm, SaveButton } from "../../../../_components/forms/FormBits";
+import { DeleteWithConfirm, SaveButton, useFormScreen } from "../../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../../_components/Screens";
 
 /** Edit or delete a full timeline event (no board; BRIEF.md section 7). */
 function EditEventScreen() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const formId = useId();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     return (await loadSection("full_timeline")).data.events.find((e) => e.id === id) ?? null;
@@ -37,7 +35,7 @@ function EditEventScreen() {
         <NotFound what="event" />
       ) : (
         <>
-          <EventForm formId={formId} event={e} onSaving={setBusy} />
+          <EventForm key={`${formKey}-${JSON.stringify(e)}`} {...control} event={e} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Delete from timeline"

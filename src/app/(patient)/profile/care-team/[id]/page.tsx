@@ -2,22 +2,19 @@
 
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useParams, useRouter } from "next/navigation";
-import { useId, useState } from "react";
 import { isUuid, type CareMember } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { useLoad } from "@/lib/useLoad";
 import { NotFound } from "../../../_components/DetailList";
 import { CareMemberForm } from "../../../_components/forms/CareMemberForm";
-import { DeleteWithConfirm, SaveButton } from "../../../_components/forms/FormBits";
+import { DeleteWithConfirm, SaveButton, useFormScreen } from "../../../_components/forms/FormBits";
 import { LoadStatus, SubScreen } from "../../../_components/Screens";
 
 /** Edit or remove someone on the care team (no Figma frame). */
 function EditCareMemberScreen() {
-  // Unique per screen: Next.js keeps earlier screens in the page, hidden.
-  const formId = useId();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const { formId, busy, formKey, control } = useFormScreen();
   const data = useLoad(async () => {
     if (!isUuid(id)) return null;
     const { data, error } = await createClient().from("care_team").select("*").eq("id", id).maybeSingle();
@@ -39,7 +36,7 @@ function EditCareMemberScreen() {
         <NotFound what="person" />
       ) : (
         <>
-          <CareMemberForm formId={formId} member={m} onSaving={setBusy} />
+          <CareMemberForm key={`${formKey}-${m.updated_at}`} {...control} member={m} />
           <div className="px-5 pb-8">
             <DeleteWithConfirm
               label="Remove from care team"

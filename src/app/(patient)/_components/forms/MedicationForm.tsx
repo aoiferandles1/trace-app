@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { TextArea } from "@/components/ui/TextArea";
@@ -8,7 +7,7 @@ import { TextField } from "@/components/ui/TextField";
 import { parseStrength } from "@/lib/patient/record";
 import { orNull, type Medication } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
-import { checkErrors, FormFrame, SAVE_FAILED, type FieldErrors } from "./FormBits";
+import { checkErrors, FormFrame, saveFailedMessage, type FieldErrors } from "./FormBits";
 
 /**
  * Add or edit a medication (no board; BRIEF.md section 7: a full-screen form
@@ -26,14 +25,15 @@ export function MedicationForm({
   medication,
   hasPeriods = false,
   onSaving,
+  onSaved,
 }: {
   formId: string;
   medication?: Medication;
   /** The medication already has strength periods: its strength is not edited here. */
   hasPeriods?: boolean;
   onSaving: (busy: boolean) => void;
+  onSaved: (href: string) => void;
 }) {
-  const router = useRouter();
   const m = medication;
   const [v, setV] = useState({
     name: m?.name ?? "",
@@ -91,11 +91,10 @@ export function MedicationForm({
       : await supabase.from("medications").insert(row).select("id").single();
     if (result.error || !result.data) {
       onSaving(false);
-      setSaveError(SAVE_FAILED);
+      setSaveError(saveFailedMessage(result.error));
       return;
     }
-    onSaving(false); // Next.js may show this screen again: never leave it busy.
-    router.push(m ? `/meds/${m.id}` : "/meds");
+    onSaved(m ? `/meds/${m.id}` : "/meds");
   }
 
   return (
