@@ -1,7 +1,7 @@
 -- Trace review fixes: a corrected demo story for seed_demo_record_v2().
 --
--- WRITTEN, NOT APPLIED. The owner decides when to apply it (supabase/README.md,
--- seed_demo_record_v2). Nothing else changes: same signature, same grants,
+-- Applied to the hosted project on 12 November 2026 (the owner's decision),
+-- recorded there as "trace_demo_seed_review_fixes". Nothing else changes: same signature, same grants,
 -- same reset of everything the caller owns. It replaces the function from
 -- 20261111163442_trace_redesign_demo_seed.sql, which stays as it was.
 --
