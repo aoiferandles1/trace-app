@@ -2,7 +2,7 @@
 
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { SessionReady } from "@/components/patient/PatientSession";
 import { useShareSession } from "@/components/patient/ShareSession";
@@ -52,10 +52,15 @@ function SessionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
+  // The share this screen has shown live. Only its end earns Home's "no longer has access"
+  // line: opened later (Back, a bookmark), the latest share may have ended days ago.
+  const shownLive = useRef<string | null>(null);
+
   useEffect(() => {
     if (!loaded) return;
+    if (session && (session.status === "active" || session.status === "paused")) shownLive.current = session.id;
     // Back to the bright app, with one line saying the share ended (BRIEF.md section 5.5).
-    if (session?.status === "ended") router.replace(`/home?ended=${session.id}`);
+    if (session?.status === "ended") router.replace(shownLive.current === session.id ? `/home?ended=${session.id}` : "/home");
     else if (session?.status === "code_issued" || session?.status === "requested") router.replace("/share/code");
     else if (!session || !["active", "paused"].includes(session.status)) router.replace("/home");
   }, [loaded, session, router]);

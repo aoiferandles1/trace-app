@@ -86,7 +86,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   await nav.getByRole("link", { name: "Recent visits" }).click();
   await expect(nav.getByRole("link", { name: "Recent visits" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { level: 3, name: "GP visit" })).toBeVisible();
-  await expect(main.getByText("Tired for three weeks").filter({ visible: true })).toBeVisible();
+  await expect(main.getByText("Go through the blood results").filter({ visible: true })).toBeVisible();
   await expect(main.getByRole("button", { name: /INR blood test/ })).toHaveCount(0);
   await expect(main.getByText("INR blood test").filter({ visible: true })).toBeVisible();
   await main.getByRole("button", { name: /Blood count and INR/ }).click();
@@ -147,7 +147,7 @@ test("happy path: code, Allow, read every view, notes reach the patient's record
   // Notes autosave.
   await page.getByLabel("Chief complaint").fill("Ongoing fatigue over the past 6 weeks");
   await page.getByLabel("Plan").fill("Repeat INR in 2 weeks");
-  await expect(page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
 
   // End session: the step before, then the end.
   await main.getByRole("link", { name: "End session" }).click();
@@ -197,7 +197,7 @@ test("deny: the portal says the patient chose not to share", async ({ browser, p
   });
   await expectNoAxeViolations(page);
   expect(await (await page.request.get("/api/portal/record?section=overview")).json()).toEqual({ record: null });
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: "Try with a new code" }).click();
   await expect(page.getByRole("textbox", { name: "Patient's share code" })).toBeFocused();
   await context.close();
 });
@@ -233,7 +233,7 @@ test("the patient ends early: the portal loses the record within 5 seconds", asy
   await patient.respond(true);
   await expect(page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 10_000 });
   await page.getByLabel("Assessment").fill("Rate controlled");
-  await expect(page.getByRole("status").filter({ hasText: "Notes saved" })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByText(/^Saved \d{1,2}:\d\d$/)).toBeVisible({ timeout: 8_000 });
 
   await patient.end();
   const endedAt = Date.now();

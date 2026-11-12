@@ -656,8 +656,7 @@ test("delete my account signs out and removes the user", async ({ page, demo }) 
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");
   await sheet.getByRole("button", { name: "Delete everything" }).click();
-  // A full page load to the welcome screen (leaveForWelcome); the sign-out event asks for the same one, so wait for where it lands.
-  await expect(page).toHaveURL((url) => url.pathname === "/", { timeout: 15_000 });
+  await page.waitForURL((url) => url.pathname === "/");
   await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
   const { data } = await demo.db.from("profiles").select("id");
   expect(data ?? []).toHaveLength(0);
