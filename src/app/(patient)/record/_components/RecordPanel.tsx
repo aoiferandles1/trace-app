@@ -34,7 +34,9 @@ export type RecordTab = "timeline" | "conditions" | "family";
 type Tab = RecordTab;
 
 const TABS: { value: Tab; label: string }[] = [
-  { value: "timeline", label: "Timeline" },
+  // "Visits" (owner, Nov 2026), not the board's "Timeline": the screen behind "View full timeline"
+  // is a different list (illnesses and diagnoses), and two things cannot share one name.
+  { value: "timeline", label: "Visits" },
   { value: "conditions", label: "Conditions" },
   { value: "family", label: "Family" },
 ];
@@ -166,7 +168,7 @@ function TimelineTab({ entries, current }: { entries: RecordEntry[]; current?: s
   if (entries.length === 0) {
     return (
       <StateMessage
-        message="Nothing on your timeline yet. Visits, results, prescriptions and notes you add show up here."
+        message="Nothing here yet. Visits, results, prescriptions and notes you add show up here."
         action={{ label: "Add to your record", href: "/add" }}
       />
     );

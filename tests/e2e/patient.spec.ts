@@ -69,8 +69,8 @@ test("record: safety facts and the three tabs", async ({ page }) => {
 
   // Timeline: upcoming first (dates in accent, "upcoming" in words), then the past.
   const tabs = page.getByRole("tablist", { name: "Record sections" });
-  await expect(tabs.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
-  const panel = page.getByRole("tabpanel", { name: "Timeline" });
+  await expect(tabs.getByRole("tab", { name: "Visits" })).toHaveAttribute("aria-selected", "true");
+  const panel = page.getByRole("tabpanel", { name: "Visits" });
   await expect(panel.getByRole("listitem")).toHaveText([
     /Cardiology follow-up.*Visit.*upcoming/,
     /INR blood test.*Visit.*upcoming/,
@@ -93,7 +93,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   await expectNoSideScroll(page);
 
   // The tabs are a tablist: arrow keys move between them.
-  await tabs.getByRole("tab", { name: "Timeline" }).focus();
+  await tabs.getByRole("tab", { name: "Visits" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(tabs.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
   await expect(tabs.getByRole("tab", { name: "Conditions" })).toBeFocused();
@@ -129,7 +129,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Atrial fibrillation" })).toBeHidden();
   await expect(page.getByRole("tab", { name: "Conditions" })).toHaveAttribute("aria-selected", "true");
 
-  await page.getByRole("tab", { name: "Timeline" }).click();
+  await page.getByRole("tab", { name: "Visits" }).click();
   await page.getByRole("link", { name: /Blood count and INR/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeVisible();
   await expect(page.getByText("Mater Hospital").filter({ visible: true }).first()).toBeVisible();
