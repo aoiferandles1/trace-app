@@ -495,10 +495,14 @@ $pdf$, 'UTF8');
   insert into public.health_event_prescriptions (user_id, event_id, position, name, detail, medication_id, medication_period_id)
   values (uid, ev, 0, 'Cetirizine 10mg', 'April to September', m_cet, p_cet);
 
-  insert into public.health_events (user_id, kind, title, occurred_on, clinician, place, outcome, notes, is_mental_health)
+  -- Same month as Tonsillitis: an earlier created_at puts it first among
+  -- equal dates (the timeline breaks ties by created_at, then by id, which
+  -- is random), so the order is the same on every reset.
+  insert into public.health_events (user_id, kind, title, occurred_on, clinician, place, outcome, notes, is_mental_health,
+                                    created_at)
   values (uid, 'condition', 'ADHD diagnosed', date '2023-11-01', 'Dr Byrne', 'Psychiatry, Mater Private',
           'managed', 'Assessed over two appointments. Concerta started at a low dose once Dr O''Mahony confirmed the heart rhythm was well controlled.',
-          true)
+          true, now() - interval '1 second')
   returning id into ev;
   insert into public.health_event_prescriptions (user_id, event_id, position, name, detail, medication_id, medication_period_id)
   values (uid, ev, 0, 'Concerta 18mg', 'Each morning, from Jan 2024', m_con, p_con18);

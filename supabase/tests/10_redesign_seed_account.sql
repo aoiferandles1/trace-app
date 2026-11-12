@@ -1,9 +1,11 @@
 -- Test: the redesign's demo seed, insurance, export, deletion and isolation.
 -- * seed_demo_record_v2 matches the approved boards (docs/redesign/canvas):
 --   medications and Concerta's five periods, past medications, visits and
---   results with their dates relative to today, the nine timeline events,
---   seven relatives, care team, vitals; no penicillin antibiotic; it resets;
---   it refuses a real account; seed_demo_record is untouched.
+--   results with their dates relative to today, the ten timeline events,
+--   seven relatives, care team, vitals, the two sample letters and the one
+--   past share (the review's corrected seed, 20261112120000); no penicillin
+--   antibiotic; it resets; it refuses a real account; seed_demo_record is
+--   untouched.
 -- * save_insurance keeps only the last four of the member number; the table
 --   has no column that could hold a password.
 -- * export_my_data(version => 2) covers every new table, files included;
@@ -76,16 +78,17 @@ begin
        from jsonb_array_elements(meds -> 'data' -> 'current') m));
 
   con := meds -> 'data' -> 'current' -> 0;
-  perform pg_temp.ok('Concerta: 18, 27, 36, 45, 36 from Jan 2024, every period Dr Hennessy, newest first, with the notes',
+  perform pg_temp.ok('Concerta: 18, 27, 36, 54, 36 from Jan 2024, every period Dr Hennessy, newest first, with the notes',
     (select string_agg(p ->> 'strength' || '@' || (p ->> 'start_date') || '-' || coalesce(p ->> 'end_date', 'now'), ','
                        order by o desc)
        from jsonb_array_elements(con -> 'periods') with ordinality t(p, o))
-      = '18@2024-01-01-2024-03-01,27@2024-03-01-2024-06-01,36@2024-06-01-2024-10-01,45@2024-10-01-2025-02-01,36@2025-02-01-now'
+      = '18@2024-01-01-2024-03-01,27@2024-03-01-2024-06-01,36@2024-06-01-2024-10-01,54@2024-10-01-2025-02-01,36@2025-02-01-now'
     and (select bool_and(p ->> 'prescribed_by' = 'Dr Hennessy' and p ->> 'date_precision' = 'month')
            from jsonb_array_elements(con -> 'periods') p)
     and con -> 'periods' -> 0 ->> 'note' = 'Back on 36. Smoother and sleeping better.'
     and con -> 'periods' -> 4 ->> 'note' = 'Barely noticed it. A little more focus in the morning, gone by lunch.'
-    and con -> 'periods' -> 1 ->> 'note' = 'Too much. Racing heart and trouble sleeping.'
+    and con -> 'periods' -> 1 ->> 'note' = 'Too strong. Felt on edge in the evenings and slept badly.'
+    and con ->> 'indication' = 'ADHD'
     and (con ->> 'period_count')::int = 5,
     (con -> 'periods')::text);
 
@@ -106,23 +109,37 @@ begin
 
   select string_agg(kind || ':' || title || '@' || ((occurs_at at time zone 'Europe/Dublin')::date - d), ',' order by occurs_at)
     into s from public.entries where user_id = uid;
-  perform pg_temp.ok('Visits: Warfarin renewed -12, Fatigue symptoms note -11, Blood count and INR -9, GP visit today, INR +14, Cardiology +48',
-    s = 'prescription:Warfarin renewed@-12,note:Fatigue symptoms@-11,result:Blood count and INR@-9,visit:GP visit@0,'
+  perform pg_temp.ok('Visits: Warfarin renewed -20, GP visit for tiredness and its session notes -16, Fatigue symptoms note -11, Blood count and INR -9, GP visit today, INR +14, Cardiology +48',
+    s = 'prescription:Warfarin renewed@-20,visit:GP visit for tiredness@-16,session_notes:Session notes@-16,'
+        || 'note:Fatigue symptoms@-11,result:Blood count and INR@-9,visit:GP visit@0,'
         || 'visit:INR blood test@14,visit:Cardiology follow-up@48', s);
 
-  perform pg_temp.ok('Today''s GP visit at 9:30 with Dr Hennessy carries Reason, Assessment and Plan (INR date relative)',
+  perform pg_temp.ok('Today''s GP visit at 9:30 with Dr Hennessy carries only its Reason (nothing assessed yet)',
     exists (select 1 from public.entries e where e.id = (j ->> 'appointment_entry_id')::uuid
               and e.occurs_at = ((d + time '09:30') at time zone 'Europe/Dublin')
               and e.clinician = 'Dr Hennessy' and e.place = 'Rathmines Medical Centre'
-              and e.reason = 'Tired for three weeks'
-              and e.plan = 'Blood tests. Repeat INR on ' || to_char(d + 14, 'FMDD Mon') || '.'), j::text);
+              and e.reason = 'Go through the blood results'
+              and e.assessment is null and e.plan is null), j::text);
 
-  perform pg_temp.ok('Blood count and INR: five rows with ranges; only Ferritin flagged low',
+  perform pg_temp.ok('The tiredness visit 16 days ago was shared with Dr Hennessy: one ended share, ended by the doctor, with its notes entry and access events',
+    (select count(*) from public.share_sessions where patient_id = uid) = 1
+    and exists (select 1 from public.share_sessions s
+                  join public.entries n on n.id = s.notes_entry_id and n.kind = 'session_notes' and n.session_id = s.id
+                  join public.entries v on v.id = s.appointment_entry_id and v.title = 'GP visit for tiredness'
+                 where s.patient_id = uid and s.status = 'ended' and s.ended_by = 'clinician'
+                   and s.clinician_name = 'Dr Hennessy' and s.share_mental_health = false and s.share_documents = false
+                   and s.share_insurance = false and s.share_full_timeline and s.share_medication_notes
+                   and n.detail ->> 'plan' = 'Full blood count, ferritin, thyroid function and INR.')
+    and (select string_agg(event, ',' order by at, id) from public.access_events where patient_id = uid)
+        = 'code_generated,requested,approved,section_viewed,section_viewed,section_viewed,notes_saved,ended',
+    (select string_agg(event, ',' order by at, id) from public.access_events where patient_id = uid));
+
+  perform pg_temp.ok('Blood count and INR: six rows with ranges (TSH added); only Ferritin flagged low',
     (select string_agg(r ->> 'name' || '=' || (r ->> 'value') || coalesce(' ' || (r ->> 'flag'), ''), ',' order by o)
        from jsonb_array_elements((select x from jsonb_array_elements(tl -> 'data' -> 'visits') x
                                    where x ->> 'title' = 'Blood count and INR') -> 'detail' -> 'results')
             with ordinality t(r, o))
-      = 'Haemoglobin=128,White cells=6.2,Platelets=245,INR=2.4,Ferritin=18 low',
+      = 'Haemoglobin=128,White cells=6.2,Platelets=245,INR=2.4,Ferritin=18 low,TSH=2.1',
     (tl -> 'data' -> 'visits')::text);
 
   perform pg_temp.ok('Warfarin renewed: prescription fields, Dr O''Mahony, Boots Rathmines',
@@ -136,11 +153,11 @@ begin
       where x ->> 'title' <> 'GP visit')   -- today's 9:30 visit is upcoming only before 9:30
       = 'INR blood test|Cardiology follow-up', (rv -> 'data' -> 'upcoming')::text);
 
-  perform pg_temp.ok('Full timeline: the nine events from the board, newest first',
+  perform pg_temp.ok('Full timeline: the board''s nine events and ADHD diagnosed (mental health), newest first',
     (select string_agg(e ->> 'title' || ' ' || to_char((e ->> 'occurred_on')::date, 'Mon YYYY'), '|' order by o)
        from jsonb_array_elements(tl -> 'data' -> 'events') with ordinality t(e, o))
       = 'Chest infection Aug 2026|Asthma flare Feb 2026|Urinary tract infection Sep 2025|Hay fever Apr 2024'
-        || '|Tonsillitis Nov 2023|Hypothyroidism diagnosed Mar 2022|Covid-19 Dec 2020'
+        || '|ADHD diagnosed Nov 2023|Tonsillitis Nov 2023|Hypothyroidism diagnosed Mar 2022|Covid-19 Dec 2020'
         || '|Atrial fibrillation diagnosed Jun 2019|Glandular fever Feb 2018',
     null);
 
@@ -151,8 +168,12 @@ begin
     and tl -> 'data' -> 'events' -> 0 -> 'prescriptions' -> 0 ->> 'detail' = '7 days, from 2 Aug'
     and tl -> 'data' -> 'events' -> 0 -> 'prescriptions' -> 0 ->> 'medication_period_id' is not null
     and tl -> 'data' -> 'events' -> 1 -> 'prescriptions' -> 1 ->> 'name' = 'Salbutamol 100mcg'
-    and tl -> 'data' -> 'events' -> 7 ->> 'seen_by' = 'Dr O''Mahony, Cardiology, Mater Private'
-    and tl -> 'data' -> 'events' -> 5 -> 'prescriptions' -> 0 ->> 'detail' = 'Raised to 50mcg in Sep 2022'
+    and tl -> 'data' -> 'events' -> 8 ->> 'seen_by' = 'Dr O''Mahony, Cardiology, Mater Private'
+    and tl -> 'data' -> 'events' -> 6 -> 'prescriptions' -> 0 ->> 'detail' = 'Raised to 50mcg in Sep 2022'
+    and tl -> 'data' -> 'events' -> 4 ->> 'is_mental_health' = 'true'
+    and tl -> 'data' -> 'events' -> 4 -> 'prescriptions' -> 0 ->> 'name' = 'Concerta 18mg'
+    and (select bool_and(jsonb_array_length(e -> 'prescriptions') = 0) from jsonb_array_elements(tl -> 'data' -> 'events') e
+          where e ->> 'title' in ('Covid-19', 'Glandular fever'))
     and tl -> 'data' -> 'events' -> 1 ->> 'notes' = 'Wheeze after a cold. Peak flow improved on treatment.',
     (tl -> 'data' -> 'events' -> 0)::text);
 
@@ -170,14 +191,19 @@ begin
         || '|Mum:Type 2 diabetes|Dad:Atrial fibrillation|Brother:Asthma',
     null);
 
-  perform pg_temp.ok('Overview: conditions, vitals 128/82, 74, 58, 98; care team of four; no documents, insurance or mental health items',
-    jsonb_array_length(ov -> 'data' -> 'conditions') = 3
+  perform pg_temp.ok('Overview: four conditions, vitals 128/82, 74, 58, 98 from 16 days ago; care team of four; two letters, no insurance; ADHD the only mental health items',
+    jsonb_array_length(ov -> 'data' -> 'conditions') = 4
     and ov -> 'data' -> 'vitals' ->> 'systolic' = '128' and ov -> 'data' -> 'vitals' ->> 'spo2' = '98'
+    and ov -> 'data' -> 'vitals' ->> 'recorded_on' = (d - 16)::text
     and (select count(*) from public.care_team where user_id = uid) = 4
     and (select name || ', ' || role || ', ' || organisation from public.care_team where user_id = uid and kind = 'pharmacy')
         = 'Boots, Pharmacy, Rathmines'
-    and pg_temp.new_counts(uid) = 'periods=13 results=5 events=9 prescriptions=10 relatives=7 rel_conditions=6 insurance=0 documents=0 files=0'
-    and not exists (select 1 from public.conditions where user_id = uid and is_mental_health)
+    and pg_temp.new_counts(uid) = 'periods=13 results=6 events=10 prescriptions=9 relatives=7 rel_conditions=6 insurance=0 documents=2 files=2'
+    and (select string_agg(name, ',') from public.conditions where user_id = uid and is_mental_health) = 'ADHD'
+    and (select string_agg(title, ',') from public.health_events where user_id = uid and is_mental_health) = 'ADHD diagnosed'
+    and (select string_agg(title || '@' || document_date, ',' order by title) from public.documents where user_id = uid)
+        = 'ADHD assessment summary@2023-11-20,Cardiology review letter@2026-06-15'
+    and (select string_agg(title, ',') from public.documents where user_id = uid and is_mental_health) = 'ADHD assessment summary'
     and not exists (select 1 from public.entries where user_id = uid and is_mental_health),
     pg_temp.new_counts(uid));
 end $$;
@@ -195,9 +221,10 @@ begin
                                    share_insurance => true, share_medication_notes => true);
   perform public.seed_demo_record_v2();
   perform pg_temp.logout();
-  perform pg_temp.ok('Calling it again resets every table, sessions included',
+  perform pg_temp.ok('Calling it again resets every table, sessions included (only the seed''s one past share is left)',
     pg_temp.new_counts(uid) = before
-    and not exists (select 1 from public.share_sessions where patient_id = uid), pg_temp.new_counts(uid));
+    and (select string_agg(status, ',') from public.share_sessions where patient_id = uid) = 'ended'
+    and (select count(*) from public.access_events where patient_id = uid) = 8, pg_temp.new_counts(uid));
   perform pg_temp.login('00000000-0000-4000-8000-000000000a03');
   begin perform public.seed_demo_record_v2(); e := 'no error';
   exception when others then e := sqlerrm; end;
@@ -264,9 +291,11 @@ begin
       array['access_events', 'care_team', 'conditions', 'documents', 'entries', 'exported_at', 'health_event_prescriptions',
             'health_events', 'insurance_connections', 'medication_periods', 'medications', 'profile', 'relative_conditions',
             'relatives', 'result_values', 'share_sessions', 'user_id', 'version', 'vitals']
-    and jsonb_array_length(j -> 'medication_periods') = 13 and jsonb_array_length(j -> 'health_events') = 9
-    and jsonb_array_length(j -> 'relatives') = 7 and jsonb_array_length(j -> 'result_values') = 5
-    and j -> 'documents' -> 0 ->> 'data_base64' = encode('\x89504e470d0a1a0a0000'::bytea, 'base64'),
+    and jsonb_array_length(j -> 'medication_periods') = 13 and jsonb_array_length(j -> 'health_events') = 10
+    and jsonb_array_length(j -> 'relatives') = 7 and jsonb_array_length(j -> 'result_values') = 6
+    and jsonb_array_length(j -> 'documents') = 3
+    and exists (select 1 from jsonb_array_elements(j -> 'documents') x
+                 where x ->> 'title' = 'Scan' and x ->> 'data_base64' = encode('\x89504e470d0a1a0a0000'::bytea, 'base64')),
     (select string_agg(k, ',') from jsonb_object_keys(j) k));
   perform pg_temp.ok('export_my_data() keeps its original keys',
     (select array_agg(k order by k) from jsonb_object_keys(old) k) =
