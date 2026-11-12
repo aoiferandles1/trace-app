@@ -44,7 +44,8 @@ function PrintScreen() {
       backHref="/profile/privacy"
       backLabel="Back to Privacy and data"
       footer={
-        <Button size="lg" fullWidth onClick={() => window.print()} disabled={data.status !== "ready"}>
+        // Never disabled (a disabled button can't be read at AA contrast); before the record loads it does nothing.
+        <Button size="lg" fullWidth onClick={() => data.status === "ready" && window.print()}>
           Print or save as PDF
         </Button>
       }

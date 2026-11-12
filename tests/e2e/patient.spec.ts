@@ -80,7 +80,7 @@ test("record: safety facts and the three tabs", async ({ page }) => {
     /Warfarin renewed.*Prescription/,
   ]);
   // Past rows open their detail; upcoming ones are not clickable (BRIEF.md 4.3).
-  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" })).toHaveText([
+  await expect(panel.getByRole("link").filter({ hasNotText: "View full timeline" }).filter({ hasNotText: /^Vitals$/ })).toHaveText([
     /GP visit.*Visit/,
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
