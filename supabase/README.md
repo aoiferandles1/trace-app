@@ -556,6 +556,8 @@ Dates relative to today (Irish time) where the boards tell today's story; fixed 
 - Vitals, 43 days ago: 128/82, heart rate 74, 58 kg, SpO2 98.
 - No documents, no insurance connection (the Insurance board starts at "choose a provider"), no mental health items: the boards show none.
 
+**Written, not applied (November 2026 review fixes).** `migrations/20261112120000_trace_demo_seed_review_fixes.sql` replaces this function with a corrected story (the review's sample-data items E1 to E9; the file's header lists each change). In short: an ADHD condition (Dr Byrne, Psychiatry, 2023, mental health) and its timeline event explain Concerta, whose strengths become 18, 27, 36, 54, 36mg with a calmer 54mg note; today's 9:30 GP visit has only its reason; a visit for tiredness 16 days ago comes first, with one past share to Dr Hennessy (ended, with session notes and access events) that planned the bloods; the results 9 days ago gain TSH; "Fatigue symptoms" has text; "Warfarin renewed" moves to 20 days ago; vitals are dated that visit; Covid-19 and Glandular fever lose their "Nothing prescribed" rows; two sample PDF letters (one flagged mental health). Same signature and grants. Until the owner applies it, everything above describes the live function; once applied, update this section, `supabase/tests/10_redesign_seed_account.sql` and the expectations listed in docs/REVIEW.md 1.6.
+
 ### `seed_demo_record()` **[old app]** (patient browser, anonymous users only)
 
 Unchanged. The redesigned app calls `seed_demo_record_v2()`. (Medications it creates get their strength periods from the trigger.)

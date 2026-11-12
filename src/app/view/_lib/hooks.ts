@@ -67,6 +67,51 @@ export function useStoredClinician(): Clinician | null | undefined {
   return useSyncExternalStore(subscribe, read, () => undefined);
 }
 
+const DEMO_KEY = "trace.portal.demo";
+
+/**
+ * True in the portal demo: opened as /view?demo=1, and from then on in this
+ * tab, so the session screens and "Enter a new code" keep the demo's footer
+ * and its doctor. A flag in sessionStorage, nothing about anyone.
+ */
+export function readDemo(): boolean {
+  if (typeof window === "undefined") return false;
+  const inUrl = new URLSearchParams(window.location.search).has("demo");
+  try {
+    if (inUrl) window.sessionStorage.setItem(DEMO_KEY, "1");
+    return inUrl || window.sessionStorage.getItem(DEMO_KEY) === "1";
+  } catch {
+    return inUrl;
+  }
+}
+
+const noop = () => () => {};
+
+/** `null` during server render and the first client render. */
+export function useDemo(): boolean | null {
+  return useSyncExternalStore(noop, readDemo, () => null);
+}
+
+/** True inside the /demo page's laptop frame, where the record needs every pixel. */
+export function useInDemoFrame(): boolean {
+  return useSyncExternalStore(
+    noop,
+    () => {
+      try {
+        return window.self !== window.top && readDemo();
+      } catch {
+        return readDemo();
+      }
+    },
+    () => false,
+  );
+}
+
+/** The portal's address, keeping the demo flag ("/view?demo=1" in the demo). */
+export function portalHome(demo: boolean | null): string {
+  return demo ? "/view?demo=1" : "/view";
+}
+
 /** Current time in ms, ticking every `interval` ms, shifted by the server clock offset. */
 export function useNow(offset: number, interval = 1000, enabled = true): number {
   const [now, setNow] = useState(() => Date.now() + offset);
@@ -95,7 +140,7 @@ export function usePolling(fn: () => Promise<unknown>, ms: number, enabled: bool
       try {
         await ref.current();
       } catch {
-        // A failed poll is retried on the next tick.
+        // A failed poll is retried on the next tick (callers say so on screen).
       }
       if (!stopped) timer = window.setTimeout(tick, ms);
     };

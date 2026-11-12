@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { PortalShell } from "@/components/layout/PortalShell";
 import { PortalFooter } from "@/components/portal/PortalFooter";
 import { PortalHeader } from "@/components/portal/PortalHeader";
@@ -14,12 +14,14 @@ import { TextField } from "@/components/ui/TextField";
 import { StateMessage } from "@/components/ui/StateMessage";
 import { ThemeColor } from "@/components/ui/ThemeColor";
 import { formatCountdown, formatCountdownSpoken } from "@/lib/format";
-import { clockOffset, portalApi, PortalApiError, type PortalStatus } from "../_lib/api";
+import { clockOffset, firstStatus, portalApi, PortalApiError, type PortalStatus } from "../_lib/api";
 import { formatClock } from "../_lib/format";
 import {
   DEMO_CLINICIAN,
   readClinician,
+  readDemo,
   saveClinician,
+  useDemo,
   useNow,
   usePolling,
   useStoredClinician,
@@ -38,6 +40,12 @@ import {
  *
  * The browser only talks to /api/portal/*. Nothing about the patient is
  * known here; the record opens on /view/session.
+ *
+ * Browser Back steps back through the flow: from the code to the name
+ * step (when the doctor came that way), and from waiting to the code (which
+ * withdraws the request, as "Cancel request" does). The demo (?demo=1)
+ * starts at the code step as Dr Hennessy and never touches the details a
+ * real doctor saved in this browser.
  */
 
 type CodeError =
@@ -55,34 +63,58 @@ type Screen =
   | { kind: "withdrawn" };
 
 const CODE_ID = "portal-code";
+const NAME_ID = "clinician-name";
 
+type Focus = "heading" | "code" | "name" | "none";
+
+/**
+ * Starts the flow afresh each time the doctor comes back to /view (Next
+ * keeps the page alive, hidden, with whatever step it was on).
+ */
 export function ViewFlow() {
+  const [visit, setVisit] = useState(0);
+  useLayoutEffect(() => () => setVisit((v) => v + 1), []);
+  return <Flow key={visit} />;
+}
+
+function Flow() {
   const router = useRouter();
   const stored = useStoredClinician();
+  const demo = useDemo();
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
   const [offset, setOffset] = useState(0);
   const [digits, setDigits] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
-  const [demo, setDemo] = useState(false);
+  const [failedPolls, setFailedPolls] = useState(0);
+  // The demo's doctor lives here only, so trying the demo never replaces a real doctor's saved details.
+  const [demoClinician, setDemoClinician] = useState<Clinician>(DEMO_CLINICIAN);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const focusTarget = useRef<"heading" | "code" | "none">("none");
+  const focusTarget = useRef<Focus>("none");
+  const inFlight = useRef(false);
+  const ignorePop = useRef(false);
 
-  const clinician = stored ?? undefined;
+  const clinician = demo ? demoClinician : (stored ?? undefined);
 
-  const go = useCallback((next: Screen, focus: "heading" | "code" | "none" = "heading") => {
+  const go = useCallback((next: Screen, focus: Focus = "heading") => {
     focusTarget.current = focus;
     setProblem(null);
     setScreen(next);
   }, []);
 
-  // Move focus to what changed: the new step's heading, or the code field
-  // (which carries any error through aria-describedby).
+  // Move focus to what changed: the new step's heading, or its field (the
+  // code field carries any error through aria-describedby).
   useEffect(() => {
     if (focusTarget.current === "heading") headingRef.current?.focus();
     if (focusTarget.current === "code") document.getElementById(CODE_ID)?.focus();
+    if (focusTarget.current === "name") document.getElementById(NAME_ID)?.focus();
     focusTarget.current = "none";
   }, [screen]);
+
+  /** A step the browser's Back button should undo. */
+  const pushStep = useCallback((step: "code" | "waiting") => {
+    window.history.pushState({ traceStep: step }, "");
+  }, []);
 
   /** Routes a portal_status to the right screen. */
   const applyStatus = useCallback(
@@ -115,11 +147,11 @@ export function ViewFlow() {
         case "none":
         default:
           if (!initial) go({ kind: "code" }, "code");
-          // No session yet: the name step, or straight to the code if this
-          // browser remembers the doctor (and this is not the demo), with focus
-          // in the boxes as on the board: the page has one job.
-          else if (readClinician() && !new URLSearchParams(window.location.search).has("demo")) go({ kind: "code" }, "code");
-          else go({ kind: "name" }, "none");
+          // No session yet: straight to the code if this browser remembers
+          // the doctor, or in the demo (as Dr Hennessy), with focus in the
+          // boxes as on the board: the page has one job. Otherwise the name step.
+          else if (readDemo() || readClinician()) go({ kind: "code" }, "code");
+          else go({ kind: "name" }, "name");
       }
     },
     [go, router],
@@ -129,15 +161,12 @@ export function ViewFlow() {
   // call: a second one without the cookie would mint a second token, and
   // whichever answer lands last would replace the cookie, so a code typed
   // meanwhile would belong to a token this browser no longer holds. (React
-  // runs effects twice in development; the ref keeps the one request.)
-  const firstStatus = useRef<Promise<PortalStatus> | null>(null);
+  // runs effects twice in development; firstStatus() shares the request.)
   useEffect(() => {
     let cancelled = false;
-    firstStatus.current ??= portalApi.status();
-    firstStatus.current
+    firstStatus()
       .then((s) => {
         if (cancelled) return;
-        setDemo(new URLSearchParams(window.location.search).has("demo"));
         applyStatus(s, true);
       })
       .catch(() => {
@@ -148,16 +177,49 @@ export function ViewFlow() {
     };
   }, [applyStatus]);
 
-  // Waiting: poll every 2 seconds.
+  // Waiting: poll every 2 seconds, and say so when Trace cannot be reached.
   usePolling(
-    async () => applyStatus(await portalApi.status(), false),
+    async () => {
+      try {
+        applyStatus(await portalApi.status(), false);
+        setFailedPolls(0);
+      } catch {
+        setFailedPolls((n) => n + 1);
+      }
+    },
     2000,
     screen.kind === "waiting",
   );
 
+  // Browser Back: waiting goes back to the code (withdrawing the request),
+  // the code goes back to the name step when the doctor came from there.
+  const screenRef = useRef(screen);
+  useEffect(() => {
+    screenRef.current = screen;
+  });
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      if (ignorePop.current) {
+        ignorePop.current = false;
+        return;
+      }
+      const step = (e.state as { traceStep?: string } | null)?.traceStep;
+      const current = screenRef.current.kind;
+      if (current === "waiting" && step !== "waiting") {
+        void portalApi.cancel().catch(() => undefined);
+        go({ kind: "code" }, "code");
+      } else if (current === "code" && step !== "code" && step !== "waiting") {
+        go({ kind: "name" }, "name");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [go]);
+
   async function submitCode(code: string) {
+    if (inFlight.current) return;
     if (!clinician) {
-      go({ kind: "name" });
+      go({ kind: "name" }, "name");
       return;
     }
     if (code.length !== 4) {
@@ -165,6 +227,7 @@ export function ViewFlow() {
       document.getElementById(CODE_ID)?.focus();
       return;
     }
+    inFlight.current = true;
     setSubmitting(true);
     setProblem(null);
     try {
@@ -176,6 +239,8 @@ export function ViewFlow() {
       });
       setDigits("");
       if (r.result === "requested") {
+        setFailedPolls(0);
+        pushStep("waiting");
         go({ kind: "waiting", requestExpiresAt: r.request_expires_at });
       } else if (r.result === "locked" || (r.attempts_left === 0 && r.locked_until)) {
         const until = r.locked_until ?? new Date(Date.now() + offset + 15 * 60_000).toISOString();
@@ -193,6 +258,7 @@ export function ViewFlow() {
       }
       setProblem("The code could not be checked. Check your connection and try again.");
     } finally {
+      inFlight.current = false;
       setSubmitting(false);
     }
   }
@@ -201,6 +267,11 @@ export function ViewFlow() {
     setSubmitting(true);
     try {
       await portalApi.cancel();
+      // Leave the waiting step's history entry behind, so Back does not cancel twice.
+      if ((window.history.state as { traceStep?: string } | null)?.traceStep === "waiting") {
+        ignorePop.current = true;
+        window.history.back();
+      }
       go({ kind: "code" }, "code");
     } catch {
       setProblem("The request could not be cancelled. Check your connection and try again.");
@@ -212,10 +283,11 @@ export function ViewFlow() {
   const waiting = screen.kind === "waiting";
   const tone = waiting ? "session" : "default";
   const header = <PortalHeader clinician={clinician} tone={tone} />;
+  const isDemo = Boolean(demo);
 
   if (screen.kind === "loading") {
     return (
-      <PortalShell tone="ground" header={header} footer={<PortalFooter demo={demo} />}>
+      <PortalShell tone="ground" header={header} footer={<PortalFooter demo={isDemo} />}>
         <PortalSplit>
           <h1 className="sr-only">Clinical Access Portal</h1>
           {problem ? (
@@ -240,7 +312,7 @@ export function ViewFlow() {
         tone="session"
         header={header}
         footer={
-          <PortalFooter tone="session" demo={demo}>
+          <PortalFooter tone="session" demo={isDemo}>
             <p className="text-caption">The patient keeps their code and can still share later.</p>
           </PortalFooter>
         }
@@ -268,6 +340,7 @@ export function ViewFlow() {
             onCancel={cancelRequest}
             cancelling={submitting}
             problem={problem}
+            connectionLost={failedPolls >= 2}
           />
         </PortalSplit>
       </PortalShell>
@@ -277,16 +350,19 @@ export function ViewFlow() {
   const whatNext = <WhatHappensNext />;
 
   return (
-    <PortalShell tone="ground" header={header} footer={<PortalFooter demo={demo} />}>
+    <PortalShell tone="ground" header={header} footer={<PortalFooter demo={isDemo} />}>
       {screen.kind === "name" && (
         <PortalSplit aside={whatNext}>
           <NameStep
             headingRef={headingRef}
-            initial={demo ? DEMO_CLINICIAN : (stored ?? null)}
+            initial={clinician ?? null}
             onDone={(c) => {
-              saveClinician(c);
+              if (demo) setDemoClinician(c);
+              else saveClinician(c);
+              pushStep("code");
               go({ kind: "code" }, "code");
             }}
+            onCancel={clinician ? () => go({ kind: "code" }, "code") : undefined}
           />
         </PortalSplit>
       )}
@@ -307,9 +383,10 @@ export function ViewFlow() {
             offset={offset}
             submitting={submitting}
             onSubmit={() => void submitCode(digits)}
+            onComplete={(v) => void submitCode(v)}
             onUnlock={() => go({ kind: "code" }, "none")}
             clinician={clinician}
-            onChangeDetails={() => go({ kind: "name" })}
+            onChangeDetails={() => go({ kind: "name" }, "name")}
           />
         </PortalSplit>
       )}
@@ -320,7 +397,8 @@ export function ViewFlow() {
             headingRef={headingRef}
             label="Request declined"
             title="Your patient chose not to share their record."
-            body="You can ask them to share again, or continue the consultation without it."
+            body="That code is used up. Ask them for a new one to try again, or continue the consultation without it."
+            action="Try with a new code"
             onTryAgain={() => go({ kind: "code" }, "code")}
           />
         </PortalSplit>
@@ -417,10 +495,13 @@ function ChangeDetails({ onClick }: { onClick: () => void }) {
 function NameStep({
   initial,
   onDone,
+  onCancel,
   headingRef,
 }: {
   initial: Clinician | null;
   onDone: (c: Clinician) => void;
+  /** Back to the code step with the details unchanged ("Change details" came here). */
+  onCancel?: () => void;
   headingRef: React.Ref<HTMLHeadingElement>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
@@ -444,14 +525,14 @@ function NameStep({
           const n = name.trim();
           if (!n) {
             setError("Enter your name, as your patient knows you.");
-            document.getElementById("clinician-name")?.focus();
+            document.getElementById(NAME_ID)?.focus();
             return;
           }
           onDone({ name: n.slice(0, 100), role: role.trim().slice(0, 60), practice: practice.trim().slice(0, 120) });
         }}
       >
         <TextField
-          id="clinician-name"
+          id={NAME_ID}
           label="Your name"
           autoComplete="name"
           maxLength={100}
@@ -484,7 +565,13 @@ function NameStep({
           <Button type="submit" size="lg" className="w-full sm:w-55">
             Continue
           </Button>
-          <p className="text-caption text-ink-2">Remembered on this computer for next time.</p>
+          {onCancel ? (
+            <Button variant="text" onClick={onCancel}>
+              Cancel
+            </Button>
+          ) : (
+            <p className="text-caption text-ink-2">Remembered in this browser for next time.</p>
+          )}
         </div>
       </form>
     </div>
@@ -510,6 +597,7 @@ function CodeStep({
   offset,
   submitting,
   onSubmit,
+  onComplete,
   onUnlock,
   clinician,
   onChangeDetails,
@@ -522,6 +610,8 @@ function CodeStep({
   offset: number;
   submitting: boolean;
   onSubmit: () => void;
+  /** The fourth digit was typed: send it without waiting for Continue. */
+  onComplete: (code: string) => void;
   onUnlock: () => void;
   clinician?: Clinician;
   onChangeDetails: () => void;
@@ -556,6 +646,7 @@ function CodeStep({
           labelHidden
           value={digits}
           onChange={onDigits}
+          onComplete={onComplete}
           disabled={locked && !unlocked}
           error={codeErrorText(error, lockedTime, unlocked) ?? problem ?? undefined}
         />
@@ -580,6 +671,7 @@ function WaitingStep({
   onCancel,
   cancelling,
   problem,
+  connectionLost,
   headingRef,
 }: {
   requestExpiresAt: string | null;
@@ -587,6 +679,8 @@ function WaitingStep({
   onCancel: () => void;
   cancelling: boolean;
   problem: string | null;
+  /** Polls have failed for a few seconds: the countdown may be out of date. */
+  connectionLost: boolean;
   headingRef: React.Ref<HTMLHeadingElement>;
 }) {
   const now = useNow(offset, 1000);
@@ -611,6 +705,11 @@ function WaitingStep({
           {problem}
         </Notice>
       )}
+      {connectionLost && !problem && (
+        <Notice tone="urgent" live="polite" surface="session">
+          Trace can&apos;t be reached. Check your connection; the portal keeps trying.
+        </Notice>
+      )}
       <Button variant="text" tone="session" className="self-start" onClick={onCancel} loading={cancelling}>
         Cancel request
       </Button>
@@ -623,12 +722,14 @@ function Outcome({
   label,
   title,
   body,
+  action = "Try again",
   onTryAgain,
 }: {
   headingRef: React.Ref<HTMLHeadingElement>;
   label: string;
   title: string;
   body: string;
+  action?: string;
   onTryAgain: () => void;
 }) {
   return (
@@ -639,7 +740,7 @@ function Outcome({
         <p className="text-body-lg text-ink-2">{body}</p>
       </div>
       <Button size="lg" className="w-full sm:w-55" onClick={onTryAgain}>
-        Try again
+        {action}
       </Button>
     </div>
   );

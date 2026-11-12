@@ -31,6 +31,13 @@ const NULL_STATUS = {
 
 const CLINICIAN = { name: "Dr Hennessy", role: "GP", practice: "Rathmines Medical Centre" };
 
+/**
+ * One made-up session per test file: its start (approved_at) stays the same
+ * whatever state a test moves it to, as the database's does. The portal
+ * treats a different approved_at as a different session and starts afresh.
+ */
+const SESSION_START = new Date(Date.now() - 5 * 60_000).toISOString();
+
 export const SCOPE = {
   critical_safety: true,
   medications: true,
@@ -56,8 +63,8 @@ export function statusOf(status: string, extra: Record<string, unknown> = {}) {
         ...base,
         clinician: CLINICIAN,
         duration_kind: "30m",
-        approved_at: new Date(now - 5 * 60_000).toISOString(),
-        expires_at: new Date(now + 25 * 60_000).toISOString(),
+        approved_at: SESSION_START,
+        expires_at: new Date(Date.parse(SESSION_START) + 30 * 60_000).toISOString(),
         allow_notes: true,
         scope: SCOPE,
         notes: { chief_complaint: null, assessment: null, plan: null, follow_up: null, updated_at: null },
@@ -68,7 +75,7 @@ export function statusOf(status: string, extra: Record<string, unknown> = {}) {
         ...base,
         clinician: CLINICIAN,
         duration_kind: "30m",
-        approved_at: new Date(now - 31 * 60_000).toISOString(),
+        approved_at: SESSION_START,
         paused_at: new Date(now - 60_000).toISOString(),
         closes_at: new Date(now + 29 * 60_000).toISOString(),
         allow_notes: true,
@@ -79,7 +86,7 @@ export function statusOf(status: string, extra: Record<string, unknown> = {}) {
         ...base,
         clinician: CLINICIAN,
         duration_kind: "30m",
-        approved_at: new Date(now - 40 * 60_000).toISOString(),
+        approved_at: SESSION_START,
         ended_at: new Date(now).toISOString(),
         ended_by: "patient",
         notes_saved_to_record: false,

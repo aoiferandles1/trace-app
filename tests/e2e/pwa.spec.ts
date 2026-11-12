@@ -94,3 +94,18 @@ test("/demo from 700px keeps the framed phone", async ({ page }) => {
   await expect(page.locator('iframe[title="Patient app, on a phone"]')).toBeVisible();
   await expect(page.getByRole("link", { name: /^Open the doctor's portal/ })).toHaveAttribute("target", "_blank");
 });
+
+test("/demo: the laptop frame only from 1280, drawn at the portal's desktop width (H2, H3)", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto("/demo");
+  await expect(page.locator('iframe[title="Patient app, on a phone"]')).toBeVisible();
+  await expect(page.locator('iframe[title="Doctor\'s portal, on a laptop"]')).toHaveCount(0);
+  await expect(page.getByText("tap Allow access on the phone", { exact: false })).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const laptop = page.locator('iframe[title="Doctor\'s portal, on a laptop"]');
+  await expect(laptop).toBeVisible();
+  await expect(laptop).toHaveAttribute("style", /width: 1024px/);
+  // Scaled to at least 70%, so the portal's 13px text stays above 9px.
+  const scale = await laptop.evaluate((el) => el.getBoundingClientRect().width / 1024);
+  expect(scale).toBeGreaterThan(0.7);
+});

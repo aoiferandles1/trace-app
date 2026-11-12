@@ -414,6 +414,8 @@ test("portal: every screen reflows at 320px and works with the keyboard (stand-i
     await check("/view/session", "Time's up on this share.");
     set({ status: () => statusOf("ended", { notes_saved_to_record: true }) });
     await check("/view/session", "Your patient ended the session.");
+    // The portal's own not-found page (review fix C25).
+    await check("/view/no-such-page", "There is nothing at this address.");
     await context.close();
   }
 });
