@@ -192,7 +192,9 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await gotoScreen(page, "/add", "Add to your record");
   const list = page.getByRole("list", { name: "What to add" });
   await expect(list.getByRole("link")).toHaveText(rows.map(([name]) => name));
-  for (const [name, href] of rows) await expect(list.getByRole("link", { name })).toHaveAttribute("href", href);
+  // Each row tells its form where Back goes (here, /add).
+  for (const [name, href] of rows)
+    await expect(list.getByRole("link", { name })).toHaveAttribute("href", `${href}?back=${encodeURIComponent("/add")}`);
   for (const hidden of ["Scan or photograph", "Record a vaccination", "Upload a receipt"]) {
     await expect(page.getByText(hidden)).toHaveCount(0);
   }
@@ -228,7 +230,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await page.getByRole("link", { name: /Headaches after lunch/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch" })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "Three days this week." }).filter({ visible: true })).toBeVisible();
-  await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
+  await expect(page.getByText(/Left out of every share unless you include mental health/).filter({ visible: true })).toBeVisible();
   await expectNoAxeViolations(page);
 
   await page.getByRole("link", { name: "Edit Headaches after lunch" }).click();
@@ -237,14 +239,17 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Headaches after lunch, better now" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Delete entry" }).click();
-  const sheet = page.getByRole("dialog", { name: "Delete this entry?" });
+  // Delete is on the Edit form, as on every other (A26).
+  await page.getByRole("link", { name: "Edit Headaches after lunch, better now" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit note" })).toBeVisible();
+  await page.getByRole("button", { name: "Delete note" }).click();
+  const sheet = page.getByRole("dialog", { name: "Delete this note?" });
   await expect(sheet).toBeVisible();
   await expectNoAxeViolations(page, "dialog");
-  await sheet.getByRole("button", { name: "Delete entry" }).click();
+  await sheet.getByRole("button", { name: "Delete note" }).click();
   await page.waitForURL(/\/record$/);
   await expect(page.getByRole("link", { name: /Headaches after lunch/ })).toHaveCount(0);
-  // Back to the deleted entry's screen (kept in memory by Next.js): the confirm sheet must not reopen.
+  // Back to the deleted entry's Edit screen (kept in memory by Next.js): the confirm sheet must not reopen.
   await page.goBack();
   await expect(page.getByText(/It may have been deleted/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
@@ -286,9 +291,11 @@ test("add, edit, end and delete a medication", async ({ page }) => {
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: "Name" }).fill("Vitamin D");
   await page.getByRole("textbox", { name: /^Strength/ }).fill("1000IU");
+  await page.getByRole("combobox", { name: /How often/ }).selectOption("once daily");
+  await page.getByRole("combobox", { name: /^When/ }).selectOption("morning");
+  // The rest is under More details (B8).
+  await page.getByRole("button", { name: "More details" }).click();
   await page.getByRole("textbox", { name: /^Form/ }).fill("Capsule");
-  await page.getByRole("textbox", { name: /How often/ }).fill("once daily");
-  await page.getByRole("textbox", { name: /^When/ }).fill("morning");
   await page.getByRole("button", { name: "Save medication" }).click();
   await page.waitForURL(/\/meds$/);
   // The strength became its first period (the unit was read from "1000IU").
@@ -322,12 +329,12 @@ test("add and edit a condition with the mental health switch", async ({ page }) 
   await expect(page.getByRole("heading", { level: 1, name: "Add a condition" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: "Condition" }).fill("Anxiety");
-  await page.getByRole("textbox", { name: /Year diagnosed/ }).fill("2021");
+  await page.getByRole("textbox", { name: /Since when/ }).fill("2021");
   await page.getByRole("switch", { name: "About mental health" }).click();
   await page.getByRole("button", { name: "Save condition" }).click();
   await page.waitForURL(/\/record\?tab=conditions$/);
   await page.getByRole("link", { name: /Anxiety/ }).click();
-  await expect(page.getByText(/About mental health\. Left out of a share/)).toBeVisible();
+  await expect(page.getByText(/Left out of every share unless you include mental health/).filter({ visible: true })).toBeVisible();
   await page.getByRole("link", { name: "Edit" }).click();
   await page.getByRole("combobox", { name: "Status" }).selectOption("resolved");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -347,7 +354,7 @@ test("profile: the list, details, edit with critical safety, care team, export",
     "Documents",
     "Care team",
     "Share history",
-    "Privacy and security",
+    "Privacy and data",
   ]);
   await expect(list.getByRole("button", { name: "Reset demo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
@@ -357,14 +364,15 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
-  // Privacy and security: export (every table, version 2).
-  await list.getByRole("link", { name: "Privacy and security" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Privacy and security" })).toBeVisible();
+  // Privacy and data: export (every table, version 2).
+  await list.getByRole("link", { name: "Privacy and data" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy and data" })).toBeVisible();
   await expectNoAxeViolations(page);
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: /Export your data/ }).click();
   const file = await (await download).path();
   const exported = JSON.parse(readFileSync(file, "utf8"));
+  await expect(page.getByText(/^Saved as trace-export-.*\.json in your downloads\.$/)).toBeVisible();
   expect(exported.version).toBe(2);
   expect(exported.profile.first_name).toBe("Jane");
   expect(exported.medications).toHaveLength(8);
@@ -375,7 +383,7 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expect(page.getByText("12 March 1991")).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("link", { name: "Edit details" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit details" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("textbox", { name: /Known allergies/ }).fill("Penicillin, Latex");
   await page.getByRole("textbox", { name: /Implants or devices/ }).fill("Pacemaker");
@@ -413,8 +421,9 @@ test("profile: the list, details, edit with critical safety, care team, export",
 test("a brand-new record shows empty states", async ({ page }) => {
   await emptyRecord(clientFor(file));
   await gotoScreen(page, "/home", /^Good/);
-  await expect(page.getByText("Your record is empty.", { exact: false })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Add to your record" })).toBeVisible();
+  // An empty record lists the first things to add, as links (B22).
+  const first = page.getByRole("region", { name: "Start your record" });
+  await expect(first.getByRole("link")).toHaveText([/Add your critical safety details/, "Add a medication", "Add a visit", "Log a note"]);
   await expect(page.getByRole("heading", { name: "Coming up" })).toHaveCount(0);
   await expectNoAxeViolations(page);
 
@@ -519,7 +528,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     .eq("id", user.user!.id);
 
   // Profile and critical safety.
-  await gotoScreen(page, "/profile/edit", "Edit profile");
+  await gotoScreen(page, "/profile/edit", "Edit details");
   await page.getByLabel(/Date of birth/).filter({ visible: true }).fill("1991-03-12");
   await page.getByRole("textbox", { name: /^Sex/ }).fill("Female");
   await page.getByRole("textbox", { name: /^Phone/ }).fill("+353 86 123 4567");
@@ -542,24 +551,27 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("combobox", { name: "Status" }).selectOption(status);
     await page.getByRole("textbox", { name: /^Doctor/ }).fill(doctor);
     await page.getByRole("textbox", { name: /^Specialty/ }).fill(specialty);
-    if (year) await page.getByRole("textbox", { name: /Year diagnosed/ }).fill(year);
-    if (note) await page.getByRole("textbox", { name: /Or when it started/ }).fill(note);
+    if (year || note) await page.getByRole("textbox", { name: /Since when/ }).fill(year || note);
     await page.getByRole("button", { name: "Save condition" }).click();
     await page.waitForURL(/\/record\?tab=conditions$/);
   }
 
   // Medications: three current, two expired.
   const meds = [
-    { Name: "Warfarin", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Drug class": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
-    { Name: "Levothyroxine", Strength: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
-    { Name: "Salbutamol", Strength: "100mcg", Form: "Inhaler", "How often": "as needed", "Drug class": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
-    { Name: "Clarithromycin", Strength: "500mg", Form: "Tablet", "How often": "twice daily", "Drug class": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
-    { Name: "Prednisolone", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Drug class": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
+    { Name: "Warfarin", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "evening", "Type of medicine": "Anticoagulant", "What it's for": "Atrial fibrillation", "Prescribed by": "Dr O'Mahony", "Their specialty": "Cardiology", "Clinic or hospital": "Mater Private", Started: "2019-01-01", "Next refill due": dublinDay(8), Instructions: "Take at the same time each evening. Needs regular INR blood tests." },
+    { Name: "Levothyroxine", Strength: "50mcg", Form: "Tablet", "How often": "once daily", When: "morning", "Type of medicine": "Thyroid", "What it's for": "Hypothyroidism", "Prescribed by": "Dr Walsh", "Their specialty": "Endocrinology", Started: "2022-01-01", Instructions: "Take on an empty stomach, 30 minutes before breakfast." },
+    { Name: "Salbutamol", Strength: "100mcg", Form: "Inhaler", "How often": "as needed", "Type of medicine": "Bronchodilator", "What it's for": "Asthma", "Prescribed by": "Dr Hennessy", "Their specialty": "GP", "Clinic or hospital": "Rathmines Medical Centre", Started: "2015-01-01", Instructions: "One to two puffs when wheezing or breathless." },
+    { Name: "Clarithromycin", Strength: "500mg", Form: "Tablet", "How often": "twice daily", "Type of medicine": "Antibiotic", Started: dublinDay(-130), "Ends or ended": dublinDay(-123) },
+    { Name: "Prednisolone", Strength: "5mg", Form: "Tablet", "How often": "once daily", When: "morning", "Type of medicine": "Steroid", Started: dublinDay(-200), "Ends or ended": dublinDay(-186) },
   ];
   for (const med of meds) {
     await gotoScreen(page, "/add/medication", "Add a medication");
+    await page.getByRole("button", { name: "More details" }).click();
     for (const [label, value] of Object.entries(med)) {
-      await page.getByLabel(new RegExp(`^${label.replace(/[?']/g, ".")}`)).filter({ visible: true }).fill(value);
+      const field = page.getByLabel(new RegExp(`^${label.replace(/[?']/g, ".")}`)).filter({ visible: true });
+      // How often and When are choices (B10).
+      if (label === "How often" || label === "When") await field.selectOption(value);
+      else await field.fill(value);
     }
     await page.getByRole("button", { name: "Save medication" }).click();
     await page.waitForURL(/\/meds$/);
@@ -579,8 +591,10 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
     await page.getByRole("combobox", { name: "What kind" }).selectOption(e.kind);
     await page.getByRole("textbox", { name: "Title" }).fill(e.title);
     await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(e.day));
-    await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
-    if (e.doctor) await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
+    // Only a visit asks for a time (A8).
+    if (e.kind === "visit") await page.getByLabel("Time").filter({ visible: true }).fill(e.time);
+    if (e.kind === "result") await page.getByRole("textbox", { name: /^Ordered by/ }).fill(e.doctor ?? "");
+    if (e.doctor && e.kind !== "result") await page.getByRole("textbox", { name: /Doctor or clinician/ }).fill(e.doctor);
     await page.getByRole("textbox", { name: /^Where/ }).fill(e.where);
     await page.getByRole("button", { name: "Save visit" }).click();
     await page.waitForURL(/\/record$/);
@@ -588,7 +602,6 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await gotoScreen(page, "/add/note", "Log a note");
   await page.getByRole("textbox", { name: "Title" }).fill("Personal note added");
   await page.getByLabel("Date").filter({ visible: true }).fill(dublinDay(-11));
-  await page.getByLabel("Time").filter({ visible: true }).fill("20:00");
   await page.getByRole("textbox", { name: "Note" }).fill("Fatigue symptoms");
   await page.getByRole("button", { name: "Save note" }).click();
   await page.waitForURL(/\/record$/);
@@ -644,7 +657,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await page.screenshot({ path: info.outputPath("by-hand-meds.png"), fullPage: true });
 
   await gotoScreen(page, "/profile", "Profile");
-  await expect(page.getByText("Patient · Dublin, IE")).toBeVisible();
+  await expect(page.getByText("Dublin, Ireland", { exact: true })).toBeVisible();
   await gotoScreen(page, "/profile/details", "Your details");
   await expect(page.getByText("+353 86 123 4567")).toBeVisible();
   await gotoScreen(page, "/profile/care-team", "Care team");
@@ -654,7 +667,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
 });
 
 test("delete my account signs out and removes the user", async ({ page }) => {
-  await gotoScreen(page, "/profile/privacy", "Privacy and security");
+  await gotoScreen(page, "/profile/privacy", "Privacy and data");
   await page.getByRole("button", { name: "Delete your account" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");

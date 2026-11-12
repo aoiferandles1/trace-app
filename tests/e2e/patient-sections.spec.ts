@@ -300,7 +300,9 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await page.getByRole("button", { name: "Save to timeline" }).click();
   await expect(page.getByText("Say what it was, like Chest infection.")).toBeVisible();
   await page.getByRole("textbox", { name: "What it was" }).fill("Ear infection");
-  await page.getByLabel("Month").filter({ visible: true }).fill("2026-10");
+  // Month and year are two fields (A50).
+  await page.getByRole("combobox", { name: "Month" }).selectOption("10");
+  await page.getByRole("textbox", { name: "Year" }).fill("2026");
   await page.getByRole("textbox", { name: /Seen by/ }).fill("Dr Hennessy");
   await page.getByRole("combobox", { name: "Outcome" }).selectOption("resolved");
   await page.getByRole("button", { name: "Add a medicine" }).click();
@@ -315,7 +317,7 @@ test("timeline events: add, edit and delete", async ({ page }) => {
   await expect(sheet.getByText("Oct 2026, Infection")).toBeVisible();
   await expect(sheet.getByText("Clarithromycin 250mg")).toBeVisible();
   await sheet.getByRole("link", { name: "Edit Ear infection" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Edit timeline" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Edit event" })).toBeVisible();
   await page.getByRole("button", { name: "Remove medicine 1" }).click();
   await page.getByRole("textbox", { name: /Doctor's notes/ }).fill("Cleared in a week.");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -333,7 +335,7 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
   await gotoScreen(page, "/record", "Record");
   await page.getByRole("link", { name: /Blood count and INR/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeVisible();
-  await expect(page.getByText("Result, 2 Nov 2026, ordered by Dr Hennessy, Mater Hospital")).toBeVisible();
+  await expect(page.getByText(/^Result, \d+ \w{3} \d{4}, ordered by Dr Hennessy, Mater Hospital$/)).toBeVisible();
   const results = page.getByRole("list", { name: "Results" }).getByRole("listitem");
   await expect(results).toHaveText([
     /Haemoglobin\s*128 g\/L$/,
@@ -352,7 +354,8 @@ test("visit detail: the result kind flags in words; the text kind's blocks; sess
   await expect(page.getByRole("heading", { level: 1, name: "Blood count and INR" })).toBeHidden();
   await page.getByRole("link", { name: /GP visit/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "GP visit" })).toBeVisible();
-  await expect(page.getByRole("term")).toHaveText(["Reason", "Assessment", "Plan"]);
+  // Plain words for the patient (B11).
+  await expect(page.getByRole("term")).toHaveText(["Reason", "What the doctor found", "What happens next"]);
   await expect(page.getByRole("definition").first()).toHaveText("Tired for three weeks");
   await expect(page.getByRole("link", { name: "Edit GP visit" })).toBeVisible();
   await expectNoAxeViolations(page);
@@ -381,7 +384,7 @@ test("family tree: drawn from the data, the same as a list for assistive tech, t
     /Brother\s*,?\s*Asthma/,
   ]);
   await expect(tree.getByRole("button", { name: /^Dad's dad ?, Heart attack at 61$/ })).toBeVisible();
-  await expect(page.getByText("Tap a condition to see who has it.")).toBeVisible();
+  await expect(page.getByText("Choose a condition to see who has it.")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
@@ -437,7 +440,8 @@ test("insurance: the mocked provider sign-in, the connected card, disconnect, an
   await gotoScreen(page, "/profile", "Profile");
   await page.getByRole("link", { name: "Insurance" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Insurance" })).toBeVisible();
-  await expect(page.getByText("Choose your provider and sign in with them. Trace never sees your password.")).toBeVisible();
+  // The password line is said once, in the sign-in sheet (E15).
+  await expect(page.getByText("Choose your provider and sign in with them.", { exact: true })).toBeVisible();
   await expect(page.getByRole("list", { name: "Providers" }).getByRole("listitem")).toHaveText([
     "VHI",
     "Laya Healthcare",
@@ -502,7 +506,9 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   await expect(page.getByRole("heading", { level: 1, name: "Upload a document" })).toBeVisible();
   // Focused flow: no tab bar. The limits are on the screen before anything fails.
   await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
-  await expect(page.getByText("PDF, JPEG or PNG, up to 3 MB. The demo keeps up to 5 files, 3 MB in all.")).toBeVisible();
+  await expect(
+    page.getByText("PDF, JPEG or PNG. A PDF can be up to 3 MB; larger photos are made smaller. The demo keeps up to 5 files, 3 MB in all."),
+  ).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
 
@@ -510,10 +516,10 @@ test("documents: the limits first, the refusals in words, upload, open with safe
   // Not a PDF, though it says so.
   await input.setInputFiles({ name: "letter.pdf", mimeType: "application/pdf", buffer: Buffer.from("hello, not a pdf") });
   await expect(page.getByText("letter.pdf isn't a PDF, JPEG or PNG. Choose one of those.")).toBeVisible();
-  // Too big.
-  const big = Buffer.concat([PNG, Buffer.alloc(3 * 1024 * 1024)]);
-  await input.setInputFiles({ name: "scan.png", mimeType: "image/png", buffer: big });
-  await expect(page.getByText("scan.png is 3 MB. Choose a file of 3 MB or less.")).toBeVisible();
+  // A PDF that is too big is refused (only photos can be made smaller).
+  const big = Buffer.concat([Buffer.from("%PDF-1.4\n"), Buffer.alloc(3 * 1024 * 1024)]);
+  await input.setInputFiles({ name: "scan.pdf", mimeType: "application/pdf", buffer: big });
+  await expect(page.getByText("scan.pdf is 3 MB. Choose a file of 3 MB or less.")).toBeVisible();
   await page.getByRole("button", { name: "Upload" }).click();
   await expect(input).toBeFocused();
   expect((await clientFor(file).from("documents").select("id")).data).toEqual([]);

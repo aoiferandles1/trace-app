@@ -109,8 +109,11 @@ function HomeScreen() {
           title={profile.first_name || "Welcome"}
           action={
             name ? (
-              <Link href="/profile" aria-label="Profile" className="rounded-full">
-                <Avatar initials={initialsOf(name)} size={40} tone="outline" />
+              <Link href="/profile" className="rounded-full">
+                <span aria-hidden="true">
+                  <Avatar initials={initialsOf(name)} size={40} tone="outline" />
+                </span>
+                <span className="sr-only">Profile</span>
               </Link>
             ) : undefined
           }
