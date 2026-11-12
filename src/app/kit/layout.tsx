@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,5 +14,7 @@ export const metadata: Metadata = {
  */
 export default function KitLayout({ children }: LayoutProps<"/kit">) {
   if (process.env.NODE_ENV === "production") notFound();
-  return children;
+  // The tab bar and the Add sheet read the address (their `?back=`), which needs a Suspense
+  // boundary above it. The real screens get theirs from the session gate's layout.
+  return <Suspense>{children}</Suspense>;
 }
