@@ -93,6 +93,8 @@ export function formatClock(iso: string | null | undefined): string {
 
 /** "28m", "1h 05m" */
 export function formatDuration(ms: number): string {
+  // A session ended within its first half minute rounds to 0: say so in words, not "0m".
+  if (ms < 30000) return "Under a minute";
   const mins = Math.max(0, Math.round(ms / 60000));
   if (mins < 60) return `${mins}m`;
   return `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
@@ -206,6 +208,18 @@ const KIND_WORDS: Record<EntryKind, string> = {
 
 export function entryType(e: Entry): string {
   return KIND_WORDS[e.kind] ?? "Visit";
+}
+
+/**
+ * An entry's title as a row or heading shows it. Notes written in a Trace
+ * session are stored with the title "Session notes", the same words as their
+ * kind, so a row would say it twice: they read "Notes from Dr Hennessy" (the
+ * patient app's words, `entryTitle()` in src/lib/patient/record.ts).
+ */
+export function entryTitle(e: Pick<Entry, "kind" | "title" | "clinician">): string {
+  if (e.kind === "session_notes" && e.title.trim().toLowerCase() === "session notes" && e.clinician?.trim())
+    return `Notes from ${e.clinician.trim()}`;
+  return e.title;
 }
 
 /** "11 Nov 2026, Dr Hennessy, Rathmines Medical Centre"; a result says "ordered by". */

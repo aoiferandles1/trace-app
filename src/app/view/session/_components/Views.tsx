@@ -30,6 +30,7 @@ import {
   documentSub,
   entryFields,
   entryMeta,
+  entryTitle,
   entryType,
   eventMeta,
   eventSub,
@@ -247,7 +248,7 @@ export function OverviewView() {
                       className="grid grid-cols-[64px_1fr_auto_18px] items-baseline gap-x-3 text-ink hovered:text-accent-alt"
                     >
                       <DayMonth day={dm.day} month={dm.month} accent={e.upcoming} dateTime={isoDay(e.occurs_at)} />
-                      <span className="text-row font-medium">{e.title}</span>
+                      <span className="text-row font-medium">{entryTitle(e)}</span>
                       <span className={e.upcoming ? "text-caption text-accent" : "text-caption text-ink-2"}>
                         {e.upcoming ? "Upcoming" : entryType(e)}
                       </span>
@@ -364,7 +365,7 @@ function EntryDetail({ entry, others = [], firstName }: { entry: Entry; others?:
       : `Added by ${firstName === "the patient" ? "the patient" : firstName}`;
   return (
     <>
-      <DetailTitle title={entry.title} meta={entryMeta(entry)} />
+      <DetailTitle title={entryTitle(entry)} meta={entryMeta(entry)} />
       {results ? (
         <div className="flex flex-col gap-4">
           {results.length === 0 && <Quiet>No results recorded.</Quiet>}
@@ -413,7 +414,7 @@ function VisitRow({ e, selected, onPick }: { e: Entry; selected: boolean; onPick
       selected={selected}
       onClick={onPick}
       leading={<DayMonth day={dm.day} month={dm.month} dateTime={isoDay(e.occurs_at)} />}
-      title={e.title}
+      title={entryTitle(e)}
       caption={entryType(e)}
     />
   );
@@ -459,7 +460,7 @@ export function VisitsView() {
                   return (
                     <li key={e.id} className="grid grid-cols-[64px_1fr] items-center py-1.5 pl-3.75">
                       <DayMonth day={dm.day} month={dm.month} accent dateTime={isoDay(e.occurs_at)} />
-                      <span className="text-label font-medium">{e.title}</span>
+                      <span className="text-label font-medium">{entryTitle(e)}</span>
                     </li>
                   );
                 })}
@@ -1063,7 +1064,7 @@ export function MentalHealthView() {
                 <>
                   <DayMonth day={dm.day} month={dm.month} accent={e.upcoming} dateTime={isoDay(e.occurs_at)} />
                   <span className="flex flex-col">
-                    <span className="text-row font-medium">{e.title}</span>
+                    <span className="text-row font-medium">{entryTitle(e)}</span>
                     <span className="text-caption text-ink-2">{entryMeta(e)}</span>
                   </span>
                   <span className="text-caption text-ink-2">{e.upcoming ? "Upcoming" : entryType(e)}</span>

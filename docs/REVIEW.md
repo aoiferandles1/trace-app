@@ -489,6 +489,8 @@ Every string the build added. All are stand-ins in the voice of the existing scr
 
 ---
 
+- After the merge (new): in the portal a doctor's notes entry is titled "Notes from Dr Hennessy" (it was "Session notes" twice, title and kind), as in the patient app · the ended screen's Duration says "Under a minute" for a session that short (it was "0m").
+
 ## 4. Claims reworded
 
 Figma copy that this version cannot back up, and what the app says now. Each needs your words.
