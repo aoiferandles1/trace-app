@@ -1,32 +1,13 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, emptyRecord, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { emptyRecord, expect, expectNoSideScroll, test } from "./helpers/patient";
 
 /**
- * The signed-in patient app (Phase 3 steps 3 to 7, and Phase 4), driven as one
- * anonymous demo user per Playwright project. See helpers/patient.ts for why.
- * Tests in this file run one after another and reset the record first.
+ * The signed-in patient app (Phase 3 steps 3 to 7, and Phase 4). Every test
+ * has its own anonymous demo user with Jane Doe's record (helpers/patient.ts),
+ * so the tests run in parallel.
  */
-
-test.describe.configure({ mode: "default" });
-
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  file = statePath(info.project.name);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file) });
-
-test.beforeEach(async () => {
-  await reseed(clientFor(file));
-});
 
 async function gotoScreen(page: Page, path: string, heading: string | RegExp) {
   await page.goto(path);
@@ -53,7 +34,7 @@ test("home shows Jane's record", async ({ page }) => {
   await expect(recent.getByRole("link")).toHaveText([
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
-    /Warfarin renewed.*Prescription/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
   ]);
   await expect(page.getByText("Upload doc")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
@@ -77,6 +58,8 @@ test("record: safety facts and the three tabs", async ({ page }) => {
     /GP visit.*Visit/,
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
+    /GP visit for tiredness.*Visit/,
     /Warfarin renewed.*Prescription/,
   ]);
   // Past rows open their detail; upcoming ones are not clickable (BRIEF.md 4.3).
@@ -84,6 +67,8 @@ test("record: safety facts and the three tabs", async ({ page }) => {
     /GP visit.*Visit/,
     /Blood count and INR.*Result/,
     /Fatigue symptoms.*Note/,
+    /Notes from Dr Hennessy.*Doctor's notes/,
+    /GP visit for tiredness.*Visit/,
     /Warfarin renewed.*Prescription/,
   ]);
   await expect(panel.getByRole("link", { name: /Cardiology follow-up/ })).toHaveCount(0);
@@ -167,8 +152,8 @@ test("meds: Current and Past (MedsA2)", async ({ page }) => {
   await expectNoSideScroll(page);
 });
 
-test("meds: a refill 5 days away or less is urgent, in words", async ({ page }) => {
-  const db = clientFor(file);
+test("meds: a refill 5 days away or less is urgent, in words", async ({ page, demo }) => {
+  const db = demo.db;
   const inThree = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date(Date.now() + 3 * 86_400_000));
   expect((await db.from("medications").update({ refill_due_on: inThree }).eq("name", "Warfarin")).error).toBeNull();
   await gotoScreen(page, "/meds", "Medications");
@@ -256,9 +241,9 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
 });
 
-test("add: an upcoming appointment shows in Home's Coming up", async ({ page }) => {
+test("add: an upcoming appointment shows in Home's Coming up", async ({ page, demo }) => {
   // On a day with no appointment (no today card).
-  const db = clientFor(file);
+  const db = demo.db;
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
   const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
   for (const v of visits ?? []) {
@@ -419,8 +404,8 @@ test("profile: the list, details, edit with critical safety, care team, export",
   await expect(page.getByRole("link", { name: /Dr Byrne/ })).toHaveCount(0);
 });
 
-test("a brand-new record shows empty states", async ({ page }) => {
-  await emptyRecord(clientFor(file));
+test("a brand-new record shows empty states", async ({ page, demo }) => {
+  await emptyRecord(demo);
   await gotoScreen(page, "/home", /^Good/);
   // An empty record lists the first things to add, as links (B22).
   const first = page.getByRole("region", { name: "Start your record" });
@@ -431,7 +416,7 @@ test("a brand-new record shows empty states", async ({ page }) => {
   await gotoScreen(page, "/record", "Record");
   await expect(page.getByText("No allergies or blood type recorded")).toBeVisible();
   // The record's four sections load together; under a full parallel run that can take longer than 5 s.
-  await expect(page.getByText(/Nothing on your timeline yet/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^Nothing here yet\. Visits, results, prescriptions and notes you add show up here\.$/)).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
   await page.getByRole("tab", { name: "Conditions" }).click();
   await expect(page.getByText("No conditions yet.")).toBeVisible();
@@ -445,13 +430,12 @@ test("a brand-new record shows empty states", async ({ page }) => {
   await expectNoAxeViolations(page);
 });
 
-test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", async ({ page }) => {
-  const db = clientFor(file);
-  const { data: user } = await db.auth.getUser();
+test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", async ({ page, demo }) => {
+  const db = demo.db;
   await db
     .from("profiles")
     .update({ onboarding_step: "about", first_name: null, last_name: null, date_of_birth: null, blood_type: null, allergies: [], terms_accepted_at: null })
-    .eq("id", user.user!.id);
+    .eq("id", demo.userId);
 
   // An unfinished sign-up is sent back to its step, and cannot skip ahead.
   await page.goto("/home");
@@ -500,7 +484,7 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await page.getByRole("button", { name: "Go to your record" }).click();
   await page.waitForURL(/\/home$/);
 
-  const { data: profile } = await db.from("profiles").select("*").eq("id", user.user!.id).single();
+  const { data: profile } = await db.from("profiles").select("*").eq("id", demo.userId).single();
   expect(profile!.onboarding_step).toBe("done");
   expect(profile!.date_of_birth).toBe("1991-03-12");
   expect(profile!.allergies).toEqual(["Penicillin"]);
@@ -517,16 +501,15 @@ function dublinDay(days: number): string {
  * record, enter the whole of Jane Doe's record by hand through the screens,
  * then check each screen shows it. Phone only, to keep the run short.
  */
-test("Jane Doe's record entered by hand shows on every screen", async ({ page }, info) => {
+test("Jane Doe's record entered by hand shows on every screen", async ({ page, demo }, info) => {
   test.skip(info.project.name !== "phone", "Runs once, at phone width");
   test.setTimeout(300_000);
-  const db = clientFor(file);
-  await emptyRecord(db);
-  const { data: user } = await db.auth.getUser();
+  const db = demo.db;
+  await emptyRecord(demo);
   await db
     .from("profiles")
     .update({ first_name: "Jane", last_name: "Doe", date_of_birth: null, sex: null, address: null, city: null, phone: null })
-    .eq("id", user.user!.id);
+    .eq("id", demo.userId);
 
   // Profile and critical safety.
   await gotoScreen(page, "/profile/edit", "Edit details");
@@ -667,14 +650,15 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page },
   await page.screenshot({ path: info.outputPath("by-hand-profile.png"), fullPage: true });
 });
 
-test("delete my account signs out and removes the user", async ({ page }) => {
+test("delete my account signs out and removes the user", async ({ page, demo }) => {
   await gotoScreen(page, "/profile/privacy", "Privacy and data");
   await page.getByRole("button", { name: "Delete your account" }).click();
   const sheet = page.getByRole("dialog", { name: "Delete your account?" });
   await expectNoAxeViolations(page, "dialog");
   await sheet.getByRole("button", { name: "Delete everything" }).click();
-  await page.waitForURL((url) => url.pathname === "/");
+  // A full page load to the welcome screen (leaveForWelcome); the sign-out event asks for the same one, so wait for where it lands.
+  await expect(page).toHaveURL((url) => url.pathname === "/", { timeout: 15_000 });
   await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
-  const { data } = await clientFor(file).from("profiles").select("id");
+  const { data } = await demo.db.from("profiles").select("id");
   expect(data ?? []).toHaveLength(0);
 });

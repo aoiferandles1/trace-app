@@ -5,7 +5,7 @@ import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
 
 /**
  * Portal screens and states that need no patient: the loading and name
- * steps, wrong and locked codes (against the real database, each with a
+ * steps, wrong and locked codes (against the local database, each with a
  * fresh portal token and its own test IP so nothing locks anyone else out),
  * the about page, and, through stand-in /api/portal responses (made-up
  * data, never the seed), the states that take real minutes to reach
@@ -70,8 +70,7 @@ test("wrong code, then too many attempts, against the database", async ({ browse
   // Codes are random, so a guess could in theory match someone's live code.
   // If it ever does, cancel at once so nobody's phone keeps the request.
   async function guess(code: string) {
-    await input.fill(code);
-    await page.getByRole("button", { name: "Continue" }).click();
+    await input.fill(code); // the fourth digit submits
     const waiting = page.getByRole("heading", { name: WAITING });
     const wrong = page.getByText(/That code doesn't match|Too many attempts/);
     await expect(waiting.or(wrong)).toBeVisible();

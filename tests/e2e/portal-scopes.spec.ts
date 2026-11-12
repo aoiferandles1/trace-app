@@ -1,39 +1,23 @@
-import { expect, test as base, type Browser, type Page } from "@playwright/test";
+import { type Browser, type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
 import { newDoctor, submitCode } from "../helpers/doctor";
-import { NOTHING_OPTIONAL, PortalPatient, type ScopeOptions } from "../helpers/portal-patient";
+import { expect, NOTHING_OPTIONAL, test, type PortalPatient, type ScopeOptions } from "../helpers/portal-patient";
 
 /**
  * What the patient did not share never reaches the portal (BRIEF.md 4.5,
- * 6.3), against the real database: each scope granted alone shows exactly
+ * 6.3), against the local database (tests/support/local-supabase): each scope granted alone shows exactly
  * its rail item and view; an ungranted section's API answers 403 with no
  * data and its URL shows "Not shared" without asking for it; medication
  * notes appear only when the contract returns them; a document opens only
  * while it is shared and the session is active; mental health items stay
  * hidden without their scope.
  *
- * One anonymous patient for the file, re-seeded before each test. Serial,
- * desktop project only. Every session uses a fresh doctor context (its own
- * portal token and test IP).
+ * Every test has its own seeded patient (the `patient` fixture). Desktop
+ * project only. Every session uses a fresh doctor context (its own portal
+ * token and test IP).
  */
 
-const test = base.extend<object, { patient: PortalPatient }>({
-  patient: [
-    async ({}, use) => {
-      const patient = await PortalPatient.signIn();
-      await use(patient);
-      await patient.dispose();
-    },
-    { scope: "worker" },
-  ],
-});
-
-test.describe.configure({ mode: "serial" });
 test.skip(({ viewport }) => (viewport?.width ?? 0) < 1024, "Runs once, in the desktop project");
-
-test.beforeEach(async ({ patient }) => {
-  await patient.reset();
-});
 
 /** Rail order, and the record section and scope key behind each optional view. */
 const OPTIONAL = [
@@ -186,7 +170,7 @@ test("medication notes appear only when the contract returns them", async ({ bro
   s = await openSession(browser, patient, { share_medication_notes: true });
   await s.page.getByRole("navigation", { name: "Patient record" }).getByRole("link", { name: "Medications" }).click();
   await expect(s.page.getByText('Jane: "Back on 36. Smoother and sleeping better."')).toBeVisible({ timeout: VIEW_LOAD });
-  await expect(s.page.getByText('Jane: "Too much. Racing heart and trouble sleeping."')).toBeVisible();
+  await expect(s.page.getByText('Jane: "Too strong. Felt on edge in the evenings and slept badly."')).toBeVisible();
   await s.page.waitForTimeout(250);
   await expectNoAxeViolations(s.page);
   await patient.end();

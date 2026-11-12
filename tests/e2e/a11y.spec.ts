@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { expect, expectNoSideScroll, test } from "./helpers/patient";
 import { newDoctor } from "../helpers/doctor";
 import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
 
@@ -14,27 +14,11 @@ import { mockPortal, SCOPE, statusOf } from "../helpers/portal-mocks";
  *   on screen with a focus ring, and no ring may be clipped by a parent that
  *   hides its overflow.
  *
- * One demo patient for the file (sign-ins are capped), desktop project only;
- * each test sets its own viewport.
+ * Desktop project only; each test sets its own viewport and has its own demo
+ * patient (helpers/patient.ts).
  */
 
-test.describe.configure({ mode: "serial" });
-
 const NARROW = { width: 320, height: 640 };
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  if ((info.project.use.viewport?.width ?? 0) < 1024) return;
-  file = statePath(`a11y-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-  await reseed(clientFor(file));
-});
-
-test.afterAll(async () => {
-  if (file) await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file || undefined!) });
 
 test.beforeEach(async ({}, info) => {
   test.skip((info.project.use.viewport?.width ?? 0) < 1024, "Runs once, in the desktop project");
@@ -120,10 +104,10 @@ async function checkScreen(page: Page, path: string, heading: string | RegExp) {
   expect(stops, `${path}: nothing to Tab to`).toBeGreaterThan(0);
 }
 
-test("patient app: every screen reflows at 320px and works with the keyboard", async ({ page }) => {
+test("patient app: every screen reflows at 320px and works with the keyboard", async ({ page, demo }) => {
   test.setTimeout(420_000);
   await page.setViewportSize(NARROW);
-  const db = clientFor(file);
+  const db = demo.db;
   const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
   const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
   const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
@@ -217,10 +201,9 @@ async function desktopBoxes(page: Page) {
   });
 }
 
-test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe and the keyboard", async ({ page }) => {
+test("patient app at 1024, 1280 and 1440: the rail, one column or two panes, axe and the keyboard", async ({ page, demo }) => {
   test.setTimeout(600_000);
-  const db = clientFor(file);
-  await reseed(db);
+  const db = demo.db;
   const entry = (await db.from("entries").select("id").eq("kind", "result").limit(1).single()).data!.id;
   const condition = (await db.from("conditions").select("id").limit(1).single()).data!.id;
   const med = (await db.from("medications").select("id").eq("name", "Concerta").single()).data!.id;
@@ -331,8 +314,7 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
   const code = (await page.getByText(/^Your code: \d \d \d \d$/).textContent())!.replace(/\D/g, "");
   const { context, page: doctor } = await newDoctor(page.context().browser()!);
   await doctor.goto("/view");
-  await doctor.getByRole("textbox", { name: "Patient's share code" }).fill(code);
-  await doctor.getByRole("button", { name: "Continue" }).click();
+  await doctor.getByRole("textbox", { name: "Patient's share code" }).fill(code); // the fourth digit submits
   const sheet = page.getByRole("dialog", { name: "Dr Hennessy wants access" });
   await expect(sheet).toBeVisible({ timeout: 10_000 });
   await expect(sheet.locator("#access-request-body")).toBeFocused();

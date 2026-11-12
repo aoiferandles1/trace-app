@@ -1,6 +1,7 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { type Page, type Route } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, deleteUser, expectNoSideScroll, reseed, signInDemo, statePath } from "./helpers/patient";
+import { clientAs, expect, expectNoSideScroll, sessionFromState, test } from "./helpers/patient";
+import { sql } from "./helpers/sql";
 import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
 
 /**
@@ -8,37 +9,22 @@ import { DOCTOR, newDoctor, submitCode } from "../helpers/doctor";
  * patient app at phone size, and the doctor's portal in a second browser
  * context. Runs once, in the desktop project.
  *
- * One demo patient for the file (anonymous sign-ins are capped at 30 an hour
- * for this machine), signed in through "Try the demo" and reused; the record
- * is reset with seed_demo_record_v2() before each test. Each doctor is a fresh
+ * Every test has its own demo patient with Jane Doe's record
+ * (helpers/patient.ts), so the tests run in parallel. Each doctor is a fresh
  * context, so a fresh portal token and a made-up IP (tests/helpers/doctor.ts).
  *
- * Time's up cannot be reached against the real database (the shortest share
- * is 30 minutes and tests cannot move its clock), so that screen is tested
- * with stand-in session data at the end of this file.
+ * Time's up is reached for real by moving the share's expiry into the past in
+ * the local database (helpers/sql.ts); the timer announcements and a wrong
+ * device clock still use stand-in session data, at the end of this file.
  */
 
-test.describe.configure({ mode: "serial" });
-
 const PHONE = { width: 390, height: 844 };
-let file = "";
 
-test.beforeAll(async ({ browser }, info) => {
-  if ((info.project.use.viewport?.width ?? 0) < 1024) return;
-  file = statePath(`share-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  if (file) await deleteUser(file);
-});
-
-test.use({ viewport: PHONE, storageState: async ({}, provide) => provide(file || undefined!) });
+test.use({ viewport: PHONE });
 
 test.beforeEach(async ({}, info) => {
   // Once, in the desktop project (the patient pages are drawn at phone size by test.use).
   test.skip((info.project.use.viewport?.width ?? 0) < 1024, "Runs once, in the desktop project");
-  await reseed(clientFor(file));
 });
 
 async function home(page: Page) {
@@ -216,7 +202,7 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await doctor.context.close();
 });
 
-test("scope tiles: the defaults, the locked tiles, and the new scopes reaching the session", async ({ page, browser }) => {
+test("scope tiles: the defaults, the locked tiles, and the new scopes reaching the session", async ({ page, browser, demo }) => {
   await page.goto("/profile");
   await page.getByRole("link", { name: "Share your record" }).click({ timeout: 20_000 });
   await expect(page.getByRole("heading", { level: 1, name: "Share your record" })).toBeVisible();
@@ -266,7 +252,7 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
   // The session row carries exactly those switches.
   await page.waitForURL(/\/share\/code$/);
   const code = await readCode(page);
-  const { data: row } = await clientFor(file).rpc("my_share_session");
+  const { data: row } = await demo.db.rpc("my_share_session");
   expect(row).toMatchObject({
     status: "code_issued",
     duration_kind: "1h",
@@ -329,8 +315,8 @@ test("scope tiles: the defaults, the locked tiles, and the new scopes reaching t
   await doctor.context.close();
 });
 
-test("deny, with the request arriving over another screen", async ({ page, browser }) => {
-  const db = clientFor(file);
+test("deny, with the request arriving over another screen", async ({ page, browser, demo }) => {
+  const db = demo.db;
   const { data: share, error } = await db.rpc("create_share_code", {
     share_documents: false,
     share_family_history: false,
@@ -432,9 +418,9 @@ test("the patient ends after the doctor's notes autosaved: the ended screen and 
   await doctor.context.close();
 });
 
-test("share from Profile on a day with no appointment", async ({ page, browser }) => {
+test("share from Profile on a day with no appointment", async ({ page, browser, demo }) => {
   // Remove today's visit: no appointment today.
-  const db = clientFor(file);
+  const db = demo.db;
   const { data: visits } = await db.from("entries").select("id, occurs_at").eq("kind", "visit");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date());
   const todays = (visits ?? []).filter(
@@ -484,45 +470,43 @@ test("regenerate replaces the code; the old one stops working", async ({ page, b
   await doctor.context.close();
 });
 
-test("a second demo visitor gets a separate record", async ({ page, browser }, info) => {
+test("a second demo visitor gets a separate record", async ({ page, browser, demo }) => {
   // A note only the first visitor has.
-  const db = clientFor(file);
+  const db = demo.db;
   const { error } = await db.from("entries").insert({ kind: "note", title: "Only in sandbox one", occurs_at: new Date().toISOString() });
   expect(error).toBeNull();
 
   // A brand-new visitor: an empty browser (contexts made in a test inherit test.use's storageState).
-  const other = statePath(`share-second-${info.project.name}`);
   const fresh = await browser.newContext({ viewport: PHONE, storageState: { cookies: [], origins: [] } });
   const welcome = await fresh.newPage();
   await welcome.goto("/");
   await welcome.getByRole("button", { name: "Try the demo" }).click();
   await welcome.waitForURL("**/home", { timeout: 60_000 });
-  await fresh.storageState({ path: other });
+  const other = await fresh.storageState();
+  const otherDb = clientAs(sessionFromState(other));
   await fresh.close();
-  try {
+  {
     const ctx = await browser.newContext({ viewport: PHONE, storageState: other });
     const second = await ctx.newPage();
     await second.goto("/record");
     await expect(second.getByRole("heading", { level: 1, name: "Record" })).toBeVisible({ timeout: 20_000 });
     await expect(second.getByRole("link", { name: /Fatigue symptoms/ })).toBeVisible();
     await expect(second.getByText("Only in sandbox one")).toHaveCount(0);
-    const me = (await db.auth.getUser()).data.user!.id;
-    const them = (await clientFor(other).auth.getUser()).data.user!.id;
+    const me = demo.userId;
+    const them = sessionFromState(other).user.id;
     expect(them).not.toBe(me);
     // Reading the first visitor's rows directly returns nothing.
-    const { data: theirs } = await clientFor(other).from("entries").select("id").eq("user_id", me);
+    const { data: theirs } = await otherDb.from("entries").select("id").eq("user_id", me);
     expect(theirs).toEqual([]);
     await ctx.close();
 
     await page.goto("/record");
     await expect(page.getByRole("link", { name: /Only in sandbox one/ })).toBeVisible({ timeout: 20_000 });
-  } finally {
-    await deleteUser(other);
   }
 });
 
-test("reset demo puts Jane's record back", async ({ page }) => {
-  const db = clientFor(file);
+test("reset demo puts Jane's record back", async ({ page, demo }) => {
+  const db = demo.db;
   await db.from("entries").insert({ kind: "note", title: "Remove me on reset", occurs_at: new Date().toISOString() });
   await page.goto("/profile");
   await page.getByRole("button", { name: "Reset demo" }).click();
@@ -539,8 +523,8 @@ test("reset demo puts Jane's record back", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Remove me on reset/ })).toHaveCount(0);
 });
 
-test("/demo runs the loop inside its two frames", async ({ browser }) => {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, storageState: file, extraHTTPHeaders: { "x-forwarded-for": "198.19.200.7" } });
+test("/demo runs the loop inside its two frames", async ({ browser, demo }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, storageState: demo.storageState, extraHTTPHeaders: { "x-forwarded-for": "198.19.200.7" } });
   const page = await ctx.newPage();
   const res = await page.goto("/demo");
   // Only Trace may frame Trace.
@@ -560,12 +544,11 @@ test("/demo runs the loop inside its two frames", async ({ browser }) => {
   const text = await phone.getByText(/^Your code: \d \d \d \d$/).textContent({ timeout: 15_000 });
   const code = text!.replace(/\D/g, "");
 
-  // The portal's name step is pre-filled in the demo.
-  await expect(laptop.getByLabel("Your name")).toHaveValue(DOCTOR.name, { timeout: 15_000 });
-  await expect(laptop.getByLabel(/Practice/)).toHaveValue(DOCTOR.practice);
-  await laptop.getByRole("button", { name: "Continue" }).click();
-  await laptop.getByRole("textbox", { name: "Patient's share code" }).fill(code);
-  await laptop.getByRole("button", { name: "Continue" }).click();
+  // The portal's demo starts at the code, as Dr Hennessy of Rathmines Medical Centre.
+  await expect(laptop.getByRole("heading", { name: "Enter the patient's code" })).toBeVisible({ timeout: 15_000 });
+  await expect(laptop.getByRole("banner")).toContainText(DOCTOR.name);
+  await expect(laptop.getByRole("banner")).toContainText(DOCTOR.practice);
+  await laptop.getByRole("textbox", { name: "Patient's share code" }).fill(code); // the fourth digit submits
 
   await phone.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click({ timeout: 10_000 });
   await expect(laptop.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
@@ -598,7 +581,50 @@ test("the cleanup cron refuses callers without the secret", async ({ request }) 
   expect((await request.get("/api/cron/cleanup", { headers: { authorization: "Bearer not-the-secret" } })).status()).toBe(401);
 });
 
-/* ---------- Time's up and the timer announcements: stand-in session data ---------- */
+test("Time's up for real: the doctor's access pauses at the expiry, and more time brings it back on both sides", async ({ page, browser, demo }) => {
+  const code = await generateFrom(page, "card");
+  const doctor = await newDoctor(browser);
+  await submitCode(doctor.page, code);
+  await page.getByRole("dialog", { name: "Dr Hennessy wants access" }).getByRole("button", { name: "Allow access" }).click();
+  await page.waitForURL(/\/session$/);
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
+
+  // The 30 minutes run out: move the expiry into the past in the database. The
+  // database pauses the share the next time either side asks (lazily, as live).
+  const [row] = await sql<{ id: string }>(
+    "update public.share_sessions set expires_at = now() - interval '1 second' where patient_id = $1 and status = 'active' returning id",
+    [demo.userId],
+  );
+  expect(row?.id).toBeTruthy();
+
+  await expect(page.getByRole("heading", { level: 1, name: "Time's up" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Dr Hennessy's access has been paused. Your record is no longer visible until you decide.")).toBeVisible();
+  await expect(page.getByText(/^If you don't decide, the session closes at /)).toBeVisible();
+  await expectNoAxeViolations(page);
+  // The portal hides the record.
+  await expect(doctor.page.getByText("Access paused")).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toHaveCount(0);
+  expect((await doctor.page.request.get("/api/portal/record?section=overview")).status()).not.toBe(200);
+  const { data: paused } = await demo.db.rpc("my_share_session");
+  expect(paused).toMatchObject({ status: "paused" });
+
+  // More time: both sides are live again.
+  await page.getByRole("button", { name: "Add 15 min" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Dr Hennessy has access" })).toBeVisible();
+  await expect(doctor.page.getByRole("heading", { level: 1, name: "Jane Doe" })).toBeVisible({ timeout: 15_000 });
+  const { data: active } = await demo.db.rpc("my_share_session");
+  expect(active).toMatchObject({ status: "active" });
+  const minutesLeft = (Date.parse((active as { expires_at: string }).expires_at) - Date.now()) / 60_000;
+  expect(minutesLeft).toBeGreaterThan(13);
+  expect(minutesLeft).toBeLessThanOrEqual(15);
+
+  await page.getByRole("button", { name: "End sharing now" }).click();
+  await page.getByRole("dialog", { name: "End sharing now?" }).getByRole("button", { name: "End sharing" }).click();
+  await page.waitForURL(/\/home\?ended=/);
+  await doctor.context.close();
+});
+
+/* ---------- Time's up (state from stand-in data) and the timer announcements ---------- */
 
 function standIn(overrides: Record<string, unknown>) {
   const now = Date.now();

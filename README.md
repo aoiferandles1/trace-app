@@ -36,14 +36,17 @@ npm run dev                  # http://localhost:3000
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Route types and TypeScript |
-| `npm run test:e2e` | The Playwright suite, with axe on every screen. Starts `next dev` on port 3100 unless something is already running there (`E2E_PORT=3000` to use your own dev server). |
+| `npm run test:e2e` | The Playwright suite, with axe on every screen, against a local stand-in for Supabase (no network, no `.env.local`). Builds the app into `.next-e2e` and serves it on port 3100; `E2E_SKIP_BUILD=1` reuses the last build. |
+| `npm run test:e2e:live` | A short smoke test against the real Supabase project with `.env.local` (demo sign-in, one save, a share code), before a deploy. |
+| `npm run test:db` | Every SQL test in `supabase/tests/` against a local Postgres 17 (PGlite) with all migrations applied. |
 
 About the tests:
 
-- They run against the real Supabase project, as demo (anonymous) users they create and delete themselves. Supabase allows about 30 anonymous sign-ins an hour from one address, so run single files while working (`npx playwright test tests/e2e/share-loop.spec.ts`) and the whole suite occasionally. If sign-ins start failing with a rate-limit error, wait.
+- The default suite runs against `tests/support/local-supabase/`: PGlite (Postgres in WebAssembly, no Docker) runs every migration unchanged, and a small Node server answers the Auth, PostgREST and Realtime calls the app makes. Every test gets its own seeded demo user, so the files run in parallel, and the doctor's portal works with a local server secret, so the whole share loop runs. Details, and how to extend it, in that folder's README.
+- `test:e2e:live` uses one of the hosted project's anonymous sign-ins (about 30 an hour from one address) and deletes its user at the end.
 - Database rules have their own SQL tests in `supabase/tests/` (each runs in a transaction that rolls back); see `supabase/README.md`.
 - No test sends email or calls the daily cleanup with the real secret.
-- Two opt-in specs write the redesign's screenshots: `E2E_SCREENS=1 npx playwright test tests/e2e/patient-screens.spec.ts tests/e2e/portal-screens.spec.ts` (390 x 844 and 1280 x 800, into `docs/redesign/screens/after/`; one demo sign-in each).
+- Two opt-in specs write the redesign's screenshots: `E2E_SCREENS=1 npx playwright test tests/e2e/patient-screens.spec.ts tests/e2e/portal-screens.spec.ts` (390 x 844 and 1280 x 800, into `docs/redesign/screens/after/`), from the local database's demo seed.
 
 ## Operations
 

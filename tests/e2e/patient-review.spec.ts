@@ -1,30 +1,17 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { expectNoAxeViolations } from "./axe";
-import { clientFor, reseed, signInDemoOnce, statePath } from "./helpers/patient";
+import { expect, test } from "./helpers/patient";
 
 /**
  * Fixes from the November 2026 review of the patient app, driven the way the
  * bugs showed up: by clicking through the app (client-side navigation), so
  * Next.js keeps earlier screens alive and hidden with their state.
  *
- * Phone project only, with its own demo user (reused while its token works).
+ * Phone project only. Every test has its own demo user (helpers/patient.ts).
  */
-
-test.describe.configure({ mode: "default" });
-
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  test.skip(info.project.name !== "phone", "Phone project only: one demo sign-in");
-  file = statePath(`review-${info.project.name}`);
-  await signInDemoOnce(browser, file, info.project.use.baseURL!);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file) });
 
 test.beforeEach(async ({}, info) => {
   test.skip(info.project.name !== "phone", "Phone project only");
-  await reseed(clientFor(file));
 });
 
 /** The tab bar's Home (a dispatched click: in dev, Next's indicator sits over that corner at 390). */
@@ -90,7 +77,7 @@ test("A1: an edit form opened again shows the saved values", async ({ page }) =>
   await expect(page.getByRole("heading", { level: 1, name: "Mild asthma" })).toBeVisible();
 });
 
-test("A11: Create share code works again after Back from the code", async ({ page }) => {
+test("A11: Create share code works again after Back from the code", async ({ page, demo }) => {
   await page.goto("/profile");
   await page.getByRole("link", { name: "Share your record" }).click();
   const create = page.getByRole("button", { name: "Create share code" });
@@ -105,7 +92,7 @@ test("A11: Create share code works again after Back from the code", async ({ pag
   await create.click();
   await expect(page.getByRole("button", { name: /Your code: \d \d \d \d ?\. Copy it/ })).toBeVisible({ timeout: 20_000 });
   await expectNoAxeViolations(page);
-  await clientFor(file).rpc("end_session");
+  await demo.db.rpc("end_session");
 });
 
 test("F1: log vitals, see them listed, edit them; axe on the new screens", async ({ page }) => {
@@ -162,8 +149,8 @@ test("A3: an empty Add a relative chooses nobody, and a second Mum is refused", 
   await expect(page.getByText("Mum is already in your family history. Edit Mum there instead.")).toBeVisible();
 });
 
-test("A6: a strength change logged by mistake can be undone", async ({ page }) => {
-  const db = clientFor(file);
+test("A6: a strength change logged by mistake can be undone", async ({ page, demo }) => {
+  const db = demo.db;
   const med = (await db.from("medications").select("id").eq("name", "Levothyroxine").single()).data!.id;
   await page.goto(`/meds/${med}`);
   await expect(page.getByRole("heading", { level: 1, name: "Levothyroxine" })).toBeVisible();

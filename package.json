@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test:e2e": "playwright test --trace off",
-    "test:db": "node tests/support/local-supabase/run-sql-tests.ts"
+    "test:db": "node tests/support/local-supabase/run-sql-tests.ts",
+    "test:e2e:live": "E2E_LIVE=1 playwright test --trace off"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

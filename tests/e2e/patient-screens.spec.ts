@@ -1,16 +1,14 @@
-import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { newDoctor, submitCode } from "../helpers/doctor";
-import { clientFor, deleteUser, reseed, signInDemo, statePath } from "./helpers/patient";
+import { expect, test } from "./helpers/patient";
 
 /**
  * Screenshots of the redesigned patient app at the boards' size (390 x 844),
- * against the real database, for comparison with the phone boards (MainA2,
+ * against the local database (its demo seed), for comparison with the phone boards (MainA2,
  * RecordA2, ShareA2, CodeA2, ApproveA2, SessionA2, MedsA2, MedDetailA2,
  * TimelineA2, FamilyA2, InsuranceA2). The sharing screens go through the real
  * loop with a doctor in a second browser. Opt-in: E2E_SCREENS=1 (they
- * overwrite the files in docs/redesign/screens/after/). Phone project only,
- * one demo sign-in.
+ * overwrite the files in docs/redesign/screens/after/). Phone project only.
  */
 
 const OUT = path.resolve(__dirname, "../../docs/redesign/screens/after");
@@ -19,22 +17,10 @@ const SIZE = { width: 390, height: 844 };
 test.skip(({ viewport }) => (viewport?.width ?? 0) >= 1024, "Phone project only");
 test.skip(!process.env.E2E_SCREENS, "Set E2E_SCREENS=1 to write the screenshots");
 
-let file = "";
-
-test.beforeAll(async ({ browser }, info) => {
-  file = statePath(`screens-${info.project.name}`);
-  await signInDemo(browser, file, info.project.use.baseURL!);
-});
-
-test.afterAll(async () => {
-  await deleteUser(file);
-});
-
-test.use({ storageState: async ({}, provide) => provide(file), viewport: SIZE });
+test.use({ viewport: SIZE });
 
 test("phone screens at 390 x 844", async ({ page, browser }) => {
   test.setTimeout(240_000);
-  await reseed(clientFor(file));
   const shot = async (name: string) => {
     await page.waitForTimeout(500);
     // The development build's corner badge is not part of the screen.
