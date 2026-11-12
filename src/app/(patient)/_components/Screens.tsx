@@ -106,9 +106,11 @@ export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" })
   return (
     <DemoStrip tone={tone === "session" ? "session" : "default"}>
       {!framed && (
-        <a
+        // A named target, so it is a real page load into the portal's own tab (never client routing).
+        <Link
           href="/view?demo=1"
           target="trace-portal"
+          prefetch={false}
           className={
             tone === "session"
               ? "hit-area font-semibold text-white underline underline-offset-2"
@@ -116,7 +118,7 @@ export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" })
           }
         >
           Open the doctor&apos;s side
-        </a>
+        </Link>
       )}
     </DemoStrip>
   );
