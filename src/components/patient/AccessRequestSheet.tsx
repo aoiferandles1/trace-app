@@ -119,7 +119,7 @@ export function AccessRequestSheet() {
             practice: session.clinician_practice ?? undefined,
           }}
           duration={durationLabel(session.duration_kind)}
-          shared={[...sharedScopes(prefs).map((s) => s.label), ...(prefs.allow_notes ? ["Can add session notes"] : [])]}
+          shared={[...sharedScopes(prefs).map((s) => s.label), ...(prefs.allow_notes ? ["Can add notes to your record"] : [])]}
           notIncluded={joinLabels(notSharedScopes(prefs))}
         />
         <p className="text-caption text-ink-2">

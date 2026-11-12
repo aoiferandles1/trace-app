@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { DetailBlock } from "@/components/ui/DetailBlock";
+import { StateMessage } from "@/components/ui/StateMessage";
 
 /**
  * Labelled blocks for detail screens (BRIEF.md 5.9): each label 13px ink-2
@@ -17,11 +18,15 @@ export function DetailList({ rows }: { rows: { label: string; value: ReactNode }
   );
 }
 
-/** The "not in your record" state for a detail screen. */
+/** The "not in your record" state for a detail screen: one plain line and a way on (E21). */
 export function NotFound({ what }: { what: string }) {
   return (
-    <p role="alert" className="px-5 py-10 text-center text-body text-ink-2">
-      This {what} isn&apos;t in your record. It may have been deleted.
-    </p>
+    <StateMessage
+      tone="error"
+      align="center"
+      className="px-5 py-10"
+      message={`There's no ${what} here. It may have been deleted.`}
+      action={{ label: "Go to your record", href: "/record" }}
+    />
   );
 }

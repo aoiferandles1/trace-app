@@ -16,7 +16,7 @@ import { fullName } from "@/lib/patient/types";
 import { createClient } from "@/lib/supabase/client";
 import { TabScreen } from "../_components/Screens";
 
-const COUNTRY_CODES: Record<string, string> = { Ireland: "IE", "United Kingdom": "UK" };
+const CASE_STUDY = "https://aoiferandles.com/trace/";
 
 /**
  * Profile (BRIEF.md section 5.12; no board): who you are, then one list of
@@ -33,13 +33,13 @@ function ProfileScreen() {
   const { profile, isAnonymous, reloadProfile } = usePatientSession();
   const share = useShareSession();
   const name = fullName(profile);
-  const place = [profile.city, profile.country && (COUNTRY_CODES[profile.country] ?? profile.country)]
-    .filter(Boolean)
-    .join(", ");
+  // The place in full words ("Dublin, Ireland"); no "Patient" label: everyone here is one (E28, A34).
+  const place = [profile.city, profile.country].filter(Boolean).join(", ");
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   async function resetDemo() {
     setResetting(true);
@@ -73,7 +73,7 @@ function ProfileScreen() {
           <Avatar initials={initialsOf(name) || "?"} size={56} tone="outline" />
           <div className="min-w-0 flex-1">
             <h2 className="font-display text-heading font-light">{name || "Your name"}</h2>
-            <p className="text-caption text-ink-2">{["Patient", place].filter(Boolean).join(" · ")}</p>
+            {place && <p className="text-caption text-ink-2">{place}</p>}
           </div>
         </section>
 
@@ -108,12 +108,43 @@ function ProfileScreen() {
           )}
         </Card>
 
+        <Card as="ul" aria-label="About Trace">
+          <li>
+            <ListRow icon="external" title="About Trace" caption="The case study by Aoife Randles" href={CASE_STUDY} chevron />
+          </li>
+        </Card>
+
         <Card as="ul" aria-label="Account">
           <li>
-            <ListRow icon="sign-out" title={signingOut ? "Signing out…" : "Sign out"} onClick={signingOut ? undefined : signOut} />
+            <ListRow
+              icon="sign-out"
+              title={signingOut ? "Signing out…" : "Sign out"}
+              // A demo can't be reopened after signing out: ask first (B23).
+              onClick={signingOut ? undefined : isAnonymous ? () => setConfirmSignOut(true) : signOut}
+            />
           </li>
         </Card>
       </div>
+
+      <BottomSheet
+        open={confirmSignOut}
+        onClose={() => setConfirmSignOut(false)}
+        title="Sign out of the demo?"
+        actions={
+          <>
+            <Button size="lg" fullWidth onClick={signOut} loading={signingOut}>
+              Sign out
+            </Button>
+            <Button variant="text" onClick={() => setConfirmSignOut(false)}>
+              Stay in the demo
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink-2">
+          This demo can&apos;t be opened again once you sign out. &ldquo;Try the demo&rdquo; starts a new one.
+        </p>
+      </BottomSheet>
 
       <BottomSheet
         open={confirmReset}

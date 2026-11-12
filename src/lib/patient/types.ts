@@ -17,7 +17,7 @@ export type CareKind = "gp" | "specialist" | "pharmacy";
 
 /** Kinds a patient can add by hand. Not `session_notes` (the database refuses it). */
 export const PATIENT_ENTRY_KINDS: { value: EntryKind; label: string }[] = [
-  { value: "visit", label: "Visit or appointment" },
+  { value: "visit", label: "Visit" },
   { value: "result", label: "Test result" },
   { value: "prescription", label: "Prescription" },
   { value: "letter", label: "Letter" },

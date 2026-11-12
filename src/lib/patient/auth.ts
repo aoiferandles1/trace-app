@@ -37,6 +37,11 @@ export const PENDING_EMAIL_KEY = "trace:pending-email";
 
 export const INVITE_ONLY = "Trace is invite-only for now.";
 
+export const NO_ACCOUNT = "We couldn't find an account for that email.";
+
+/** Session storage key for the email typed on sign in, so a reload of the code step keeps it (A37). */
+export const LOGIN_EMAIL_KEY = "trace:login-email";
+
 /**
  * Words for the errors Supabase Auth returns on the email and code steps.
  * The invite trigger makes sign-up of an uninvited email fail with HTTP 500
@@ -49,7 +54,7 @@ export function authErrorMessage(error: AuthError | Error, stage: "send" | "veri
     return INVITE_ONLY;
   }
   if (stage === "login" && (code === "otp_disabled" || /signups not allowed/i.test(message))) {
-    return "We couldn't find an account for that email. Check it, or create your record instead.";
+    return NO_ACCOUNT;
   }
   if (code === "over_email_send_rate_limit" || code === "over_request_rate_limit" || /rate limit|security purposes/i.test(message)) {
     return "Too many emails were sent. Wait a minute, then try again.";

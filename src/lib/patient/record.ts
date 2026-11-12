@@ -266,7 +266,7 @@ export const ENTRY_KIND_LABEL: Record<RecordEntryKind, string> = {
   letter: "Letter",
   imaging: "Scan",
   vaccination: "Vaccination",
-  session_notes: "Session notes",
+  session_notes: "Doctor's notes",
 };
 
 /**

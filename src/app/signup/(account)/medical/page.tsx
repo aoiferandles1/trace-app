@@ -16,7 +16,8 @@ import { useStepSave } from "../_lib/useStepSave";
 /**
  * Sign-up step 4 of 7 (p-medical): critical safety information. Allergies
  * and implants are typed as one line each and saved as lists (split on
- * commas). "I'll add this later" moves on without saving anything.
+ * commas). "I'll add this later" moves on without saving; it only shows
+ * while nothing is typed, so typed values are never dropped (A49).
  */
 function MedicalScreen() {
   const { save, busy, error, profile } = useStepSave("medical");
@@ -24,6 +25,7 @@ function MedicalScreen() {
   const [allergies, setAllergies] = useState(profile.allergies.join(", "));
   const [implants, setImplants] = useState(profile.implants.join(", "));
   const [skipping, setSkipping] = useState(false);
+  const typed = Boolean(bloodType || allergies.trim() || implants.trim());
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -39,33 +41,37 @@ function MedicalScreen() {
       header={<ProgressHeader step={4} backHref="/signup/about" />}
       footer={
         <div className="flex flex-col gap-3">
-          <Button type="submit" form="medical-form" size="lg" fullWidth loading={busy && !skipping}>
-            Continue
-          </Button>
           <Button
-            variant="secondary"
+            type="submit"
+            form="medical-form"
             size="lg"
             fullWidth
-            loading={busy && skipping}
-            onClick={() => {
-              setSkipping(true);
-              void save({});
-            }}
+            loading={busy && !skipping}
+            onClick={() => setSkipping(false)}
           >
-            I&apos;ll add this later
+            Continue
           </Button>
+          {!typed && (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              loading={busy && skipping}
+              onClick={() => {
+                setSkipping(true);
+                void save({});
+              }}
+            >
+              I&apos;ll add this later
+            </Button>
+          )}
         </div>
       }
     >
       <div className="flex flex-col gap-5 px-5 pb-8">
-        <StepIntro eyebrow="Medical basics" title="Critical safety information.">
-          This is always shown to any doctor you share with. It can never be hidden. Adding it now means every doctor
-          you share with sees it first.
+        <StepIntro title="Critical safety information">
+          Every doctor you share with sees this first. It can never be hidden.
         </StepIntro>
-        <Notice tone="critical" icon="warning">
-          This section is pinned to the top of your shared record. Every doctor who views your record will always see
-          it, before anything else.
-        </Notice>
         <form id="medical-form" onSubmit={submit} noValidate className="flex flex-col gap-5">
           <SelectField
             label="Blood type"
@@ -77,15 +83,14 @@ function MedicalScreen() {
             label="Known allergies"
             value={allergies}
             onChange={(e) => setAllergies(e.target.value)}
-            placeholder="e.g. Penicillin"
-            hint="Include any drug, food, or contact allergies. Separate them with commas."
+            hint="Drug, food or contact allergies. Separate them with commas."
           />
           <TextField
             label="Implants or devices"
             optional
             value={implants}
             onChange={(e) => setImplants(e.target.value)}
-            placeholder="e.g. pacemaker, stent"
+            hint="Separate them with commas."
           />
           {error && (
             <Notice tone="critical" live="assertive">

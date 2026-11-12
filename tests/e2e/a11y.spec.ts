@@ -353,7 +353,7 @@ test("patient app: the share loop screens at 320px, and the request sheet with t
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);
   await page.getByRole("link", { name: "View summary" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Session ended" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Sharing ended" })).toBeVisible();
   await expectNoSideScroll(page);
   await expectNoAxeViolations(page);
   expect((await walkKeyboard(page)).problems).toEqual([]);

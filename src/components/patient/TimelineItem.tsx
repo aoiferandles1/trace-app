@@ -37,7 +37,7 @@ export const ENTRY_KINDS: Record<EntryKind, { label: string; icon: IconName }> =
   letter: { label: "Letter", icon: "document" },
   imaging: { label: "Imaging", icon: "document" },
   vaccination: { label: "Vaccination", icon: "shield" },
-  session_notes: { label: "Session notes", icon: "pencil" },
+  session_notes: { label: "Doctor's notes", icon: "pencil" },
 };
 
 export function TimelineYear({ children, className }: { children: ReactNode; className?: string }) {

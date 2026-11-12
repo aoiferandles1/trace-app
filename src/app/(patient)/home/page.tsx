@@ -283,7 +283,7 @@ function LiveCard({ session }: { session: ShareSession }) {
       name={paused ? "Your record is hidden" : manual ? "Until you end it" : `Ends at ${formatTime(session.expires_at!)}`}
       place={session.clinician_practice ?? undefined}
       initials={initialsOf(name)}
-      action={{ href: "/session", label: paused ? "Decide now" : "View session", icon: "clock" }}
+      action={{ href: "/session", label: paused ? "Decide now" : "Manage sharing", icon: "clock" }}
     />
   );
 }

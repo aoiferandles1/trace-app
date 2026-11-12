@@ -293,7 +293,7 @@ export function shareErrorMessage(code: string | undefined): string {
     case "session_live":
       return "A doctor can already see your record. End that session before you start a new share.";
     case "invalid_appointment":
-      return "That appointment isn't in your record any more. Share from your profile instead.";
+      return "That visit isn't in your record any more. Share from your profile instead.";
     case "session_limit_reached":
       return "This share has reached its 12 hour limit. End it when you're ready.";
     case "no_live_session":

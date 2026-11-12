@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
 import { usePatientSession } from "@/components/patient/PatientSession";
@@ -84,15 +84,42 @@ export function ShareNoticeStrip({ notice, onDismiss }: { notice: ShareNotice; o
   );
 }
 
+/** True inside the /demo page's frames (it has its own way to the doctor's side). */
+function useFramed(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => window.self !== window.top,
+    () => true,
+  );
+}
+
 /**
  * "Demo with sample data" (BRIEF.md section 3.2): the strip at the top of
  * every signed-in screen of a demo (anonymous) account. Real accounts never
- * see it.
+ * see it. Outside the /demo page it also links to the doctor's side, in its
+ * own tab (H6), so a visitor can play both parts.
  */
 export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" }): ReactNode {
   const { isAnonymous } = usePatientSession();
+  const framed = useFramed();
   if (!isAnonymous) return null;
-  return <DemoStrip tone={tone === "session" ? "session" : "default"} />;
+  return (
+    <DemoStrip tone={tone === "session" ? "session" : "default"}>
+      {!framed && (
+        <a
+          href="/view?demo=1"
+          target="trace-portal"
+          className={
+            tone === "session"
+              ? "hit-area font-semibold text-white underline underline-offset-2"
+              : "hit-area font-semibold text-accent underline underline-offset-2"
+          }
+        >
+          Open the doctor&apos;s side
+        </a>
+      )}
+    </DemoStrip>
+  );
 }
 
 export function TabScreen({

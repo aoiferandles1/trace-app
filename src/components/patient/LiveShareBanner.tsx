@@ -51,7 +51,7 @@ export function LiveShareBanner({
         timeLeft && <span className="shrink-0 text-caption font-semibold tabular-nums">{timeLeft} left</span>
       )}
       <Icon name="chevron-right" size={18} />
-      <span className="sr-only">. View session</span>
+      <span className="sr-only">. Manage sharing</span>
     </Link>
   );
 }

@@ -246,7 +246,7 @@ test("add: the sheet of plain rows, then a note from start to delete", async ({ 
   await expect(page.getByRole("link", { name: /Headaches after lunch/ })).toHaveCount(0);
   // Back to the deleted entry's screen (kept in memory by Next.js): the confirm sheet must not reopen.
   await page.goBack();
-  await expect(page.getByText(/isn't in your record/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/It may have been deleted/).filter({ visible: true })).toBeVisible({ timeout: 10_000 });
   expect(await page.evaluate(() => document.querySelectorAll("dialog[open]").length)).toBe(0);
 });
 
@@ -449,7 +449,7 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await page.goto("/signup/privacy");
   await page.waitForURL(/\/signup\/about$/);
 
-  await expect(page.getByRole("heading", { level: 1, name: "Tell us a little about yourself." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Tell us about yourself" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Enter your first name.")).toBeVisible();
@@ -459,33 +459,32 @@ test("sign-up steps 3 to 7 resume, save to the profile and finish on Home", asyn
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/medical$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Critical safety information." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Critical safety information" })).toBeVisible();
   await expectNoAxeViolations(page);
   await page.getByRole("combobox", { name: "Blood type" }).selectOption("A+");
   await page.getByRole("textbox", { name: "Known allergies" }).fill("Penicillin");
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/privacy$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Your data, your rights." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Your data, your rights" })).toBeVisible();
   await expectNoAxeViolations(page);
-  await page.getByRole("button", { name: "I agree" }).click();
-  await expect(page.getByText("Turn on the agreement to continue.")).toBeVisible();
-  await page.getByRole("switch", { name: /I agree to Trace's Terms of Service/ }).click();
+  // One act of consent: the line says what "I agree" accepts (B21).
+  await expect(page.getByText("By agreeing you accept Trace's terms and privacy policy.")).toBeVisible();
   await page.getByRole("button", { name: "I agree" }).click();
 
   await page.waitForURL(/\/signup\/profiles$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Set up your first share profile." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "What a doctor sees when you share" })).toBeVisible();
   await expect(page.getByText("Add Emergency and Specialist profiles later")).toHaveCount(0);
   await expectNoAxeViolations(page);
 
   // Leaving and coming back resumes here.
   await page.goto("/home");
   await page.waitForURL(/\/signup\/profiles$/);
-  await page.getByRole("button", { name: "Set up GP visit profile" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   await page.waitForURL(/\/signup\/welcome$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Welcome to Trace, Jane!" })).toBeVisible();
-  await expect(page.getByText("Blood type A+ · Penicillin allergy")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Welcome to Trace, Jane" })).toBeVisible();
+  await expect(page.getByText("Blood type A+, Penicillin allergy")).toBeVisible();
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
   await page.getByRole("button", { name: "Go to your record" }).click();

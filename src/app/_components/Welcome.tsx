@@ -1,9 +1,8 @@
 "use client";
 
-import { Icon, type IconName } from "@/components/ui/Icon";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -15,8 +14,11 @@ import { demoErrorMessage, pathForStep } from "@/lib/patient/auth";
  * then p-login. Someone already signed in goes straight to their record (or
  * their sign-up step).
  *
- * "Try the demo" is new (PLAN.md section 9): it signs in anonymously, fills
- * the visitor's own sandbox with Jane Doe's record and opens Home.
+ * "Try the demo" is the main action (most visitors come from the case study,
+ * H1): it signs in anonymously, fills the visitor's own sandbox with Jane
+ * Doe's record and opens Home, saying what it is doing while it waits (H5).
+ * Sign in follows; creating a record is a link, after the line saying Trace
+ * is invite-only.
  */
 export function Welcome() {
   const router = useRouter();
@@ -77,70 +79,45 @@ export function Welcome() {
         <p className="font-display text-display font-light">trace</p>
         <h1 className="font-display text-title font-light">Your health record, owned by you.</h1>
         <p className="text-body text-ink-2">
-          Trace puts your medical history in one place and keeps you in control.
+          Keep your medical history in one place, and share it with a doctor only when you say so.
         </p>
-        <ul className="flex flex-col">
-          <Feature icon="person" title="You decide who sees what">
-            Share with any doctor, anywhere. Choose exactly what they can access.
-          </Feature>
-          <Feature icon="record" title="Your complete history in one place">
-            Log visits, track medications and keep notes, all in one record.
-          </Feature>
-          <Feature icon="shield" title="Private by design">
-            Your data is yours. No advertising. No data sales. Ever.
-          </Feature>
-        </ul>
-        <div className="mt-2 flex flex-col gap-5">
-          <ButtonLink href="/signup" size="lg" fullWidth>
-            Create your record
-          </ButtonLink>
-          <ButtonLink href="/login" variant="secondary" size="lg" fullWidth>
-            I already have an account
-          </ButtonLink>
-        </div>
-        <div className="flex flex-col items-center gap-2 pt-3">
-          <p className="text-center text-caption text-ink-2">Just looking? Try Trace with sample data.</p>
-          <Button variant="text" size="md" onClick={startDemo} loading={demoBusy}>
+        {/* A visitor's way in is the demo (H1); accounts are by invite, said before the email step. */}
+        <div className="mt-2 flex flex-col gap-3">
+          <Button size="lg" fullWidth onClick={startDemo} loading={demoBusy}>
             Try the demo
           </Button>
+          <p role="status" className="text-center text-caption text-ink-2">
+            {demoBusy ? "Setting up a sample record. This takes a few seconds." : "A sample patient's record. Nothing to sign up for."}
+          </p>
           {demoError && (
             <Notice tone="critical" live="assertive" className="w-full">
               {demoError}
             </Notice>
           )}
+          <ButtonLink href="/login" variant="secondary" size="lg" fullWidth className="mt-2">
+            Sign in
+          </ButtonLink>
+          <p className="text-center text-caption text-ink-2">
+            Trace is invite-only for now.{" "}
+            <Link href="/signup" className="font-semibold text-accent underline underline-offset-2">
+              Create your record
+            </Link>{" "}
+            if you have an invite.
+          </p>
         </div>
         <p className="mt-auto text-center text-caption text-ink-2">
           Trace is a portfolio project by Aoife Randles, not a medical service.{" "}
           <a href="https://aoiferandles.com/trace/" className="text-accent underline underline-offset-2">
             Read the case study
           </a>{" "}
-          ·{" "}
+          or the{" "}
           <Link href="/terms" className="text-accent underline underline-offset-2">
-            Terms
+            terms
           </Link>
+          .
         </p>
       </div>
     </PatientShell>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  children,
-}: {
-  icon: IconName;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3.5 py-2">
-      <Icon name={icon} className="text-accent" />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-row font-medium text-ink">{title}</span>
-        <span className="text-caption text-ink-2">{children}</span>
-      </span>
-    </li>
   );
 }
 

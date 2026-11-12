@@ -102,10 +102,11 @@ export function formatShortDate(iso: string, now: Date = new Date()): string {
   return y === thisYear ? `${d} ${MONTHS[m - 1]}` : `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
-/** "Wed 14 Jan" (Home's Upcoming card). */
-export function formatWeekdayDate(iso: string): string {
-  const { m, d, weekday } = dayParts(iso);
-  return `${WEEKDAYS[weekday]} ${d} ${MONTHS[m - 1]}`;
+/** "Wed 14 Jan" this year, "Wed 14 Jan 2025" in any other (Share history). */
+export function formatWeekdayDate(iso: string, now: Date = new Date()): string {
+  const { y, m, d, weekday } = dayParts(iso);
+  const thisYear = Number(dayKey(now).slice(0, 4));
+  return `${WEEKDAYS[weekday]} ${d} ${MONTHS[m - 1]}${y === thisYear ? "" : ` ${y}`}`;
 }
 
 /** "9:30am". */

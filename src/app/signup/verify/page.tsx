@@ -26,7 +26,7 @@ export default function SignupVerifyPage() {
   return (
     <PatientShell header={<ProgressHeader step={2} backHref="/signup" />}>
       <div className="flex flex-col gap-6 px-5 pb-10">
-        <StepIntro eyebrow="Verify email" title="Check your email.">
+        <StepIntro title="Check your email">
           We sent a 6-digit code to {email}
         </StepIntro>
         <CodeForm email={email} mode="signup" />

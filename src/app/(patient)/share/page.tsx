@@ -232,7 +232,7 @@ function ShareConfirmScreen() {
               <>
                 {" "}
                 <Link href="/session" className="underline underline-offset-2">
-                  View session
+                  Manage sharing
                 </Link>
               </>
             )}
