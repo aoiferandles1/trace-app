@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { PatientShell } from "@/components/layout/PatientShell";
 import { LiveShareBanner } from "@/components/patient/LiveShareBanner";
-import { usePatientSession } from "@/components/patient/PatientSession";
 import { useShareSession, type ShareNotice } from "@/components/patient/ShareSession";
 import { IconButton } from "@/components/ui/IconButton";
 import { PageHeader } from "@/components/patient/PageHeader";
 import { PatientRail } from "@/components/patient/PatientRail";
 import { TabBar } from "@/components/patient/TabBar";
-import { DemoStrip } from "@/components/ui/DemoStrip";
 import { StateMessage } from "@/components/ui/StateMessage";
 import { formatCountdown } from "@/lib/format";
 import { clinicianName, isOpen, msUntil } from "@/lib/patient/share";
@@ -84,44 +82,17 @@ export function ShareNoticeStrip({ notice, onDismiss }: { notice: ShareNotice; o
   );
 }
 
-/** True inside the /demo page's frames (it has its own way to the doctor's side). */
-function useFramed(): boolean {
-  return useSyncExternalStore(
-    () => () => {},
-    () => window.self !== window.top,
-    () => true,
-  );
-}
-
 /**
- * "Demo with sample data" (BRIEF.md section 3.2): the strip at the top of
- * every signed-in screen of a demo (anonymous) account. Real accounts never
- * see it. Outside the /demo page it also links to the doctor's side, in its
- * own tab (H6), so a visitor can play both parts.
+ * The demo marker: the slot at the top of every signed-in screen where the
+ * "Demo with sample data" strip used to sit (BRIEF.md section 3.2, H6). Aoife
+ * removed the strip (16 Nov 2026): it covered the top of the phone in the
+ * portfolio's live demo and in every screenshot. A demo is still marked as one
+ * on the welcome screen, in Profile ("Reset demo") and in the portal's footer.
+ * The slot stays so the screens keep their shape; it renders nothing.
  */
-export function DemoMarker({ tone = "ground" }: { tone?: "ground" | "session" }): ReactNode {
-  const { isAnonymous } = usePatientSession();
-  const framed = useFramed();
-  if (!isAnonymous) return null;
-  return (
-    <DemoStrip tone={tone === "session" ? "session" : "default"}>
-      {!framed && (
-        // A named target, so it is a real page load into the portal's own tab (never client routing).
-        <Link
-          href="/view?demo=1"
-          target="trace-portal"
-          prefetch={false}
-          className={
-            tone === "session"
-              ? "hit-area font-semibold text-white underline underline-offset-2"
-              : "hit-area font-semibold text-accent underline underline-offset-2"
-          }
-        >
-          Open the doctor&apos;s side
-        </Link>
-      )}
-    </DemoStrip>
-  );
+export function DemoMarker(props: { tone?: "ground" | "session" }): ReactNode {
+  void props;
+  return null;
 }
 
 export function TabScreen({

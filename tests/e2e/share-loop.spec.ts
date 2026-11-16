@@ -59,7 +59,8 @@ test("happy path: the today card to notes on the timeline and in the share histo
   await home(page);
   const today = page.getByRole("region", { name: "GP visit today" });
   await expect(today.getByText("9:30")).toBeVisible();
-  await expect(page.getByText("Demo with sample data").first()).toBeVisible();
+  // The demo strip was removed (Nov 2026): it covered the top of the phone in the portfolio's demo.
+  await expect(page.getByText("Demo with sample data")).toHaveCount(0);
   await expectNoAxeViolations(page);
 
   // Share confirm (ShareA2), with the GP visit defaults.

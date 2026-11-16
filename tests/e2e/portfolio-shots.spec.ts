@@ -7,7 +7,7 @@ import { expect, test } from "./helpers/patient";
 /**
  * Screenshots for the Trace case study on Aoife's portfolio (aoiferandles.com/trace/),
  * at 2x: the phone at 390 x 844 (780 x 1688 files, the size of the case study's
- * Figma exports), the portal and the patient app on a computer at 1280 x 800.
+ * Figma exports), the portal and the patient app on a computer at 1680 x 1050 (a full laptop screen, so the screenshots read at normal scale).
  * One GP visit through the real loop: the patient on the phone, the doctor in a
  * second browser. Opt-in: E2E_PORTFOLIO_OUT=<folder> (PNGs, written there; the
  * portfolio converts them to WebP). Phone project only.
@@ -17,7 +17,7 @@ import { expect, test } from "./helpers/patient";
 
 const OUT = process.env.E2E_PORTFOLIO_OUT ?? "";
 const PHONE = { width: 390, height: 844 };
-const WIDE = { width: 1280, height: 800 };
+const WIDE = { width: 1680, height: 1050 };
 
 test.skip(({ viewport }) => (viewport?.width ?? 0) >= 1024, "Phone project only");
 test.skip(!OUT, "Set E2E_PORTFOLIO_OUT=<folder> to write the screenshots");

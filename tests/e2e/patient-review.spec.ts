@@ -178,9 +178,10 @@ test("A39: a photo over 3 MB is made smaller before upload", async ({ page }) =>
   await expect(page.getByText(/^JPEG, \d+ KB, made smaller from 3 MB$/)).toBeVisible();
 });
 
-test("H6, E28, B23: the demo strip opens the doctor's side; Profile has no middle dots; demo sign out asks first", async ({ page }) => {
+test("E28, B23: no demo strip (removed, Nov 2026); Profile has no middle dots; demo sign out asks first", async ({ page }) => {
   await page.goto("/profile");
-  await expect(page.getByRole("link", { name: "Open the doctor's side" })).toHaveAttribute("href", "/view?demo=1");
+  await expect(page.getByRole("heading", { level: 1, name: "Profile" })).toBeVisible();
+  await expect(page.getByText("Demo with sample data")).toHaveCount(0);
   await expect(page.getByText(/·/)).toHaveCount(0);
   await page.getByRole("button", { name: "Sign out" }).click();
   const sheet = page.getByRole("dialog", { name: "Sign out of the demo?" });

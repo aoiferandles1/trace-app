@@ -123,10 +123,12 @@ function ShareConfirmScreen() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <div aria-hidden="true" className="flex min-w-0 flex-1 gap-1">
-              {SCOPES.map((s) => (
+              {/* Filled from the left, one per shared section: a count, not a map of the tiles (Aoife, Nov 2026:
+                  in tile order the gaps read as a missed dash) */}
+              {SCOPES.map((s, i) => (
                 <span
                   key={s.id}
-                  className={`h-1.5 max-w-5 flex-1 rounded-full ${s.key === null || effective[s.key] ? "bg-accent" : "bg-border-control"}`}
+                  className={`h-1.5 max-w-5 flex-1 rounded-full ${i < shared ? "bg-accent" : "bg-border-control"}`}
                 />
               ))}
             </div>
