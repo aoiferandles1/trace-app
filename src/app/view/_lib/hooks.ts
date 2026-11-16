@@ -92,6 +92,18 @@ export function useDemo(): boolean | null {
   return useSyncExternalStore(noop, readDemo, () => null);
 }
 
+/**
+ * Whether the portal may move focus on its own (to a new step's heading or
+ * field). Always on its own tab. Inside a frame (/demo, or Aoife's portfolio
+ * case study) only once the doctor is using this frame: a focus() in a frame
+ * scrolls the outer page to it, so loading the portal, or the patient
+ * approving on the phone beside it, must not pull the reader's page around.
+ */
+export function mayTakeFocus(): boolean {
+  if (window.self === window.top) return true;
+  return document.hasFocus();
+}
+
 /** True inside the /demo page's laptop frame, where the record needs every pixel. */
 export function useInDemoFrame(): boolean {
   return useSyncExternalStore(

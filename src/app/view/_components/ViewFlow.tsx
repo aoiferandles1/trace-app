@@ -18,6 +18,7 @@ import { clockOffset, firstStatus, portalApi, PortalApiError, type PortalStatus 
 import { formatClock } from "../_lib/format";
 import {
   DEMO_CLINICIAN,
+  mayTakeFocus,
   readClinician,
   readDemo,
   saveClinician,
@@ -104,10 +105,13 @@ function Flow() {
 
   // Move focus to what changed: the new step's heading, or its field (the
   // code field carries any error through aria-describedby).
+  // Inside a frame nobody is using yet, focus stays put (mayTakeFocus).
   useEffect(() => {
-    if (focusTarget.current === "heading") headingRef.current?.focus();
-    if (focusTarget.current === "code") document.getElementById(CODE_ID)?.focus();
-    if (focusTarget.current === "name") document.getElementById(NAME_ID)?.focus();
+    if (mayTakeFocus()) {
+      if (focusTarget.current === "heading") headingRef.current?.focus();
+      if (focusTarget.current === "code") document.getElementById(CODE_ID)?.focus();
+      if (focusTarget.current === "name") document.getElementById(NAME_ID)?.focus();
+    }
     focusTarget.current = "none";
   }, [screen]);
 
