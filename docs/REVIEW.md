@@ -194,6 +194,7 @@ Your choice of 16 Nov from the Home mockups: Idea 1's share card, Idea 4's medic
 
 - **H5. No demo strip (your decision, 16 Nov 2026).** "Demo with sample data" and "Open the doctor's side" are gone from the top of every patient screen: the strip covered the top of the phone in the portfolio's live demo and in its screenshots. A demo is still marked on the welcome screen, by "Reset demo" in Profile and in the portal's footer.
 - **H6. Share confirm's dashes count from the left.** "8 of 10 shared" fills the first eight dashes. They used to follow the tiles' order, so an off tile in the middle read as a missed dash.
+- **H7. The portal takes no focus inside a frame nobody is using.** Loading the portal in the portfolio's demo, or the patient approving on the phone beside it, used to move focus into the laptop frame, which scrolled the whole portfolio page to it. On its own tab the portal moves focus to each new step as before.
 
 ### 1.4 Doctor's portal (Phase 7)
 

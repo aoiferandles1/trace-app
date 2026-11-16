@@ -545,6 +545,12 @@ test("/demo runs the loop inside its two frames", async ({ browser, demo }) => {
   const phone = page.frameLocator('iframe[title="Patient app, on a phone"]');
   const laptop = page.frameLocator('iframe[title="Doctor\'s portal, on a laptop"]');
 
+  // Loading the portal in a frame takes no focus, so it never scrolls the outer page to it
+  // (the portfolio frames it further down a long page: mayTakeFocus).
+  await expect(laptop.getByRole("heading", { name: "Enter the patient's code" })).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe("IFRAME");
+
   // Already signed in as the demo patient: the phone opens Home.
   await phone.getByRole("link", { name: "Share record" }).click({ timeout: 30_000 });
   await phone.getByRole("button", { name: "Create share code" }).click();

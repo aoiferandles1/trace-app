@@ -40,7 +40,7 @@ import {
   patientLine,
   sharedForLabel,
 } from "../../_lib/format";
-import { portalHome, useDemo, useInDemoFrame, useNow, usePolling } from "../../_lib/hooks";
+import { mayTakeFocus, portalHome, useDemo, useInDemoFrame, useNow, usePolling } from "../../_lib/hooks";
 import { isGranted, VIEWS, viewDef, viewForPath } from "../../_lib/sections";
 import { SessionContext, type EndProblem, type SessionContextValue } from "./SessionContext";
 import { NotSharedView } from "./Views";
@@ -655,7 +655,7 @@ function StateTitle({ label, title }: { label: string; title: string }) {
   const heading = useRef<HTMLHeadingElement>(null);
   // Focus moves to the new state, unless the doctor is typing notes (the live region says what changed).
   useEffect(() => {
-    if (!(document.activeElement instanceof HTMLTextAreaElement)) heading.current?.focus();
+    if (!(document.activeElement instanceof HTMLTextAreaElement) && mayTakeFocus()) heading.current?.focus();
   }, []);
   return (
     <div className="flex flex-col gap-2.5">
