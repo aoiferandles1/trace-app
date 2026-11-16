@@ -30,7 +30,15 @@ import { createClient } from "@/lib/supabase/client";
 import { must, useLoad } from "@/lib/useLoad";
 import { useNow } from "@/lib/useNow";
 import { LoadStatus, TabScreen } from "../_components/Screens";
-import { ShareCard, SinceLastVisit, TodaysMedicines, type SinceItem } from "./_components/HomeSections";
+import {
+  doseKey,
+  ShareCard,
+  SinceLastVisit,
+  TodaysMedicines,
+  type DoseLog,
+  type DoseSlot,
+  type SinceItem,
+} from "./_components/HomeSections";
 
 type HomeData = {
   /** Every entry later than now, soonest first. */
@@ -43,11 +51,16 @@ type HomeData = {
   sharedVisitIds: string[];
   /** The latest share that ended, for the share card's "Last shared with". */
   lastShare: { name: string; endedAt: string } | null;
+  /** The day (Irish time) the doses below are for. */
+  today: string;
+  /** Doses ticked today; null when the log can't be read (the list then has no ticks). */
+  doses: DoseLog | null;
 };
 
 async function loadHome(): Promise<HomeData> {
   const db = createClient();
-  const [record, ended, last] = await Promise.all([
+  const today = dayKey(new Date());
+  const [record, ended, last, taken] = await Promise.all([
     loadSections("overview", "full_timeline"),
     db.from("share_sessions").select("appointment_entry_id").eq("status", "ended").not("appointment_entry_id", "is", null),
     db
@@ -57,6 +70,7 @@ async function loadHome(): Promise<HomeData> {
       .not("ended_at", "is", null)
       .order("ended_at", { ascending: false })
       .limit(1),
+    db.from("medication_doses").select("medication_id, slot, taken_at").eq("taken_on", today),
   ]);
   const lastRow = must(last)[0];
   return {
@@ -66,6 +80,11 @@ async function loadHome(): Promise<HomeData> {
     hasConditions: (record.overview.conditions?.length ?? 0) > 0,
     sharedVisitIds: must(ended).map((r) => r.appointment_entry_id!),
     lastShare: lastRow ? { name: clinicianName(lastRow), endedAt: lastRow.ended_at! } : null,
+    today,
+    // A failed read only costs the ticks, never Home.
+    doses: taken.error
+      ? null
+      : Object.fromEntries(taken.data.map((d) => [doseKey(d.medication_id, d.slot as DoseSlot), d.taken_at])),
   };
 }
 
@@ -211,7 +230,7 @@ function HomeBody({
 
       {prep && sinceSection}
 
-      <TodaysMedicines meds={data.current} />
+      <TodaysMedicines meds={data.current} today={data.today} doses={data.doses} />
 
       {comingUp.length > 0 && (
         <section aria-labelledby="coming-up" className="flex flex-col gap-2">
