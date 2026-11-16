@@ -2,6 +2,7 @@ import { type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { expectNoAxeViolations } from "./axe";
 import { emptyRecord, expect, expectNoSideScroll, test } from "./helpers/patient";
+import { sql } from "./helpers/sql";
 
 /**
  * The signed-in patient app (Phase 3 steps 3 to 7, and Phase 4). Every test
@@ -29,17 +30,49 @@ test("home shows Jane's record", async ({ page }) => {
   await expect(coming.getByRole("link")).toHaveText([/Warfarin refill/, /INR blood test/, /Cardiology follow-up/]);
   await expect(coming.getByText("8 days")).toHaveCount(0);
   await expect(coming.getByRole("link", { name: /Warfarin refill/ })).toHaveAttribute("href", /\/meds\//);
-  // Recent: the three latest past entries, not today's visit (it is on the card).
-  const recent = page.getByRole("region", { name: "Recent" });
-  await expect(recent.getByRole("link")).toHaveText([
+  // A visit today: "Before you go in" sits right under the card, with what was
+  // added since the last visit (the GP visit for tiredness), newest first.
+  const before = page.getByRole("region", { name: "Before you go in" });
+  await expect(before.getByRole("link")).toHaveText([
     /Blood count and INR.*Result/,
-    /Fatigue symptoms.*Note/,
+    /Fatigue symptoms.*Your note/,
     /Notes from Dr Hennessy.*Doctor's notes/,
   ]);
+  await expect(page.getByRole("region", { name: "Since your last visit" })).toHaveCount(0);
+  // Today's medicines, grouped by when they are taken; no white share card beside the today card.
+  const meds = page.getByRole("region", { name: "Today's medicines" });
+  await expect(meds.getByRole("list", { name: "Morning" }).getByRole("link")).toHaveText([/Concerta.*36mg/, /Levothyroxine.*50mcg/]);
+  await expect(meds.getByRole("list", { name: "Evening" }).getByRole("link")).toHaveText([/Warfarin.*5mg/]);
+  await expect(meds.getByRole("list", { name: "As needed" }).getByRole("link")).toHaveText([/Salbutamol.*100mcg/]);
+  await expect(page.getByRole("region", { name: "Share your record" })).toHaveCount(0);
   await expect(page.getByText("Upload doc")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
   await expectNoSideScroll(page);
+});
+
+test("home on a day without a visit: the share card, then Since your last visit", async ({ page, demo }) => {
+  // Without today's GP visit, Home is in its normal-day state.
+  await sql("delete from public.entries where id = $1", [demo.appointmentEntryId]);
+  await gotoScreen(page, "/home", /^Good (morning|afternoon|evening), Jane$/);
+  await expect(page.getByRole("region", { name: "GP visit today" })).toHaveCount(0);
+  const card = page.getByRole("region", { name: "Share your record" });
+  // The seed's earlier share with Dr Hennessy, at the GP visit for tiredness.
+  await expect(card.getByText(/^Last shared with Dr Hennessy, \d{1,2} [A-Z][a-z]{2}/)).toBeVisible();
+  await expect(card.getByRole("link", { name: "Share record" })).toHaveAttribute("href", "/share");
+  // Order: share card, medicines, Coming up, then what changed since the last visit.
+  const headings = page.getByRole("main").getByRole("heading", { level: 2 });
+  await expect(headings).toHaveText(["Share your record", "Today's medicines", "Coming up", "Since your last visit"]);
+  const since = page.getByRole("region", { name: "Since your last visit" });
+  await expect(since.getByRole("link")).toHaveText([/Blood count and INR/, /Fatigue symptoms/, /Notes from Dr Hennessy/]);
+  await expect(page.getByRole("region", { name: "Before you go in" })).toHaveCount(0);
+  await expectNoAxeViolations(page);
+  await expectNoSideScroll(page);
+
+  // Never shared: the card says what sharing is instead.
+  await sql("delete from public.share_sessions where patient_id = $1", [demo.userId]);
+  await page.reload();
+  await expect(card.getByText("Choose what a doctor sees, and for how long")).toBeVisible({ timeout: 20_000 });
 });
 
 test("record: safety facts and the three tabs", async ({ page }) => {
@@ -615,7 +648,7 @@ test("Jane Doe's record entered by hand shows on every screen", async ({ page, d
   const coming = page.getByRole("list", { name: "Coming up" });
   await expect(coming.getByRole("link", { name: /Warfarin refill/ })).toBeVisible();
   await expect(coming.getByRole("link", { name: /INR blood test/ })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Recent" }).getByRole("link", { name: /Blood test, full blood count and INR.*Result/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Before you go in" }).getByRole("link", { name: /Blood test, full blood count and INR.*Result/ })).toBeVisible();
   await page.screenshot({ path: info.outputPath("by-hand-home.png"), fullPage: true });
 
   await gotoScreen(page, "/record", "Record");
