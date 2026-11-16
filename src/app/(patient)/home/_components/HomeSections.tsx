@@ -1,12 +1,14 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, SectionHeading } from "@/components/ui/Card";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
-import { formatShortDate } from "@/lib/dates";
-import { capitalise, URGENT_REFILL_DAYS, type RecordMedication } from "@/lib/patient/record";
+import { TickToggle } from "@/components/ui/Toggle";
+import { formatShortDate, formatTime } from "@/lib/dates";
+import { capitalise, errorCode, URGENT_REFILL_DAYS, type RecordMedication } from "@/lib/patient/record";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Home's share card on a day without a visit (owner's choice, Nov 2026: Idea 1
@@ -50,7 +52,25 @@ export function HeadingWithMeta({ id, children, meta }: { id: string; children: 
   );
 }
 
-const GROUPS = ["Morning", "Evening", "As needed"] as const;
+/** A time of day a dose can be ticked for (`medication_doses.slot`). */
+export type DoseSlot = "morning" | "midday" | "evening" | "bedtime" | "other";
+
+/** Today's ticked doses: `${medication id}:${slot}` to the time it was ticked. */
+export type DoseLog = Record<string, string>;
+
+export const doseKey = (medicationId: string, slot: DoseSlot) => `${medicationId}:${slot}`;
+
+/** The groups, in the day's order. "As needed" has no ticks. */
+const GROUPS: { label: string; slot: DoseSlot | null; when: string; has: (m: RecordMedication) => boolean }[] = [
+  { label: "Morning", slot: "morning", when: "this morning", has: (m) => m.schedule === "Morning" || isTwice(m) },
+  { label: "Midday", slot: "midday", when: "at midday", has: (m) => schedule(m) === "midday" },
+  { label: "Evening", slot: "evening", when: "this evening", has: (m) => m.schedule === "Evening" || isTwice(m) },
+  { label: "Bedtime", slot: "bedtime", when: "at bedtime", has: (m) => schedule(m) === "bedtime" },
+  { label: "As needed", slot: null, when: "", has: (m) => m.schedule === "As needed" },
+];
+const schedule = (m: RecordMedication) => (m.schedule as string | null)?.toLowerCase() ?? null;
+const isTwice = (m: RecordMedication) => schedule(m) === "morning and evening";
+const KNOWN = new Set(["morning", "midday", "evening", "bedtime", "as needed", "morning and evening"]);
 
 /** "Tablet, once daily"; an urgent refill says so instead ("3 days left"). */
 function medicineCaption(m: RecordMedication): { text?: string; urgent: boolean } {
@@ -66,21 +86,71 @@ function medicineCaption(m: RecordMedication): { text?: string; urgent: boolean 
 }
 
 /**
- * Today's medicines (owner's choice, Nov 2026: Idea 4 of the Home mockups, as
- * a plain list). The current medications grouped by when they are taken
- * (the record's schedule: Morning, Evening, As needed; anything without one
- * under "Other"). No ticks: the record keeps no log of doses taken.
+ * Today's medicines (owner's choice, Nov 2026: Ideas 4 of the Home mockups).
+ * The current medications grouped by when they are taken (the record's
+ * "When": Morning, Midday, Evening, Bedtime, As needed; "Morning and evening"
+ * in both; anything else under "Other"). Each dose has a tick ring that saves
+ * it as taken today (`medication_doses`, only the patient sees it); "As
+ * needed" has none. `doses` is null when the log cannot be read, and then the
+ * list shows without ticks.
  */
-export function TodaysMedicines({ meds }: { meds: RecordMedication[] }) {
+export function TodaysMedicines({ meds, today, doses }: { meds: RecordMedication[]; today: string; doses: DoseLog | null }) {
   const headingId = useId();
+  // Ticks made here, on top of what was loaded (null: unticked).
+  const [changed, setChanged] = useState<Record<string, string | null>>({});
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const [problem, setProblem] = useState<string | null>(null);
+
   const groups = [
-    ...GROUPS.map((label) => ({ label, meds: meds.filter((m) => m.schedule === label) })),
-    { label: "Other", meds: meds.filter((m) => !m.schedule) },
+    ...GROUPS.map((g) => ({ ...g, meds: meds.filter(g.has) })),
+    { label: "Other", slot: "other" as DoseSlot, when: "today", meds: meds.filter((m) => !KNOWN.has(schedule(m) ?? "")) },
   ].filter((g) => g.meds.length > 0);
   if (groups.length === 0) return null;
+
+  const takenAt = (key: string): string | null => (key in changed ? changed[key] : (doses?.[key] ?? null));
+
+  async function toggle(m: RecordMedication, slot: DoseSlot, on: boolean) {
+    const key = doseKey(m.id, slot);
+    // Not disabled while saving (that would drop keyboard focus); a second press waits.
+    if (busy[key]) return;
+    setBusy((b) => ({ ...b, [key]: true }));
+    setProblem(null);
+    setChanged((c) => ({ ...c, [key]: on ? new Date().toISOString() : null }));
+    const db = createClient();
+    let failed = false;
+    if (on) {
+      const { data, error } = await db
+        .from("medication_doses")
+        .insert({ medication_id: m.id, taken_on: today, slot })
+        .select("taken_at")
+        .single();
+      // Already ticked (another tab): it is taken either way.
+      if (error && !/duplicate|unique/i.test(errorCode(error) ?? "")) failed = true;
+      else if (data) setChanged((c) => ({ ...c, [key]: data.taken_at }));
+    } else {
+      const { error } = await db
+        .from("medication_doses")
+        .delete()
+        .eq("medication_id", m.id)
+        .eq("taken_on", today)
+        .eq("slot", slot);
+      if (error) failed = true;
+    }
+    if (failed) {
+      setChanged((c) => ({ ...c, [key]: on ? null : (doses?.[key] ?? new Date().toISOString()) }));
+      setProblem(`${m.name} couldn't be saved. Check your connection and try again.`);
+    }
+    setBusy((b) => ({ ...b, [key]: false }));
+  }
+
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-2">
       <SectionHeading id={headingId}>{"Today's medicines"}</SectionHeading>
+      {problem && (
+        <p role="alert" className="text-caption text-critical">
+          {problem}
+        </p>
+      )}
       <Card padding="none" className="px-4.5 pb-0.5 pt-3">
         {groups.map((g, i) => {
           const labelId = `${headingId}-${i}`;
@@ -91,12 +161,26 @@ export function TodaysMedicines({ meds }: { meds: RecordMedication[] }) {
               </h3>
               <ul aria-labelledby={labelId} className="divide-y divide-border-row">
                 {g.meds.map((m) => {
+                  const key = g.slot ? doseKey(m.id, g.slot) : null;
+                  const taken = key ? takenAt(key) : null;
                   const caption = medicineCaption(m);
+                  const ticks = key !== null && doses !== null;
                   return (
-                    <li key={m.id}>
+                    <li key={m.id} className="flex items-center gap-1">
+                      {ticks && (
+                        <TickToggle
+                          checked={taken !== null}
+                          label={`Took ${m.name}${m.strength_label ? ` ${m.strength_label}` : ""} ${g.when}`}
+                          onCheckedChange={(on) => toggle(m, g.slot!, on)}
+                          className="-ml-2.5"
+                        />
+                      )}
+                      {/* As needed lines up with the ticked rows above it. */}
+                      {doses !== null && key === null && <span aria-hidden="true" className="w-8.5 shrink-0" />}
                       <ListRow
+                        className="min-w-0 flex-1"
                         title={m.name}
-                        caption={caption.text}
+                        caption={caption.urgent || !taken ? caption.text : `Taken ${formatTime(taken)}`}
                         captionTone={caption.urgent ? "urgent" : "default"}
                         value={m.strength_label ?? undefined}
                         valueStyle="numeral"

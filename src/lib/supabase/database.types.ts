@@ -391,6 +391,41 @@ export type Database = {
         }
         Relationships: []
       }
+      medication_doses: {
+        Row: {
+          id: string
+          medication_id: string
+          slot: string
+          taken_at: string
+          taken_on: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          medication_id: string
+          slot: string
+          taken_at?: string
+          taken_on: string
+          user_id?: string
+        }
+        Update: {
+          id?: string
+          medication_id?: string
+          slot?: string
+          taken_at?: string
+          taken_on?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_doses_medication_fkey"
+            columns: ["medication_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       medication_periods: {
         Row: {
           created_at: string

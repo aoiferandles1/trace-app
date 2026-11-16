@@ -75,6 +75,42 @@ test("home on a day without a visit: the share card, then Since your last visit"
   await expect(card.getByText("Choose what a doctor sees, and for how long")).toBeVisible({ timeout: 20_000 });
 });
 
+test("home: ticking a medicine saves it for today, and unticking removes it", async ({ page, demo }) => {
+  await gotoScreen(page, "/home", /^Good (morning|afternoon|evening), Jane$/);
+  const meds = page.getByRole("region", { name: "Today's medicines" });
+  const warfarin = meds.getByRole("switch", { name: "Took Warfarin 5mg this evening" });
+  await expect(warfarin).toHaveAttribute("aria-checked", "false");
+  // As needed has no tick.
+  await expect(meds.getByRole("switch", { name: /Salbutamol/ })).toHaveCount(0);
+  await expect(meds.getByRole("switch")).toHaveCount(3);
+
+  await warfarin.click();
+  await expect(warfarin).toHaveAttribute("aria-checked", "true");
+  await expect(meds.getByRole("link", { name: /Warfarin.*Taken \d{1,2}:\d{2}(am|pm)/ })).toBeVisible();
+  await expect(warfarin).toBeFocused();
+  await expect.poll(async () => (await demo.db.from("medication_doses").select("slot, taken_on")).data).toEqual([
+    { slot: "evening", taken_on: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(new Date()) },
+  ]);
+
+  // It stays ticked after a reload, and unticks.
+  await page.reload();
+  await expect(warfarin).toHaveAttribute("aria-checked", "true", { timeout: 20_000 });
+  await warfarin.press("Space");
+  await expect(warfarin).toHaveAttribute("aria-checked", "false");
+  await expect.poll(async () => (await demo.db.from("medication_doses").select("id")).data).toEqual([]);
+  await expectNoAxeViolations(page);
+});
+
+test("home: without the dose log, Today's medicines shows without ticks", async ({ page }) => {
+  await page.route(/\/rest\/v1\/medication_doses/, (route) =>
+    route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ code: "42P01", message: "relation does not exist" }) }),
+  );
+  await gotoScreen(page, "/home", /^Good (morning|afternoon|evening), Jane$/);
+  const meds = page.getByRole("region", { name: "Today's medicines" });
+  await expect(meds.getByRole("link", { name: /Warfarin/ })).toBeVisible();
+  await expect(meds.getByRole("switch")).toHaveCount(0);
+});
+
 test("record: safety facts and the three tabs", async ({ page }) => {
   await gotoScreen(page, "/record", "Record");
   const strip = page.getByRole("region", { name: "Critical safety information" });

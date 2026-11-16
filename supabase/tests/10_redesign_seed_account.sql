@@ -289,7 +289,7 @@ begin
   perform pg_temp.ok('export_my_data(version 2) has every table the user owns',
     (select array_agg(k order by k) from jsonb_object_keys(j) k) =
       array['access_events', 'care_team', 'conditions', 'documents', 'entries', 'exported_at', 'health_event_prescriptions',
-            'health_events', 'insurance_connections', 'medication_periods', 'medications', 'profile', 'relative_conditions',
+            'health_events', 'insurance_connections', 'medication_doses', 'medication_periods', 'medications', 'profile', 'relative_conditions',
             'relatives', 'result_values', 'share_sessions', 'user_id', 'version', 'vitals']
     and jsonb_array_length(j -> 'medication_periods') = 13 and jsonb_array_length(j -> 'health_events') = 10
     and jsonb_array_length(j -> 'relatives') = 7 and jsonb_array_length(j -> 'result_values') = 6
