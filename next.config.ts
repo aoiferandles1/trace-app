@@ -6,15 +6,22 @@ const nextConfig: NextConfig = {
   // folder, so it can never be mistaken for, or overwrite, a real build.
   distDir: process.env.TRACE_E2E === "1" ? ".next-e2e" : ".next",
   cacheComponents: true,
-  // Only Trace itself may frame Trace (the /demo page frames the patient app
-  // and the portal). Everyone else is refused, against clickjacking.
+  // Only Trace itself (the /demo page) and Aoife's portfolio case study
+  // (aoiferandles.com/trace/, its "Try it yourself" frames) may frame Trace.
+  // Everyone else is refused, against clickjacking. The app is served at
+  // trace.aoiferandles.com, so the portfolio's frames are same-site and the
+  // SameSite=Lax session cookies reach them. Browsers that understand
+  // frame-ancestors ignore X-Frame-Options; only very old ones fall back to it.
   async headers() {
     return [
       {
         source: "/:path*",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          {
+            key: "Content-Security-Policy",
+            value: "frame-ancestors 'self' https://aoiferandles.com https://www.aoiferandles.com",
+          },
           // A health record: never tell other sites which page linked to them.
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "X-Content-Type-Options", value: "nosniff" },

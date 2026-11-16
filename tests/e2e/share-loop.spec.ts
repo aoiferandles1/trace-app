@@ -531,9 +531,11 @@ test("/demo runs the loop inside its two frames", async ({ browser, demo }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, storageState: demo.storageState, extraHTTPHeaders: { "x-forwarded-for": "198.19.200.7" } });
   const page = await ctx.newPage();
   const res = await page.goto("/demo");
-  // Only Trace may frame Trace.
+  // Only Trace and the portfolio's case study may frame Trace.
   expect(res!.headers()["x-frame-options"]).toBe("SAMEORIGIN");
-  expect(res!.headers()["content-security-policy"]).toContain("frame-ancestors 'self'");
+  expect(res!.headers()["content-security-policy"]).toBe(
+    "frame-ancestors 'self' https://aoiferandles.com https://www.aoiferandles.com",
+  );
   expect(res!.headers()["referrer-policy"]).toBe("no-referrer");
   expect(res!.headers()["x-content-type-options"]).toBe("nosniff");
   await expect(page.getByRole("heading", { level: 1, name: "Try both sides of a GP visit" })).toBeVisible();
