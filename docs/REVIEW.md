@@ -192,6 +192,9 @@ Your choice of 16 Nov from the Home mockups: Idea 1's share card, Idea 4's medic
 - **H3. "Since your last visit" replaces Recent.** The last visit before today, and what was added on or after its day, newest first, at most 5: results, notes ("Your note"), prescriptions, a doctor's notes, letters, and any strength change or new medication ("Concerta now 36mg", "Strength change"). The date of that visit sits beside the heading. Hidden when nothing is new. With no past visit yet it is "Recent" (the latest three), as before.
 - **H4. Order.** Normal day: share card, Today's medicines, Coming up, Since your last visit. On a visit day or while a doctor has access: the card, then the same list as "Before you go in" ("Since 31 Oct"), Today's medicines, Coming up.
 
+- **H5. No demo strip (your decision, 16 Nov 2026).** "Demo with sample data" and "Open the doctor's side" are gone from the top of every patient screen: the strip covered the top of the phone in the portfolio's live demo and in its screenshots. A demo is still marked on the welcome screen, by "Reset demo" in Profile and in the portal's footer.
+- **H6. Share confirm's dashes count from the left.** "8 of 10 shared" fills the first eight dashes. They used to follow the tiles' order, so an off tile in the middle read as a missed dash.
+
 ### 1.4 Doctor's portal (Phase 7)
 
 Rebuilt on PortalEntryB (Enter code), PortalWaitB (Waiting) and PortalRecordE (the live record and its views). Where the build differs from a board, or a board from the brief:
